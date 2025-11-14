@@ -77,9 +77,13 @@
           <span class="text-xs text-gray-600">({{getEnergyUsagePercentage() | number:'1.0-0'}}%)</span>
         </p>
         <div class="mt-2">
-          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
-            <div class="bg-gradient-to-r from-green-500 to-yellow-500 h-2 rounded-full transition-all duration-300"
-                 [style.width.%]="getEnergyUtilizationPercentage()">
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-1 overflow-hidden">
+            <div class="h-2 rounded-full transition-all duration-300"
+                 [class.bg-gradient-to-r]="getEnergyUtilizationPercentage() <= 100"
+                 [class.from-green-500]="getEnergyUtilizationPercentage() <= 100"
+                 [class.to-yellow-500]="getEnergyUtilizationPercentage() <= 100"
+                 [class.bg-red-500]="getEnergyUtilizationPercentage() > 100"
+                 [style.width.%]="getEnergyUtilizationPercentage() > 100 ? 100 : getEnergyUtilizationPercentage()">
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-gray-600">
