@@ -66,6 +66,26 @@ class ApplicationDeploymentRepository:
         """Get all pending application deployments."""
         return await self.get_all(status=DeploymentStatus.PENDING.value)
 
+    async def get_by_statuses(
+        self,
+        statuses: List[str],
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[ApplicationDeployment]:
+        """Get all application deployments with status in the provided list."""
+        stmt = select(ApplicationDeployment).options(
+            joinedload(ApplicationDeployment.application_definition)
+        )
+
+        if statuses:
+            stmt = stmt.where(ApplicationDeployment.status.in_(statuses))
+
+        stmt = stmt.order_by(ApplicationDeployment.created_at.desc())
+        stmt = stmt.limit(limit).offset(offset)
+
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
     async def update_status(
         self,
         request_id: UUID,

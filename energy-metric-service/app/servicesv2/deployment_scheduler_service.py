@@ -25,7 +25,7 @@ class DeploymentSchedulerService:
 
     async def process_pending_deployments(self) -> int:
         """
-        Process all pending deployment requests (status = 'Created').
+        Process all pending deployment requests (status = 'Created' or 'Scheduled').
 
         Returns:
             Number of deployments processed
@@ -37,9 +37,9 @@ class DeploymentSchedulerService:
                 deployment_repo = ApplicationDeploymentRepository(db)
                 app_definition_repo = ApplicationDefinitionRepository(db)
 
-                # Get all pending deployments (status = 'Created')
-                pending_deployments = await deployment_repo.get_all(
-                    status=RequestStatus.CREATED.value,
+                # Get all pending deployments (status = 'Created' or 'Scheduled')
+                pending_deployments = await deployment_repo.get_by_statuses(
+                    statuses=[RequestStatus.CREATED.value, RequestStatus.SCHEDULED.value],
                     limit=100
                 )
 
