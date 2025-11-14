@@ -1,0 +1,8 @@
+.group:last-child {
+  border-bottom: 0 !important;
+}
+.container-details {
+  overflow: hidden;
+  overflow-y: auto;
+  height: calc(100svh - 97px);
+}

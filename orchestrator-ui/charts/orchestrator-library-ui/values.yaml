@@ -1,0 +1,15 @@
+app:
+  namespace: aces-orchestration-library-ui
+  name: aces-orchestrator-library-ui
+  replicaCount: 1
+
+  image:
+    repository: orchestrator-library-ui
+    tag: alpha1
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 4000
+    nodePort: 30010
+

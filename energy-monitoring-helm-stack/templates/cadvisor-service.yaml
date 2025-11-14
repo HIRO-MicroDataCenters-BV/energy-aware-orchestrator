@@ -1,0 +1,19 @@
+{{- if .Values.cadvisor.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "energy-metrics.fullname" . }}-cadvisor
+  labels:
+    {{- include "energy-metrics.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cadvisor
+spec:
+  type: {{ .Values.cadvisor.service.type }}
+  ports:
+    - port: {{ .Values.cadvisor.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "energy-metrics.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: cadvisor
+{{- end }}

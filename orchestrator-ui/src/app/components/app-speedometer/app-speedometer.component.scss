@@ -1,0 +1,215 @@
+.speedometer-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+
+  &.grid-item {
+    width: 100%;
+    height: auto;
+  }
+}
+
+.transition-all {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.speedometer-progress {
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+svg path:not(.speedometer-progress) {
+  transition: stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.speedometer-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.tick-mark {
+  transition: stroke 0.2s ease;
+
+  &.major {
+    stroke: #374151;
+    stroke-width: 2;
+  }
+
+  &.minor {
+    stroke: #9ca3af;
+    stroke-width: 1;
+  }
+}
+
+.tick-label {
+  font-size: 0.75rem;
+  fill: #6b7280;
+  font-weight: 500;
+  dominant-baseline: middle;
+}
+
+.speedometer-low {
+  stroke: #10b981;
+  color: #10b981;
+}
+
+.speedometer-medium {
+  stroke: #f59e0b;
+  color: #f59e0b;
+}
+
+.speedometer-high {
+  stroke: #ef4444;
+  color: #ef4444;
+}
+
+.speedometer-shadow {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes pulse-critical {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.speedometer-critical {
+  animation: pulse-critical 2s infinite;
+
+  .speedometer-value {
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+    text-shadow: 0 0 8px currentColor;
+  }
+}
+
+.speedometer-loading {
+  opacity: 0.6;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .speedometer-value {
+    font-size: 1.25rem;
+  }
+
+  .speedometer-label {
+    font-size: 0.75rem;
+  }
+
+  .tick-label {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .speedometer-value {
+    font-size: 1rem;
+  }
+
+  .speedometer-label {
+    font-size: 0.625rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .speedometer-label {
+    color: #9ca3af;
+  }
+
+  .tick-label {
+    fill: #9ca3af;
+  }
+
+  .tick-mark {
+    &.major {
+      stroke: #d1d5db;
+    }
+
+    &.minor {
+      stroke: #6b7280;
+    }
+  }
+}
+
+@media (prefers-contrast: high) {
+  .speedometer-low,
+  .speedometer-medium,
+  .speedometer-high {
+    stroke: #000000;
+    color: #000000;
+  }
+
+  .tick-mark {
+    stroke: #000000;
+  }
+
+  .tick-label {
+    fill: #000000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-all,
+  .speedometer-value,
+  .speedometer-progress {
+    transition: none;
+  }
+
+  .speedometer-critical {
+    animation: none;
+  }
+
+  .speedometer-loading::after {
+    animation: none;
+  }
+}
+
+.speedometer-container:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.speedometers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+}

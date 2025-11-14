@@ -1,0 +1,140 @@
+---
+# This workflow builds and deploys 
+# the Orchestration Library UI
+# and deploys it to a Kubernetes cluster using Helm.
+
+name: Build and Deploy the Orchestration Library UI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  checkout:
+    name: Checkout Code
+    runs-on: ubuntu-latest
+    outputs:
+      repo-path: ${{ steps.set-repo-path.outputs.repo-path }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set repo path output
+        id: set-repo-path
+        run: echo "repo-path=${GITHUB_WORKSPACE}" >> $GITHUB_OUTPUT
+
+  validate:
+    name: Validate YAML file Syntax and Testcoverage
+    runs-on: ubuntu-latest
+    needs: checkout
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Show versions
+        run: |
+          node -v
+          pnpm -v
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Need to uncomment this step once the tests are running
+      # - name: Run tests
+      #   run: pnpm test
+      
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Lint Helm chart
+        run: helm lint ./charts/orchestrator-library-ui
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      image_name: ${{ steps.set-image.outputs.image_name }}
+      image_tag: ${{ steps.set-image.outputs.image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        id: set-image
+        run: |
+          IMAGE_TAG=${{ vars.ORCHESTRATOR_LIBRARY_UI_IMAGE_TAG }}-$(date +%Y%m%d%H%M%S)
+          docker build -t ${{ vars.ORCHESTRATOR_LIBRARY_UI_IMAGE_NAME }}:$IMAGE_TAG .
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_name=${{ vars.ORCHESTRATOR_LIBRARY_UI_IMAGE_NAME }}" >> $GITHUB_OUTPUT
+
+      - name: Push Docker image
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ vars.ORCHESTRATOR_LIBRARY_UI_IMAGE_NAME }}:${{ steps.set-image.outputs.image_tag }}
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: 
+      - build-and-push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.HIRO_KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Set Helm dry-run flag
+        id: helm-dry-run
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "flag=" >> $GITHUB_OUTPUT
+          else
+            echo "flag=--dry-run" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy Orchestration API Helm chart
+        run: |
+          helm upgrade --install ${{ vars.ORCHESTRATOR_LIBRARY_UI_RELEASE_NAME }} ./charts/orchestrator-library-ui \
+            --namespace ${{ vars.ORCHESTRATOR_LIBRARY_UI_NAMESPACE }} \
+            --create-namespace \
+            --set namespace=${{ vars.ORCHESTRATOR_LIBRARY_UI_NAMESPACE }} \
+            --set app.image.repository=${{ vars.ORCHESTRATOR_LIBRARY_UI_IMAGE_NAME }} \
+            --set app.image.tag=${{ needs.build-and-push.outputs.image_tag }} \
+            --set app.service.type=NodePort \
+            --set app.service.port=4000 \
+            --set app.service.nodePort=${{ vars.ORCHESTRATOR_LIBRARY_UI_NODE_PORT }} \
+            ${{ steps.helm-dry-run.outputs.flag }}

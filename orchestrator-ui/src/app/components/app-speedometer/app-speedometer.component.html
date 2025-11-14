@@ -1,0 +1,92 @@
+<div
+  class="speedometer-container"
+  [style.width.px]="size"
+  [style.height.px]="size / 2 + 40"
+>
+  <div class="relative w-full h-full">
+    <svg
+      [attr.width]="size"
+      [attr.height]="size / 2 + 40"
+      [attr.viewBox]="'0 0 ' + size + ' ' + (size / 2 + 40)"
+      class="w-full h-full"
+    >
+      <path
+        [attr.d]="getArcPath(startAngle, endAngle, outerRadius)"
+        [attr.stroke]="backgroundColor"
+        [attr.stroke-width]="strokeWidth"
+        fill="none"
+        stroke-linecap="butt"
+      />
+
+      <rect
+        [attr.x]="getStartCapX()"
+        [attr.y]="getStartCapY()"
+        [attr.width]="strokeWidth"
+        [attr.height]="strokeWidth"
+        [attr.rx]="strokeWidth * 0.4"
+        [attr.ry]="strokeWidth * 0.4"
+        [attr.fill]="backgroundColor"
+        [attr.transform]="getStartCapTransform()"
+      />
+
+      <rect
+        [attr.x]="getEndCapX()"
+        [attr.y]="getEndCapY()"
+        [attr.width]="strokeWidth"
+        [attr.height]="strokeWidth"
+        [attr.rx]="strokeWidth * 0.4"
+        [attr.ry]="strokeWidth * 0.4"
+        [attr.fill]="backgroundColor"
+        [attr.transform]="getEndCapTransform()"
+      />
+
+      <path
+        [attr.d]="getProgressArcPath()"
+        [attr.stroke]="getValueColor()"
+        [attr.stroke-width]="strokeWidth"
+        fill="none"
+        stroke-linecap="butt"
+        class="speedometer-progress"
+      />
+
+      <rect
+        *ngIf="displayValue > min"
+        [attr.x]="getStartCapX()"
+        [attr.y]="getStartCapY()"
+        [attr.width]="strokeWidth"
+        [attr.height]="strokeWidth"
+        [attr.rx]="strokeWidth * 0.4"
+        [attr.ry]="strokeWidth * 0.4"
+        [attr.fill]="getValueColor()"
+        [attr.transform]="getStartCapTransform()"
+      />
+
+      <rect
+        *ngIf="displayValue > min"
+        [attr.x]="getProgressEndCapX()"
+        [attr.y]="getProgressEndCapY()"
+        [attr.width]="strokeWidth"
+        [attr.height]="strokeWidth"
+        [attr.rx]="strokeWidth * 0.4"
+        [attr.ry]="strokeWidth * 0.4"
+        [attr.fill]="getValueColor()"
+        [attr.transform]="getProgressEndCapTransform()"
+      />
+    </svg>
+
+    <div class="absolute inset-0 flex flex-col items-center justify-end pb-4">
+      <div class="text-center">
+        <div
+          class="text-sm speedometer-label mb-1"
+          *ngIf="label"
+          [style.color]="getValueColor()"
+        >
+          {{ getShortLabel() }}
+        </div>
+        <div class="text-gray-700 text-lg">
+          {{ formatValue(displayValue || 0) }}{{ unit }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

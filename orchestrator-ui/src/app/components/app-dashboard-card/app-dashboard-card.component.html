@@ -1,0 +1,142 @@
+<div class="dashboard-card space-1 rounded-md bg-gray-100 p-1 relative">
+  <header class="p-4 flex">
+    <h2 class="text-sm">{{ data.title | transloco }}</h2>
+    <div *ngIf="data.actions" class="ml-auto">
+      <ul class="flex gap-2 text-sm">
+        <li
+          class="after:content-['•'] after:ml-2 after:text-gray-400 last:after:content-['']"
+          *ngFor="let action of data.actions"
+        >
+          <a
+            [routerLink]="action.link"
+            routerLinkActive="active"
+            class="text-gray-500 hover:text-primary"
+            >{{ action.label | transloco }}</a
+          >
+        </li>
+      </ul>
+    </div>
+  </header>
+  <section class="relative overlay-container">
+    <app-loading-overlay
+      [isVisible]="isLoading"
+      [showBackdrop]="true"
+      size="md"
+      theme="primary"
+    ></app-loading-overlay>
+
+    <app-error-overlay
+      [isVisible]="hasError"
+      [showBackdrop]="true"
+      [showRetry]="true"
+      size="md"
+      theme="danger"
+      title="error.filed_to_load.title"
+      message="error.filed_to_load.message"
+      (retry)="retryLoad()"
+    ></app-error-overlay>
+
+    <div *ngIf="data.type === 'metrics' && data.key === 'cluster'" class="h-68">
+      <div class="grid grid-cols-2 gap-1 mb-1 h-30">
+        <div
+          *ngFor="let metric of getMetrics()"
+          class="rounded-md p-4 text-center border-gray-200 border-1 metric-card"
+          [class.healthy]="metric.healthy"
+          [class.unhealthy]="!metric.healthy"
+        >
+          <div class="flex items-center justify-center mb-3">
+            <div
+              class="w-4 h-4 mr-2 flex justify-center items-center"
+              [class.text-green-500]="metric.healthy"
+              [class.text-red-500]="!metric.healthy"
+            >
+              <ng-icon [name]="metric.icon" />
+            </div>
+            <span class="text-xs font-medium text-gray-700">{{
+              metric.title | transloco
+            }}</span>
+          </div>
+          <div class="text-gray-900 mb-1 font-medium">
+            {{ metric.readyCount }} {{ 'card.out_of' | transloco }}
+            {{ metric.totalCount }}
+          </div>
+          <div class="text-sm text-gray-500">
+            <span *ngIf="metric.failedCount !== undefined"
+              >{{ metric.failedCount }}
+              {{ metric.statusText | transloco }}</span
+            >
+            <span *ngIf="metric.failedCount === undefined">{{
+              metric.statusText | transloco
+            }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-1 h-30">
+        <div
+          class="bg-white border-1 border-grey-200 rounded p-4 text-center flex items-center justify-center speedometer-container-minimal"
+        >
+          <app-speedometer
+            *ngIf="isBrowser"
+            [value]="getMetricValue('cpu')"
+            [min]="getCpuSpeedometerConfig().min"
+            [max]="getCpuSpeedometerConfig().max"
+            [unit]="getCpuSpeedometerConfig().unit"
+            [label]="'card.cpu_usage' | transloco"
+            [size]="getCpuSpeedometerConfig().size"
+            [lowThreshold]="getCpuSpeedometerConfig().lowThreshold"
+            [highThreshold]="getCpuSpeedometerConfig().highThreshold"
+            [animate]="getCpuSpeedometerConfig().animate"
+          ></app-speedometer>
+          <div *ngIf="!isBrowser" class="text-gray-600">
+            {{ 'card.cpu_usage' | transloco }}: {{ getMetricValue('cpu') }}%
+          </div>
+        </div>
+
+        <div
+          class="bg-white border-1 border-grey-200 rounded p-4 text-center flex items-center justify-center speedometer-container-minimal"
+        >
+          <app-speedometer
+            *ngIf="isBrowser"
+            [value]="getMetricValue('memory')"
+            [min]="getMemorySpeedometerConfig().min"
+            [max]="getMemorySpeedometerConfig().max"
+            [unit]="getMemorySpeedometerConfig().unit"
+            [label]="'card.memory_usage' | transloco"
+            [size]="getMemorySpeedometerConfig().size"
+            [lowThreshold]="getMemorySpeedometerConfig().lowThreshold"
+            [highThreshold]="getMemorySpeedometerConfig().highThreshold"
+            [animate]="getMemorySpeedometerConfig().animate"
+          ></app-speedometer>
+          <div *ngIf="!isBrowser" class="text-gray-600">
+            {{ 'card.memory_usage' | transloco }}:
+            {{ getMetricValue('memory') }}%
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      *ngIf="data.type === 'metrics' && data.key !== 'cluster'"
+      class="p-4 h-64"
+    >
+      <div class="text-gray-500">{{ 'tips.no_data' | transloco }}</div>
+    </div>
+    <div
+      *ngIf="data.type === 'table'"
+      class="table-container bg-white rounded-md border-gray-200 border-1 overflow-hidden h-68"
+    >
+      <app-table
+        [columns]="getTableColumns()"
+        [actions]="getTableActions()"
+        [tabs]="getTableTabs()"
+        [dataSource]="getDataSource()"
+        [hasRowAction]="false"
+        [showHeader]="false"
+        [showFooter]="false"
+        [pageSize]="getTablePageSize()"
+      ></app-table>
+    </div>
+    <div *ngIf="!data.type" class="p-4 h-64">
+      <div class="text-gray-500">{{ 'tips.no_data' | transloco }}</div>
+    </div>
+  </section>
+</div>

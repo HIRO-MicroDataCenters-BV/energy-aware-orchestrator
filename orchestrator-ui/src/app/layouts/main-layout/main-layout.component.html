@@ -1,0 +1,159 @@
+<div
+  class="min-h-screen bg-background flex"
+  [attr.data-sidebar-state]="sidebarService.state()"
+>
+  <hlm-sidebar
+    [collapsible]="'icon'"
+    [variant]="'sidebar'"
+    class="sidebar bg-white z-10000"
+  >
+    <div hlmSidebarHeader class="p-4">
+      <div class="flex gap-2">
+        <span class="logo">
+          <img src="/logo.svg" />
+        </span>
+        <div
+          [class.hidden]="sidebarService.state() === 'collapsed'"
+          class="mt-[2px]"
+        >
+          <h1 class="text-sm font-semibold leading-none">
+            {{ 'app.title' | transloco }}
+          </h1>
+        </div>
+      </div>
+    </div>
+
+    <div hlmSidebarContent class="p-2">
+      <ul hlmSidebarMenu *ngFor="let group of menuItems">
+        <li
+          *ngIf="group.label"
+          class="menu-item-group font-medium text-xs text-gray-500 px-2"
+          [class.hidden]="sidebarService.state() === 'collapsed'"
+        >
+          {{ `section.${group.label}` | transloco }}
+        </li>
+
+        <ng-container *ngFor="let item of group.items">
+          <li
+            *ngIf="item.items && item.items.length > 0"
+            hlmSidebarMenuItem
+            class="mb-1 relative"
+            (mouseenter)="onMenuItemHover(item)"
+            (mouseleave)="onMenuItemLeave()"
+          >
+            <div
+              class="flex items-center justify-between font-normal menu-item-link p-2 rounded-md cursor-pointer"
+              [class.bg-gray-100]="item.expanded"
+              (click)="toggleSubmenu(item)"
+            >
+              <div class="flex items-center gap-2">
+                <ng-icon
+                  *ngIf="item.icon"
+                  hlm
+                  size="sm"
+                  [name]="item.icon"
+                ></ng-icon>
+                <span [class.hidden]="sidebarService.state() === 'collapsed'">{{
+                      `section.${item.label}` | transloco
+                }}</span>
+              </div>
+              <ng-icon
+                *ngIf="sidebarService.state() !== 'collapsed'"
+                hlm
+                size="sm"
+                [name]="
+                  item.expanded ? 'lucideChevronDown' : 'lucideChevronRight'
+                "
+              ></ng-icon>
+            </div>
+
+            <ul
+              *ngIf="
+                (item.expanded && sidebarService.state() !== 'collapsed') ||
+                showSubmenuOnHover === item
+              "
+              class="pl-4 mt-1 border-l-1 border-gray-300 ml-4"
+              [class.absolute]="sidebarService.state() === 'collapsed'"
+              [class.left-full]="sidebarService.state() === 'collapsed'"
+              [class.ml-2]="sidebarService.state() === 'collapsed'"
+              [class.z-50]="sidebarService.state() === 'collapsed'"
+              [class.bg-white]="sidebarService.state() === 'collapsed'"
+              [class.shadow-md]="sidebarService.state() === 'collapsed'"
+              [class.rounded-md]="sidebarService.state() === 'collapsed'"
+              [class.p-2]="sidebarService.state() === 'collapsed'"
+              [class.min-w-[180px]]="sidebarService.state() === 'collapsed'"
+            >
+              <li *ngFor="let subItem of item.items" class="mb-1">
+                <a
+                  hlmSidebarMenuButton
+                  [routerLink]="resolveRoute(group.route, item.route, subItem.route)"
+                  routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: true }"
+                  class="flex items-center gap-2 font-normal menu-item-link p-2 [.active]:bg-gray-100 rounded-md"
+                >
+                  <ng-icon
+                    *ngIf="subItem.icon"
+                    hlm
+                    size="sm"
+                    [name]="subItem.icon"
+                  ></ng-icon>
+                  <span
+                    [class.hidden]="sidebarService.state() === 'collapsed'"
+                    >{{
+                        `section.${subItem.label}` | transloco
+                    }}</span
+                  >
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <li
+            *ngIf="!item.items || item.items.length === 0"
+            hlmSidebarMenuItem
+            class="mb-1"
+          >
+            <a
+              hlmSidebarMenuButton
+              [routerLink]="resolveRoute(group.route, item.route)"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="flex items-center gap-2 font-normal menu-item-link p-2 [.active]:bg-gray-100 rounded-md"
+            >
+              <ng-icon
+                *ngIf="item.icon"
+                hlm
+                size="sm"
+                [name]="item.icon"
+              ></ng-icon>
+              <span [class.hidden]="sidebarService.state() === 'collapsed'">{{
+                    `section.${item.label}` | transloco
+              }}</span>
+            </a>
+          </li>
+        </ng-container>
+      </ul>
+    </div>
+    <div hlmSidebarFooter>
+      <div class="p-4">
+        <img src="logo_footer.svg" />
+      </div>
+    </div>
+  </hlm-sidebar>
+
+  <main class="flex flex-col h-screen flex-1 min-w-0">
+    <div class="h-16 top-0 border-b-1 border-gray-200 flex items-center">
+      <div class="flex items-center px-8 gap-2">
+        <hlm-sidebar-trigger></hlm-sidebar-trigger>
+
+        <span>
+          <app-header></app-header>
+        </span>
+      </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 h-screen overflow-auto">
+      <router-outlet />
+    </div>
+  </main>
+</div>

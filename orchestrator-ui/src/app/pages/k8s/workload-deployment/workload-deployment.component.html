@@ -1,0 +1,490 @@
+<div class="fixed inset-0 top-16 overflow-auto bg-background"
+     [style.left.px]="sidebarService.state() === 'collapsed' ? 48 : 256">
+
+  <!-- Delete Notification -->
+  <div *ngIf="deleteNotification.show"
+       class="fixed top-20 right-4 z-50 max-w-md border rounded-lg shadow-lg p-4"
+       [class.bg-green-50]="deleteNotification.type === 'success'"
+       [class.border-green-300]="deleteNotification.type === 'success'"
+       [class.bg-red-50]="deleteNotification.type === 'error'"
+       [class.border-red-300]="deleteNotification.type === 'error'">
+    <div class="flex items-start gap-3">
+      <span *ngIf="deleteNotification.type === 'success'" class="text-green-600 text-xl">✓</span>
+      <span *ngIf="deleteNotification.type === 'error'" class="text-red-600 text-xl">✕</span>
+      <div class="flex-1">
+        <p class="text-sm font-medium"
+           [class.text-green-800]="deleteNotification.type === 'success'"
+           [class.text-red-800]="deleteNotification.type === 'error'">
+          {{deleteNotification.message}}
+        </p>
+      </div>
+      <button (click)="deleteNotification.show = false"
+              class="text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
+    </div>
+  </div>
+
+  <div class="p-2 space-y-2 w-full">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-2">
+      <div>
+        <h1 class="text-lg font-bold text-gray-900">Workload Deployment</h1>
+        <p class="text-xs text-gray-600">Energy-aware scheduling</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          (click)="refreshAllData()"
+          class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 hover:cursor-pointer transition-colors flex items-center gap-1 border border-gray-300"
+          [disabled]="isRefreshing"
+          title="Refresh all data">
+          <ng-icon name="lucideRefreshCw" size="14" [class.refresh-spin]="isRefreshing"></ng-icon>
+          Refresh
+        </button>
+        <app-add-workload-dialog #addDialog (submitted)="onDialogSubmitted($event)"></app-add-workload-dialog>
+        <button
+          (click)="addDialog.open()"
+          class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 hover:cursor-pointer transition-colors flex items-center gap-1">
+          <span>+</span>
+          Schedule Workload
+        </button>
+      </div>
+    </div>
+
+    <!-- Energy Status -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div class="bg-white rounded border p-2 relative">
+        <p class="text-xs font-medium text-gray-600 mt-1">Available Energy</p>
+        <p class="text-xl font-bold text-green-600 mb-1">{{(availableEnergy / 1000) | number:'1.1-1'}} kW</p>
+        <div class="absolute bottom-1 left-1 text-[9px] text-gray-500 pt-1" *ngIf="currentEnergySlot">
+          Current Time Slot (6h): {{formatTimeSlot(currentEnergySlot.slot_start_time, currentEnergySlot.slot_end_time)}}
+        </div>
+        <div class="absolute top-1 right-1 text-[9px] text-gray-500" *ngIf="upcomingEnergySlots.length > 0">
+          Next Slot (6h): {{formatTimeSlot(upcomingEnergySlots[0].slot_start_time, upcomingEnergySlots[0].slot_end_time)}}
+          <span class="ml-1 font-semibold" [style.color]="getChartBarColor(upcomingEnergySlots[0].available_watts)">
+            {{(upcomingEnergySlots[0].available_watts / 1000) | number:'1.1-1'}} kW
+          </span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded border p-2">
+        <p class="text-xs font-medium text-gray-600">Demand</p>
+        <p class="text-xl font-bold text-orange-600">{{(totalEnergyDemand / 1000) | number:'1.1-1'}} kW</p>
+      </div>
+
+      <div class="bg-white rounded border p-2">
+        <p class="text-xs font-medium text-gray-600">Energy usages</p>
+        <p class="text-xl font-bold text-purple-600">
+          {{(getEnergyUsageWatts() / 1000) | number:'1.1-1'}} kW
+          <span class="text-xs text-gray-600">({{getEnergyUsagePercentage() | number:'1.0-0'}}%)</span>
+        </p>
+        <div class="mt-2">
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div class="bg-gradient-to-r from-green-500 to-yellow-500 h-2 rounded-full transition-all duration-300"
+                 [style.width.%]="getEnergyUtilizationPercentage()">
+            </div>
+          </div>
+          <div class="flex justify-between text-[10px] text-gray-600">
+            <span>{{(totalEnergyDemand / 1000) | number:'1.1-1'}}kW demand</span>
+            <span>{{(availableEnergy / 1000) | number:'1.1-1'}}kW available</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded border p-2">
+        <p class="text-xs font-medium text-gray-600">Active</p>
+        <p class="text-xl font-bold text-blue-600">{{getWorkloadsByStatus('Running').length + getWorkloadsByStatus('Scheduled').length}}</p>
+      </div>
+    </div>
+
+    <!-- Workload Lists -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+      <!-- Created Workloads Table -->
+      <div class="bg-white rounded border">
+        <div class="px-3 py-2 border-b bg-yellow-50">
+          <h2 class="text-sm font-semibold text-gray-900 flex items-center gap-1">
+            Created Workloads ({{getCreatedRequests().length}})
+          </h2>
+        </div>
+        <div class="p-2 overflow-x-auto max-h-80">
+          <table class="min-w-full text-xs">
+            <thead class="bg-gray-50 text-gray-600">
+            <tr>
+              <th class="px-2 py-1 text-left font-medium">App Name</th>
+              <th class="px-2 py-1 text-left font-medium">Status</th>
+              <th class="px-2 py-1 text-left font-medium">Type</th>
+              <th class="px-2 py-1 text-left font-medium">Energy (W)</th>
+              <th class="px-2 py-1 text-left font-medium">Scheduled</th>
+              <th class="px-2 py-1 text-left font-medium">Deployed</th>
+              <th class="px-2 py-1 text-left font-medium">Actions</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+            <tr *ngFor="let request of getCreatedRequests()" class="group hover:bg-gray-50">
+              <td class="px-2 py-2">
+                <div class="text-gray-900">{{request.app_name || '-'}}</div>
+                <div class="text-[10px] text-gray-500 truncate max-w-32">{{request.app_description || '-'}}</div>
+              </td>
+              <td class="px-2 py-2">
+                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getStatusColor(request.status)">
+                    {{request.status}}
+                  </span>
+              </td>
+              <td class="px-2 py-2">
+                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(request.workload_type)">
+                    {{request.workload_type}}
+                  </span>
+              </td>
+              <td class="px-2 py-2">{{request.estimated_energy_watts || '-'}}</td>
+              <td class="px-2 py-2">{{formatDateString(request.scheduled_at)}}</td>
+              <td class="px-2 py-2">{{formatDateString(request.deployed_at)}}</td>
+              <td class="px-2 py-2">
+                <button
+                  (click)="openDeleteConfirmDialog(request)"
+                  class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                  title="Delete deployment request">
+                  <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="getCreatedRequests().length === 0">
+              <td class="px-2 py-2 text-center text-gray-500" colspan="7">No Pending workloads found</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Scheduled Workloads Table -->
+      <div class="bg-white rounded border">
+        <div class="px-3 py-2 border-b bg-green-50">
+          <h2 class="text-sm font-semibold text-gray-900 flex items-center gap-1">
+            Scheduled Workloads ({{getScheduledRequests().length}})
+          </h2>
+        </div>
+        <div class="p-2 overflow-x-auto max-h-80">
+          <table class="min-w-full text-xs">
+            <thead class="bg-gray-50 text-gray-600">
+              <tr>
+                <th class="px-2 py-1 text-left font-medium">App Name</th>
+                <th class="px-2 py-1 text-left font-medium">Status</th>
+                <th class="px-2 py-1 text-left font-medium">Type</th>
+                <th class="px-2 py-1 text-left font-medium">Energy (W)</th>
+                <th class="px-2 py-1 text-left font-medium">Scheduled</th>
+                <th class="px-2 py-1 text-left font-medium">Deployed</th>
+                <th class="px-2 py-1 text-left font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr *ngFor="let request of getScheduledRequests()" class="group hover:bg-gray-50">
+                <td class="px-2 py-2">
+                  <div class="text-gray-900">{{request.app_name || '-'}}</div>
+                  <div class="text-[10px] text-gray-500 truncate max-w-32">{{request.app_description || '-'}}</div>
+                </td>
+                <td class="px-2 py-2">
+                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getStatusColor(request.status)">
+                    {{request.status}}
+                  </span>
+                </td>
+                <td class="px-2 py-2">
+                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(request.workload_type)">
+                    {{request.workload_type}}
+                  </span>
+                </td>
+                <td class="px-2 py-2">{{request.estimated_energy_watts || '-'}}</td>
+                <td class="px-2 py-2">{{formatDateString(request.scheduled_at)}}</td>
+                <td class="px-2 py-2">{{formatDateString(request.deployed_at)}}</td>
+                <td class="px-2 py-2">
+                  <button
+                    (click)="openDeleteConfirmDialog(request)"
+                    class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                    title="Delete deployment request">
+                    <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="getScheduledRequests().length === 0">
+                <td class="px-2 py-2 text-center text-gray-500" colspan="7">No scheduled workloads found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Running Applications Table -->
+    <div class="bg-white rounded border">
+      <div class="px-3 py-2 border-b bg-blue-50 flex justify-between items-center">
+        <h2 class="text-sm font-semibold text-gray-900 flex items-center gap-1">
+          Running Applications ({{appPods.length}})
+        </h2>
+        <!-- K8s Connection Status -->
+        <div class="flex items-center gap-1 px-2 py-1 rounded text-xs border"
+             [class.bg-yellow-50]="k8sConnectionStatus === 'checking'"
+             [class.border-yellow-300]="k8sConnectionStatus === 'checking'"
+             [class.bg-green-50]="k8sConnectionStatus === 'connected'"
+             [class.border-green-300]="k8sConnectionStatus === 'connected'"
+             [class.bg-red-50]="k8sConnectionStatus === 'disconnected'"
+             [class.border-red-300]="k8sConnectionStatus === 'disconnected'">
+          <span *ngIf="k8sConnectionStatus === 'checking'" class="text-yellow-600">🔄</span>
+          <span *ngIf="k8sConnectionStatus === 'connected'" class="text-green-600">●</span>
+          <span *ngIf="k8sConnectionStatus === 'disconnected'" class="text-red-600">●</span>
+          <span [class.text-yellow-700]="k8sConnectionStatus === 'checking'"
+                [class.text-green-700]="k8sConnectionStatus === 'connected'"
+                [class.text-red-700]="k8sConnectionStatus === 'disconnected'"
+                class="font-medium">
+            {{k8sConnectionStatus === 'checking' ? 'Checking...' : k8sConnectionStatus === 'connected' ? 'EMDC Connected' : 'EMDC Disconnected'}}
+          </span>
+        </div>
+      </div>
+      <div class="p-2 overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="bg-gray-50 text-gray-600">
+            <tr>
+              <th class="px-2 py-1 text-left font-medium">Application</th>
+              <th class="px-2 py-1 text-left font-medium">Type</th>
+              <th class="px-2 py-1 text-left font-medium">Pod Count</th>
+              <th class="px-2 py-1 text-left font-medium">Pod Names</th>
+              <th class="px-2 py-1 text-left font-medium">Namespaces</th>
+              <th class="px-2 py-1 text-left font-medium">Status</th>
+              <th class="px-2 py-1 text-left font-medium">Started</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <ng-container *ngFor="let app of appPods">
+              <!-- Application Summary Row -->
+              <tr class="hover:bg-gray-50 cursor-pointer" (click)="toggleAppExpansion(app.app_name)">
+                <td class="px-2 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">
+                      {{isAppExpanded(app.app_name) ? '▼' : '▶'}}
+                    </span>
+                    <div>
+                      <div class="text-gray-900 font-medium">{{app.app_name}}</div>
+                      <div class="text-[10px] text-gray-500" *ngIf="app.app_definition_id">ID: {{app.app_definition_id}}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-2 py-2">
+                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(app.workload_type)">
+                    {{app.workload_type}}
+                  </span>
+                </td>
+                <td class="px-2 py-2">
+                  <span class="font-medium">{{app.pod_count}}</span>
+                </td>
+                <td class="px-2 py-2">
+                  <div class="space-y-0.5">
+                    <div *ngFor="let pod of app.pods.slice(0, 2)" class="text-[10px] text-gray-600">
+                      {{pod.name}}
+                    </div>
+                    <div *ngIf="app.pods.length > 2" class="text-[10px] text-gray-400">
+                      +{{app.pods.length - 2}} more...
+                    </div>
+                  </div>
+                </td>
+                <td class="px-2 py-2">
+                  <div *ngFor="let ns of getUniqueNamespaces(app.pods)" class="text-[10px]">{{ns}}</div>
+                </td>
+                <td class="px-2 py-2">
+                  <div class="space-y-0.5">
+                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getPodStatusColor(app.pods[0]?.phase)">
+                      {{app.pods[0]?.phase || '-'}}
+                    </span>
+                    <div *ngIf="app.pods.length > 1" class="text-[10px] text-gray-400">
+                      +{{app.pods.length - 1}} more
+                    </div>
+                  </div>
+                </td>
+                <td class="px-2 py-2">{{formatDateString(getEarliestStartTime(app.pods))}}</td>
+              </tr>
+
+              <!-- Expanded Pod Details -->
+              <ng-container *ngIf="isAppExpanded(app.app_name)">
+                <tr *ngFor="let pod of app.pods" class="bg-gray-50 border-l-2 border-blue-200">
+                  <td class="px-6 py-1 text-xs">
+                    <div class="text-gray-700">{{pod.name}}</div>
+                    <div class="text-[10px] text-gray-500">{{pod.uid}}</div>
+                  </td>
+                  <td class="px-2 py-1 text-xs">-</td>
+                  <td class="px-2 py-1 text-xs">{{pod.pod_ip || '-'}}</td>
+                  <td class="px-2 py-1 text-xs">{{getContainerNamesFromPod(pod)}}</td>
+                  <td class="px-2 py-1 text-xs">{{pod.namespace}}</td>
+                  <td class="px-2 py-1 text-xs">
+                    <div class="flex items-center gap-1">
+                      <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getPodStatusColor(pod.phase)">
+                        {{pod.phase}}
+                      </span>
+                      <span class="text-[10px] text-gray-500">R:{{getRestartCountFromPod(pod)}}</span>
+                    </div>
+                  </td>
+                  <td class="px-2 py-1 text-xs">{{formatDateString(pod.start_time)}}</td>
+                </tr>
+              </ng-container>
+            </ng-container>
+
+            <tr *ngIf="appPods.length === 0">
+              <td class="px-2 py-2 text-center text-gray-500" colspan="7">No running applications</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Energy Forecast - Next 24 Hours -->
+    <div class="bg-white rounded border" *ngIf="chartEnergySlots.length > 0">
+      <div class="px-3 py-2 border-b bg-gradient-to-r from-blue-50 to-purple-50 cursor-pointer hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 transition-colors"
+           (click)="toggleEnergyForecast()">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="text-gray-600 transition-transform" [class.rotate-180]="!isEnergyForecastExpanded">
+              ▼
+            </span>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900">Energy Availability Forecast (Next 24 Hours)</h3>
+              <p class="text-xs text-gray-500">Each slot represents a 6-hour time window</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-gray-600" *ngIf="isEnergyForecastExpanded">
+            <div class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 bg-green-500 rounded"></span>
+              <span>High</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 bg-yellow-500 rounded"></span>
+              <span>Medium</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 bg-orange-500 rounded"></span>
+              <span>Low</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 bg-red-500 rounded"></span>
+              <span>Very Low</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="isEnergyForecastExpanded">
+        <!-- Chart -->
+        <div class="p-2 border-b">
+          <highcharts-chart
+            [options]="chartOptions"
+            style="display: block; width: 100%; height: 180px;">
+          </highcharts-chart>
+        </div>
+
+        <!-- Time Slots Grid -->
+        <div class="p-2">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div *ngFor="let slot of chartEnergySlots; let i = index"
+                 class="border rounded p-1 transition-all hover:shadow-sm relative"
+                 [class]="getEnergyLevelClass(slot.available_watts)">
+
+              <!-- Current slot indicator -->
+              <div *ngIf="isCurrentSlotInChart(slot)"
+                   class="absolute -top-1 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-blue-600 text-white text-[8px] font-bold rounded">
+                NOW
+              </div>
+
+              <!-- Energy Level Badge -->
+              <div class="absolute top-0.5 right-0.5">
+                <span class="px-1 py-0.5 rounded text-[8px] font-semibold bg-white bg-opacity-80">
+                  {{getEnergyLevelLabel(slot.available_watts)}}
+                </span>
+              </div>
+
+              <!-- Time Range -->
+              <div class="text-[9px] text-gray-600 mb-0.5 pr-8">
+                <div class="font-semibold">{{formatTimeSlot(slot.slot_start_time, slot.slot_end_time)}}</div>
+                <div class="text-gray-500 text-[8px]">{{getTimeUntilSlot(slot.slot_start_time)}}</div>
+              </div>
+
+              <!-- Available Energy - Inline kW -->
+              <div class="text-center py-0.5 mb-0.5 bg-white bg-opacity-50 rounded">
+                <div class="text-lg font-bold inline-flex items-baseline" [style.color]="getChartBarColor(slot.available_watts)">
+                  {{(slot.available_watts / 1000) | number:'1.1-1'}}
+                  <span class="text-[9px] text-gray-600 ml-0.5">kW</span>
+                </div>
+              </div>
+
+              <!-- Energy Range - Compact -->
+              <div class="text-[8px] space-y-0.5">
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Range:</span>
+                  <span class="font-semibold">
+                    <ng-container *ngIf="slot.guaranteed_minimum_watts && slot.potential_maximum_watts; else noFullRange">
+                      {{(slot.guaranteed_minimum_watts / 1000) | number:'1.0-0'}}-{{(slot.potential_maximum_watts / 1000) | number:'1.0-0'}}&nbsp;kW
+                    </ng-container>
+                    <ng-template #noFullRange>
+                      <ng-container *ngIf="slot.potential_maximum_watts">
+                        Max {{(slot.potential_maximum_watts / 1000) | number:'1.0-0'}}&nbsp;kW
+                      </ng-container>
+                    </ng-template>
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500">Confidence:</span>
+                  <span class="font-semibold">{{slot.confidence_percentage | number:'1.0-0'}}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Stats -->
+          <div class="mt-1.5 pt-1.5 border-t grid grid-cols-4 gap-1">
+            <div class="bg-gray-50 rounded p-1 text-center">
+              <div class="text-gray-500 text-[8px]">Avg</div>
+              <div class="text-xs font-bold text-gray-900">{{getAverageChartEnergy() | number:'1.0-0'}} kW</div>
+            </div>
+            <div class="bg-gray-50 rounded p-1 text-center">
+              <div class="text-gray-500 text-[8px]">Peak</div>
+              <div class="text-xs font-bold text-gray-900">{{(maxChartEnergy / 1000) | number:'1.0-0'}} kW</div>
+            </div>
+            <div class="bg-gray-50 rounded p-1 text-center">
+              <div class="text-gray-500 text-[8px]">Slots</div>
+              <div class="text-xs font-bold text-gray-900">{{chartEnergySlots.length}}×6h</div>
+            </div>
+            <div class="bg-gray-50 rounded p-1 text-center">
+              <div class="text-gray-500 text-[8px]">Source</div>
+              <div class="text-xs font-bold text-gray-900 truncate">{{chartEnergySlots[0]?.energy_source_type || '-'}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scheduling Rules Info (moved to bottom) -->
+    <div class="bg-blue-50 rounded border border-blue-200 p-2">
+      <h3 class="text-xs font-semibold text-blue-900 mb-1">Energy-Aware Workload Scheduling Rules</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+        <div class="flex items-center gap-1">
+          <div><strong class="text-red-600">Critical:</strong> Immediate</div>
+        </div>
+        <div class="flex items-center gap-1">
+          <div><strong class="text-yellow-600">Preferred:</strong> 6h → Critical</div>
+        </div>
+        <div class="flex items-center gap-1">
+          <div><strong class="text-green-600">Optional:</strong> 24h → Preferred</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<hlm-alert-dialog #deleteConfirmDialog>
+  <hlm-alert-dialog-content *brnAlertDialogContent="let ctx">
+    <hlm-alert-dialog-header>
+      <h3 hlmAlertDialogTitle>Delete Deployment Request</h3>
+      <p hlmAlertDialogDescription>
+        Are you sure you want to delete "{{requestToDelete?.app_name || 'this deployment request'}}"?
+        This action cannot be undone.
+      </p>
+    </hlm-alert-dialog-header>
+    <hlm-alert-dialog-footer>
+      <button hlmAlertDialogCancel (click)="ctx.close()" class="cursor-pointer">Cancel</button>
+      <button hlmAlertDialogAction (click)="confirmDelete(); ctx.close()" class="bg-red-600 hover:bg-red-700 cursor-pointer">
+        Delete
+      </button>
+    </hlm-alert-dialog-footer>
+  </hlm-alert-dialog-content>
+</hlm-alert-dialog>

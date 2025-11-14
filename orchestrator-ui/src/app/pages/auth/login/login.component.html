@@ -1,0 +1,115 @@
+<div
+  class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4"
+>
+  <div class="w-full max-w-sm">
+    <div
+      hlmCard
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
+    >
+      <div hlmCardHeader class="text-center pb-6">
+        <!-- Logo -->
+        <div class="flex justify-center mb-6">
+          <img
+            src="/favicon-152x152.png"
+            [alt]="'app.title' | transloco"
+            class="w-12 h-12 rounded-lg"
+          />
+        </div>
+      </div>
+
+      <div hlmCardContent class="space-y-4">
+        <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+          <!-- Email Field -->
+          <div class="space-y-1 mb-2">
+            <label
+              hlmLabel
+              for="email"
+              class="text-sm text-gray-700 dark:text-gray-300"
+            >
+              {{ 'auth.login.email_label' | transloco }}
+            </label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              hlmInput
+              [placeholder]="'auth.login.email_placeholder' | transloco"
+              class="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+            />
+            <div
+              *ngIf="
+                loginForm.get('email')?.invalid &&
+                loginForm.get('email')?.touched
+              "
+              class="text-sm text-red-600 dark:text-red-400"
+            >
+              {{ 'auth.login.email_error' | transloco }}
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div class="space-y-1">
+            <label
+              hlmLabel
+              for="password"
+              class="text-sm text-gray-700 dark:text-gray-300"
+            >
+              {{ 'auth.login.password_label' | transloco }}
+            </label>
+            <div class="relative">
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                hlmInput
+                [placeholder]="'auth.login.password_placeholder' | transloco"
+                class="w-full h-10 px-3 pr-10 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              />
+              <button
+                type="button"
+                (click)="togglePasswordVisibility()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <ng-icon
+                  [name]="showPassword() ? 'lucideEyeOff' : 'lucideEye'"
+                  class="h-4 w-4"
+                />
+              </button>
+            </div>
+            <div
+              *ngIf="
+                loginForm.get('password')?.invalid &&
+                loginForm.get('password')?.touched
+              "
+              class="text-sm text-red-600 dark:text-red-400"
+            >
+              {{ 'auth.login.password_error' | transloco }}
+            </div>
+          </div>
+
+          <!-- Login Button -->
+          <button
+            type="submit"
+            hlmBtn
+            [disabled]="loginForm.invalid || isLoading()"
+            class="w-full mt-6 h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white font-medium rounded-md transition-colors"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <div
+                *ngIf="isLoading()"
+                class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+              ></div>
+              <span>
+                {{
+                  isLoading()
+                    ? ('auth.login.logging_in' | transloco)
+                    : ('auth.login.login_button' | transloco)
+                }}
+              </span>
+            </div>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

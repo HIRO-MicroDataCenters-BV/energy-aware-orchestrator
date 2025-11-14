@@ -1,0 +1,67 @@
+<div class="p-2 space-y-2 w-full">
+  <div *ngIf="successMessage" class="px-3 py-2 rounded text-sm bg-green-50 text-green-800 border border-green-200">
+    {{ successMessage }}
+  </div>
+
+  <div class="bg-white rounded border">
+    <div class="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-900">Created Workloads</h2>
+      <button
+        (click)="openRegisterDialog()"
+        class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 cursor-pointer transition-colors flex items-center gap-1">
+        <span>+</span>
+        Register New Workload
+      </button>
+    </div>
+    <div class="p-2 overflow-x-auto">
+      <table class="min-w-full text-xs">
+        <thead class="bg-gray-50 text-gray-600">
+          <tr>
+            <th class="px-2 py-1 text-left font-medium">Name</th>
+            <th class="px-2 py-1 text-left font-medium">Namespace</th>
+            <th class="px-2 py-1 text-left font-medium">Type</th>
+            <th class="px-2 py-1 text-left font-medium">Est. Energy (W)</th>
+            <th class="px-2 py-1 text-left font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr *ngFor="let w of workloads" class="hover:bg-gray-50 cursor-pointer" (click)="showWorkloadDetails(w)">
+            <td class="px-2 py-3">{{ w.name }}</td>
+            <td class="px-2 py-3">{{ w.namespace }}</td>
+            <td class="px-2 py-3">
+              <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(w.workload_type)">{{ w.workload_type }}</span>
+            </td>
+            <td class="px-2 py-3">{{ w.estimated_energy_required || '-' }}</td>
+            <td class="px-2 py-3">
+              <button
+                (click)="deleteWorkload(w.id); $event.stopPropagation()"
+                class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                title="Delete workload">
+                <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!workloads || workloads.length === 0">
+            <td class="px-2 py-2 text-center text-gray-500" colspan="5">No workloads found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <app-register-workload-dialog
+    #registerDialog
+    (workloadRegistered)="onWorkloadRegistered($event)">
+  </app-register-workload-dialog>
+
+  <app-delete-confirmation-dialog
+    #deleteDialog
+    (confirmed)="onDeleteConfirmed()"
+    (cancelled)="onDeleteCancelled()">
+  </app-delete-confirmation-dialog>
+
+  <app-workload-details-dialog #detailsDialog>
+  </app-workload-details-dialog>
+</div>
+
+

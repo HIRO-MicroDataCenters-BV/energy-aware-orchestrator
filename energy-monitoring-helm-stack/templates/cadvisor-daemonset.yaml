@@ -1,0 +1,59 @@
+{{- if .Values.cadvisor.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "energy-metrics.fullname" . }}-cadvisor
+  labels:
+    {{- include "energy-metrics.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cadvisor
+spec:
+  selector:
+    matchLabels:
+      {{- include "energy-metrics.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: cadvisor
+  template:
+    metadata:
+      labels:
+        {{- include "energy-metrics.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cadvisor
+    spec:
+      serviceAccountName: {{ include "energy-metrics.serviceAccountName" . }}
+      hostNetwork: {{ .Values.cadvisor.hostNetwork }}
+      hostPID: {{ .Values.cadvisor.hostPID }}
+      containers:
+      - name: cadvisor
+        image: "{{ .Values.cadvisor.image.repository }}:{{ .Values.cadvisor.image.tag }}"
+        imagePullPolicy: {{ .Values.cadvisor.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.cadvisor.service.port }}
+          protocol: TCP
+        args:
+        {{- range .Values.cadvisor.args }}
+        - {{ . | quote }}
+        {{- end }}
+        volumeMounts:
+        {{- range .Values.cadvisor.volumeMounts }}
+        - name: {{ .name }}
+          mountPath: {{ .mountPath }}
+          {{- if .readOnly }}
+          readOnly: {{ .readOnly }}
+          {{- end }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.cadvisor.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.cadvisor.securityContext | nindent 10 }}
+      volumes:
+      {{- range .Values.cadvisor.volumes }}
+      - name: {{ .name }}
+        hostPath:
+          path: {{ .hostPath.path }}
+          type: {{ .hostPath.type }}
+      {{- end }}
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+{{- end }}

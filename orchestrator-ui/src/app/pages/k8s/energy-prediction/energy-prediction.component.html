@@ -1,0 +1,132 @@
+<div class="fixed inset-0 top-16 overflow-auto bg-background"
+     [style.left.px]="sidebarService.state() === 'collapsed' ? 48 : 256">
+  <div class="p-3 space-y-3 w-full">
+    <div class="mb-3 text-center">
+      <h2 class="text-2xl font-bold">Kubernetes Node Energy Prediction</h2>
+      <p class="text-muted-foreground mt-2">
+        Real-time and predicted energy consumption for K8s cluster nodes
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mb-3">
+      <div class="w-full">
+        <div class="border rounded-lg p-2 bg-white">
+          <div class="mb-2">
+            <h3 class="text-base font-semibold text-blue-600">Tomorrow's Forecast</h3>
+            <p class="text-xs text-muted-foreground">Energy consumption prediction for the next 24 hours</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Peak Usage:</span>
+              <span class="text-xs font-bold text-red-600">2,450W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Average Usage:</span>
+              <span class="text-xs font-bold text-blue-600">1,680W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Minimum Usage:</span>
+              <span class="text-xs font-bold text-green-600">950W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Total Energy:</span>
+              <span class="text-xs font-bold">40.3 kWh</span>
+            </div>
+          </div>
+          <div class="mt-2 p-1 bg-blue-50 rounded-md">
+            <p class="text-xs text-blue-700">
+              Expected peak demand around 2:00 PM due to increased workload processing
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <div class="border rounded-lg p-2 bg-white">
+          <div class="mb-2">
+            <h3 class="text-base font-semibold text-purple-600">Next Week Forecast</h3>
+            <p class="text-xs text-muted-foreground">7-day energy consumption outlook</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Weekly Peak:</span>
+              <span class="text-xs font-bold text-red-600">2,750W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Weekly Average:</span>
+              <span class="text-xs font-bold text-purple-600">1,820W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Total Energy:</span>
+              <span class="text-xs font-bold">306.7 kWh</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">vs Last Week:</span>
+              <span class="text-xs font-bold text-green-600">-8.2%</span>
+            </div>
+          </div>
+          <div class="mt-2 p-1 bg-purple-50 rounded-md">
+            <p class="text-xs text-purple-700">
+              Decreased usage expected due to scheduled maintenance on Thursday
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-3 w-full">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+        <div class="w-full">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">Actual vs Forecasted Energy</h3>
+            <p class="text-xs text-muted-foreground">Comparison between actual energy consumption and forecasted values over time</p>
+          </div>
+          <div class="w-full border rounded-lg p-4 bg-white">
+            <div class="chart-container w-full h-[280px]">
+              <highcharts-chart
+                [options]="comparisonChartOptions"
+                class="w-full h-full"
+              ></highcharts-chart>
+            </div>
+          </div>
+          <div class="text-xs text-muted-foreground mt-1">
+            Shows accuracy of predictions and helps identify patterns in forecasting performance
+          </div>
+        </div>
+
+        <div class="w-full">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">Energy Consumption Overview</h3>
+            <p class="text-sm text-muted-foreground">Historical and predicted energy usage across all nodes</p>
+          </div>
+          <div class="w-full border rounded-lg p-4 bg-white">
+            <div class="chart-container w-full h-[280px]">
+              <highcharts-chart
+                [options]="overviewChartOptions"
+                class="w-full h-full"
+              ></highcharts-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold">Node-Specific Energy Predictions</h3>
+          <p class="text-sm text-muted-foreground">Detailed energy consumption forecast per node for the next 24 hours</p>
+        </div>
+        <div class="w-full border rounded-lg p-4 bg-white">
+          <div class="chart-container w-full h-[400px]">
+            <highcharts-chart
+              [options]="detailedChartOptions"
+              class="w-full h-full"
+            ></highcharts-chart>
+          </div>
+        </div>
+        <div class="text-xs text-muted-foreground mt-2">
+          Predictions are based on historical usage patterns, workload scheduling, and resource utilization trends
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

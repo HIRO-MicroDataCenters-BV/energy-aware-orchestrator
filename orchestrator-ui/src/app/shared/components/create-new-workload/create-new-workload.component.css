@@ -1,0 +1,11 @@
+/* Component-specific styles if needed */
+
+input::placeholder {
+  color: #d1d5db; /* Tailwind gray-300 - lighter/blurred appearance */
+  opacity: 1;
+}
+
+textarea::placeholder {
+  color: #d1d5db; /* Tailwind gray-300 - lighter/blurred appearance */
+  opacity: 1;
+}

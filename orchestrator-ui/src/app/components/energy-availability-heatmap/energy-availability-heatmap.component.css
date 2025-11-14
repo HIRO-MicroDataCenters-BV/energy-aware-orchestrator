@@ -1,0 +1,16 @@
+.chart-container highcharts-chart {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-container highcharts-chart div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-container .highcharts-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+

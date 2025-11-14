@@ -1,0 +1,77 @@
+[hlmBadge]:hover {
+  background-color: inherit;
+}
+
+/* Center table headers vertically and horizontally when visible */
+hlm-th:not([style*='display: none']) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0.75rem 1rem !important;
+  min-height: 3rem !important;
+}
+
+/* Ensure truncated headers are also centered when visible */
+hlm-th[truncate]:not([style*='display: none']) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Center content within headers */
+hlm-th > * {
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Remove default table cell behavior for better flexbox control when visible */
+.brn-table th:not([style*='display: none']) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Responsive header adjustments */
+@media (max-width: 768px) {
+  hlm-th {
+    padding: 0.5rem 0.75rem !important;
+    min-height: 2.5rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Hover effects for interactive headers when visible */
+hlm-th:not([style*='display: none']):hover {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+  transition: background-color 0.2s ease !important;
+}
+
+/* Better text wrapping for long headers when visible */
+hlm-th:not([style*='display: none']) {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+}
+
+/* Ensure proper height consistency */
+.brn-table thead tr {
+  height: auto !important;
+}
+
+/* Explicit rule for hidden headers - ensure they stay hidden */
+hlm-th[style*='display: none'] {
+  display: none !important;
+}
+
+/* Hidden headers should not affect layout */
+.brn-table th[style*='display: none'] {
+  display: none !important;
+}
+.container-table button {
+  text-align: left;
+  cursor: pointer;
+  padding-left: 0;
+  padding-right: 0;
+}

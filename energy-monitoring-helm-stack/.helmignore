@@ -1,0 +1,14 @@
+# Python virtual environments
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Development files
+.git/
+.gitignore
+README.md
+.DS_Store
+EOF < /dev/null

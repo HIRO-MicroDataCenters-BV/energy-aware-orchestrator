@@ -1,0 +1,159 @@
+<div class="fixed inset-0 top-16 overflow-auto bg-background"
+     [style.left.px]="sidebarService.state() === 'collapsed' ? 48 : 256">
+
+  <div class="p-2 space-y-3 w-full">
+    <div class="mb-3 text-center" *ngIf="false">
+      <h2 class="text-2xl font-bold">Energy Prediction</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mb-3" *ngIf="false">
+      <div class="w-full">
+        <div class="border rounded-lg p-2 bg-white">
+          <div class="mb-2">
+            <h3 class="text-base font-semibold text-blue-600">Energy Availability Summary</h3>
+            <p class="text-xs text-muted-foreground">Current 1-week energy forecast from providers</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Total Available Slots:</span>
+              <span class="text-xs font-bold text-blue-600">{{energyForecastSummary.totalSlots}}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Total Capacity:</span>
+              <span class="text-xs font-bold text-green-600">{{(energyForecastSummary.totalCapacity / 1000) | number:'1.1-1'}}kW</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Average Confidence:</span>
+              <span class="text-xs font-bold text-purple-600">{{energyForecastSummary.averageConfidence}}%</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Active Providers:</span>
+              <span class="text-xs font-bold">{{energyForecastSummary.providers.length}}</span>
+            </div>
+          </div>
+          <div class="mt-2 p-1 bg-blue-50 rounded-md">
+            <p class="text-xs text-blue-700">
+              Energy sources: {{energyForecastSummary.sourcesTypes.join(', ')}}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <div class="border rounded-lg p-2 bg-white">
+          <div class="mb-2">
+            <h3 class="text-base font-semibold text-purple-600">Next Week Forecast</h3>
+            <p class="text-xs text-muted-foreground">7-day energy consumption outlook</p>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Weekly Peak:</span>
+              <span class="text-xs font-bold text-red-600">2,750W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Weekly Average:</span>
+              <span class="text-xs font-bold text-purple-600">1,820W</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">Total Energy:</span>
+              <span class="text-xs font-bold">306.7 kWh</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-medium">vs Last Week:</span>
+              <span class="text-xs font-bold text-green-600">-8.2%</span>
+            </div>
+          </div>
+          <div class="mt-2 p-1 bg-purple-50 rounded-md">
+            <p class="text-xs text-purple-700">
+              Decreased usage expected due to scheduled maintenance on Thursday
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-3 w-full">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-2 min-w-0">
+        <div class="min-w-0">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">Actual vs Forecasted Energy</h3>
+            <p class="text-xs text-muted-foreground">Comparison between actual energy consumption and forecasted values over time</p>
+          </div>
+          <div class="w-full border rounded-lg p-2 bg-white min-w-0">
+            <div class="chart-container w-full h-[280px] min-w-0">
+              <highcharts-chart
+                [options]="comparisonChartOptions"
+                class="w-full h-full"
+              ></highcharts-chart>
+            </div>
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">Energy Availability Heatmap</h3>
+            <p class="text-xs text-muted-foreground">Weekly energy availability pattern by day and 4-hour time slots</p>
+          </div>
+          <div class="w-full border rounded-lg p-2 bg-white min-w-0">
+            <app-energy-availability-heatmap [dataSource]="'energy-prediction'" [refreshInterval]="45000"></app-energy-availability-heatmap>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-2 min-w-0">
+        <div class="min-w-0">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">CPU Watts Usage</h3>
+            <p class="text-xs text-muted-foreground">Real-time CPU power consumption across nodes</p>
+          </div>
+          <div class="w-full border rounded-lg p-2 bg-white min-w-0">
+            <div class="chart-container w-full h-[280px] min-w-0">
+              <highcharts-chart
+                [options]="cpuWattsChartOptions"
+                class="w-full h-full"
+              ></highcharts-chart>
+            </div>
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">CPU Utilization</h3>
+            <p class="text-xs text-muted-foreground">CPU utilization percentage across nodes</p>
+          </div>
+          <div class="w-full border rounded-lg p-2 bg-white min-w-0">
+            <div class="chart-container w-full h-[280px] min-w-0">
+              <highcharts-chart
+                [options]="cpuUtilizationChartOptions"
+                class="w-full h-full"
+              ></highcharts-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-2 min-w-0">
+        <div class="min-w-0">
+          <div class="mb-2">
+            <h3 class="text-lg font-semibold">Memory Usage</h3>
+            <p class="text-xs text-muted-foreground">Memory consumption in MB across nodes</p>
+          </div>
+          <div class="w-full border rounded-lg p-2 bg-white min-w-0">
+            <div class="chart-container w-full h-[280px] min-w-0">
+              <highcharts-chart
+                [options]="memoryUsageChartOptions"
+                class="w-full h-full"
+              ></highcharts-chart>
+            </div>
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <!-- Empty space for potential future chart -->
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+</div>

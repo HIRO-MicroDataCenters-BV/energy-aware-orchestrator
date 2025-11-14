@@ -1,0 +1,9 @@
+<div class="fixed inset-0 top-16 overflow-hidden bg-background" 
+     [style.left.px]="sidebarService.state() === 'collapsed' ? 48 : 256">
+  <div class="full-chart-container w-full h-full p-2">
+    <highcharts-chart
+      [options]="chartOptions"
+      class="w-full h-full"
+    ></highcharts-chart>
+  </div>
+</div>

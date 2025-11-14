@@ -1,0 +1,16 @@
+<div class="flex items-center gap-2 text-sm text-gray-500">
+  <div
+    *ngFor="let item of breadcrumbs; let i = index"
+    class="flex items-center"
+  >
+    <a *ngIf="item.url" [routerLink]="item.url" class="hover:text-gray-700">{{
+      ('section.' + item.label) | transloco
+    }}</a>
+    <span *ngIf="!item.url" class="text-gray-700">{{
+      ('section.' + item.label) | transloco
+    }}</span>
+    <span class="ml-2 mt-1" *ngIf="i < breadcrumbs.length - 1">
+      <ng-icon hlm name="lucideChevronRight" size="sm" />
+    </span>
+  </div>
+</div>

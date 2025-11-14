@@ -1,0 +1,500 @@
+{
+  "buttons": {
+    "button": "Button",
+    "outline": "Outline",
+    "ghost": "Ghost",
+    "link": "Link",
+    "small": "Small",
+    "large": "Large"
+  },
+  "inputs": {
+    "placeholder": "Placeholder"
+  },
+  "card": {
+    "cluster": "Cluster",
+    "recent_workload_request_decisions": "Recent Workload Request Decisions",
+    "recent_alerts": "Recent Alerts",
+    "recent_saved_models": "Recent Saved Models",
+    "swarm_intelligence": "Swarm Intelligence",
+    "monitoring": "Monitoring",
+    "recent_served_models": "Recent Served Models",
+    "nodes": "Nodes",
+    "pods": "Pods",
+    "out_of": "out of",
+    "ready": "Ready",
+    "failed": "Failed",
+    "cpu_usage": "CPU Usage",
+    "memory_usage": "Memory Usage"
+  },
+  "section": {
+    "dashboard": "Dashboard",
+    "workloads": "Workloads",
+    "clusters": "Clusters",
+    "nodes": "Nodes",
+    "emdc": "EMDC",
+    "k8s": "Kubernetes Dashboard",
+    "kubernetes": "Kubernetes Dashboard",
+    "alerts": "Alerts",
+    "cog": "COG",
+    "monitoring": "Monitoring",
+    "request_decisions": "Request Decisions",
+    "actions": "Actions",
+    "overview": "Overview",
+    "Energy Metrics": "Energy Metrics",
+    "energy_metrics": "Energy Metrics",
+    "EnergyMetrics": "Energy Metrics",
+    "System Utilization": "System Utilization",
+    "Workload Deployment": "Deploy Workload",
+    "workload_deployment": "Deploy Workload",
+    "Create Workload": "Create Workload",
+    "Register Workload": "Register Workload"
+  },
+  "action": {
+    "previous": "Previous",
+    "next": "Next",
+    "view_details": "View Details",
+    "view_logs": "View Logs",
+    "view_all": "View All",
+    "scale_cluster": "Scale Cluster",
+    "add_nodes": "Add Nodes",
+    "cordon_cluster": "Cordon Cluster",
+    "drain_cluster": "Drain Cluster",
+    "delete_cluster": "Delete Cluster",
+    "healthy": "Healthy",
+    "retry": "Retry"
+  },
+  "placeholder": {
+    "search": "Search...",
+    "columns": "Columns"
+  },
+  "details": {
+    "source_ip": "Source IP",
+    "source_port": "Source Port",
+    "destination_ip": "Destination IP",
+    "destination_port": "Destination Port",
+    "action_details": "Action Details",
+    "action_type": "Action",
+    "action_status": "Status",
+    "created_at": "Start Date & Time",
+    "updated_at": "End Date & Time",
+    "duration": "Duration",
+    "bound_pod_name": "Target Pod",
+    "pod_parent_name": "Parent Workload",
+    "action_reason": "Reason",
+    "alert_type": "Type",
+    "date": "Date",
+    "time": "Time",
+    "node_id": "Node",
+    "pod_id": "Pod",
+    "pod_name": "Pod Name",
+    "ai_summary": "AI Summary",
+    "alert_model": "Model Used",
+    "alert_description": "Description",
+    "alert_details": "Alert Details",
+    "decision_details": "Decision Details",
+    "queue_name": "Queue",
+    "is_decision_status": "Status",
+    "memory": "Demand Memory",
+    "cpu": "Demand CPU",
+    "node_name": "Node",
+    "namespace": "Namespace"
+  },
+  "column": {
+    "id": "ID",
+    "name": "Name",
+    "demand_slack_cpu": "CPU Slack",
+    "demand_slack_memory": "Mem. Slack",
+    "is_decision_status": "Decision Status",
+    "is_elastic": "Is Elastic",
+    "navigationId": "Navigation ID",
+    "pod_parent_id": "Parent ID",
+    "action_status": "Action Status",
+    "bound_node_name": "Bound Node Name",
+    "bound_pod_namespace": "Bound Pod Namespace",
+    "created_node_name": "Created Node Name",
+    "created_pod_name": "Created Pod Name",
+    "created_pod_namespace": "Target Namespace",
+    "deleted_node_name": "Deleted Node Name",
+    "deleted_pod_name": "Deleted Pod Name",
+    "deleted_pod_namespace": "Deleted Pod Namespace",
+    "pod_parent_type": "Parent Type",
+    "pod_parent_uid": "Parent UID",
+    "actions": "Actions",
+    "alert_type": "Type",
+    "alert_description": "Description",
+    "alert_model": "Model",
+    "action_type": "Action",
+    "request_id": "Request ID",
+    "status": "Status",
+    "updated_at": "Updated At",
+    "action": "Action",
+    "queue_name": "Queue Name",
+    "demand_cpu": "CPU Demand",
+    "demand_memory": "Mem. Demand",
+    "namespace": "Namespace",
+    "pod_name": "Pod Name",
+    "pod_parent_kind": "Parent",
+    "node_id": "Node ID",
+    "node_name": "Node",
+    "pod_id": "Pod ID",
+    "decision_status": "Decision Status",
+    "created_at": "Created At",
+    "action_start_time": "Start Time",
+    "action_end_time": "End Time",
+    "bound_pod_name": "Target Pod",
+    "pod_parent_name": "Parent Workload",
+    "action_reason": "Reason",
+    "pod": "Pod",
+    "duration": "Duration",
+    "cpu_memory": "CPU / Memory",
+    "time": "Time"
+  },
+  "common": {
+    "title": "Orchestration Library",
+    "navigation": {
+      "home": "Home",
+      "ui_kit": "UI Kit",
+      "profile": "Profile",
+      "admin": "Admin Panel",
+      "logout": "Logout"
+    }
+  },
+  "app": {
+    "title": "SHIFT2DC",
+    "description": "Orchestration Panel",
+    "footer": "All rights reserved",
+    "welcome": "Welcome to"
+  },
+  "hint": {
+    "page": "page",
+    "no_data": "No data",
+    "m": "m",
+    "mi": "Mi",
+    "s": "s",
+    "slack": "Slack"
+  },
+  "auth": {
+    "login": {
+      "email_label": "Email",
+      "email_placeholder": "Enter your email",
+      "email_error": "Please enter a valid email address",
+      "password_label": "Password",
+      "password_placeholder": "Enter your password",
+      "password_error": "Password is required",
+      "login_button": "Sign In",
+      "logging_in": "Signing in..."
+    },
+    "register": {
+      "title": "Register",
+      "description": "Create a new account",
+      "first_name": "First Name",
+      "first_name_placeholder": "Enter your first name",
+      "last_name": "Last Name",
+      "last_name_placeholder": "Enter your last name",
+      "email": "Email",
+      "email_placeholder": "Enter your email",
+      "password": "Password",
+      "password_placeholder": "Enter your password",
+      "confirm_password": "Confirm Password",
+      "confirm_password_placeholder": "Confirm your password",
+      "register_button": "Register",
+      "registering": "Registering...",
+      "have_account": "Already have an account?",
+      "login_link": "Login",
+      "email_required": "Email is required",
+      "email_invalid": "Please enter a valid email",
+      "password_required": "Password is required",
+      "password_min_length": "Password must be at least 6 characters",
+      "confirm_password_required": "Please confirm your password",
+      "passwords_not_match": "Passwords do not match",
+      "error_message": "An error occurred during registration"
+    },
+    "callback": {
+      "processing": "Processing Authentication",
+      "processing_description": "Please wait while we complete your sign-in...",
+      "success": "Authentication Successful",
+      "success_description": "You have been successfully signed in. Redirecting...",
+      "error": "Authentication Failed",
+      "error_description": "There was an error processing your authentication.",
+      "retry": "Try Again",
+      "back_to_login": "Back to Login"
+    },
+    "logout": {
+      "title": "Logout",
+      "description": "You have been successfully logged out",
+      "login_again": "Login Again"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "description": "Manage your account information",
+    "email": "Email",
+    "name": "Name",
+    "role": "Role",
+    "logout": "Logout"
+  },
+  "error": {
+    "filed_to_load": {
+      "title": "Failed to Load",
+      "message": "An error occurred while loading the page. Please try again later.",
+      "retry": "Retry"
+    },
+    "not_found": {
+      "title": "Page Not Found",
+      "message": "The page you are looking for doesn't exist or has been moved.",
+      "back_home": "Back to Home"
+    },
+    "forbidden": {
+      "title": "Access Denied",
+      "message": "You don't have permission to access this page.",
+      "back_home": "Back to Home"
+    },
+    "unauthorized": {
+      "title": "Unauthorized",
+      "message": "You need to log in to access this page.",
+      "back_home": "Back to Home"
+    },
+    "server_error": {
+      "title": "Server Error",
+      "message": "Something went wrong on our servers. Please try again later.",
+      "back_home": "Back to Home"
+    }
+  },
+  "ui_kit": {
+    "title": "Design System",
+    "subtitle": "Explore our comprehensive collection of UI components built with Angular and Spartan UI. Each component is crafted with attention to detail and modern design principles.",
+    "badge": "✨ UI Components Showcase",
+    "sections": {
+      "typography": "Typography",
+      "buttons": "Buttons",
+      "inputs_forms": "Inputs & Forms",
+      "accordion": "Accordion",
+      "alert": "Alert",
+      "avatar": "Avatar",
+      "badge_section": "Badge",
+      "card": "Card",
+      "checkbox": "Checkbox",
+      "dialog": "Dialog",
+      "progress": "Progress",
+      "separator": "Separator",
+      "skeleton": "Skeleton",
+      "switch": "Switch",
+      "table": "Table",
+      "tabs": "Tabs"
+    },
+    "accordion": {
+      "basic": "Basic Accordion",
+      "item_1_title": "Is it accessible?",
+      "item_1_content": "Yes. It adheres to the WAI-ARIA design pattern.",
+      "item_2_title": "Is it styled?",
+      "item_2_content": "Yes. It comes with default styles that matches the other components' aesthetic."
+    },
+    "alert": {
+      "default": "Default Alert",
+      "destructive": "Destructive Alert",
+      "title": "Heads up!",
+      "description": "You can add components to your app using the cli.",
+      "error_title": "Error",
+      "error_description": "Your session has expired. Please log in again."
+    },
+    "avatar": {
+      "image": "With Image",
+      "fallback": "Fallback",
+      "variants": "Size Variants"
+    },
+    "badge_section": {
+      "default": "Default Badge",
+      "variants": "Badge Variants",
+      "with_icon": "With Icon",
+      "default_text": "Badge",
+      "secondary": "Secondary",
+      "destructive": "Destructive",
+      "outline": "Outline",
+      "with_icon_text": "Featured"
+    },
+    "card": {
+      "basic": "Basic Card",
+      "with_form": "Card with Form",
+      "title": "Card Title",
+      "description": "Card Description",
+      "content": "Card content goes here. You can add any content you want.",
+      "action": "Action",
+      "form_title": "Create project",
+      "form_description": "Deploy your new project in one-click.",
+      "form_label": "Name",
+      "form_placeholder": "Name of your project",
+      "form_submit": "Deploy"
+    },
+    "checkbox": {
+      "basic": "Basic Checkbox",
+      "disabled": "Disabled Checkbox",
+      "label": "Accept terms and conditions",
+      "disabled_label": "Accept terms and conditions (disabled)"
+    },
+    "dialog": {
+      "basic": "Basic Dialog",
+      "trigger": "Open Dialog"
+    },
+    "progress": {
+      "basic": "Basic Progress",
+      "animated": "Animated Progress"
+    },
+    "separator": {
+      "horizontal": "Horizontal Separator",
+      "vertical": "Vertical Separator",
+      "text_above": "This is the content above the separator.",
+      "text_below": "This is the content below the separator.",
+      "left_content": "Left",
+      "right_content": "Right"
+    },
+    "skeleton": {
+      "basic": "Basic Skeleton",
+      "card": "Card Skeleton"
+    },
+    "switch": {
+      "basic": "Basic Switch",
+      "disabled": "Disabled Switch",
+      "label": "Airplane Mode",
+      "disabled_label": "Airplane Mode (disabled)"
+    },
+    "table": {
+      "basic": "Basic Table",
+      "header_name": "Name",
+      "header_status": "Status",
+      "header_role": "Role",
+      "row_1_name": "John Doe",
+      "row_1_status": "Active",
+      "row_1_role": "Developer",
+      "row_2_name": "Jane Smith",
+      "row_2_status": "Inactive",
+      "row_2_role": "Designer"
+    },
+    "tabs": {
+      "basic": "Basic Tabs",
+      "account": "Account",
+      "password": "Password",
+      "account_title": "Account",
+      "account_description": "Make changes to your account here. Click save when you're done.",
+      "password_title": "Password",
+      "password_description": "Change your password here. After saving, you'll be logged out."
+    },
+    "typography": {
+      "headings": "Headings",
+      "text_elements": "Text Elements",
+      "special_elements": "Special Elements",
+      "heading_1": "Heading 1",
+      "heading_2": "Heading 2",
+      "heading_3": "Heading 3",
+      "heading_4": "Heading 4",
+      "paragraph_text": "This is a paragraph with normal text styling. It demonstrates the default typography settings.",
+      "small_text": "This is smaller text that might be used for captions or secondary information.",
+      "emphasized_text": "This is emphasized text with larger size and medium weight.",
+      "blockquote_text": "This is a blockquote example with beautiful styling.",
+      "code_example": "print('Hello World');",
+      "html_elements": "<blockquote> and <code> elements"
+    },
+    "buttons": {
+      "variants": "Button Variants",
+      "sizes": "Button Sizes",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "outline": "Outline",
+      "ghost": "Ghost",
+      "destructive": "Destructive",
+      "small": "Small",
+      "default": "Default",
+      "large": "Large",
+      "code_example_title": "Usage Example"
+    },
+    "forms": {
+      "input_types": "Input Types",
+      "input_states": "Input States",
+      "text_input": "Text Input",
+      "email_input": "Email Input",
+      "password_input": "Password Input",
+      "disabled_input": "Disabled Input",
+      "error_input": "Input with Error",
+      "placeholder_text": "Enter your text here...",
+      "placeholder_email": "Enter your email...",
+      "placeholder_password": "Enter your password...",
+      "placeholder_disabled": "This input is disabled",
+      "placeholder_error": "This input has an error",
+      "code_example_title": "Usage Example"
+    }
+  },
+  "proxy_test": {
+    "title": "Proxy Authentication Test",
+    "subtitle": "Testing DEX authentication flow through proxy",
+    "status": {
+      "checking_server": "Checking Angular dev server...",
+      "server_running": "Angular dev server is running",
+      "server_not_running": "Angular dev server is not accessible",
+      "please_start": "Please start: pnpm run start:dev",
+      "testing_flows": "Testing authentication flows...",
+      "all_passed": "All authentication flow tests passed!",
+      "needs_attention": "Some authentication tests need attention."
+    },
+    "steps": {
+      "initial_request": "Initial request to protected resource",
+      "auth_redirect": "Authentication redirect detected",
+      "follow_redirect": "Following redirect to DEX auth",
+      "auth_required": "Authentication required (no redirect)",
+      "resource_accessible": "Resource accessible without authentication",
+      "server_error": "Server error",
+      "unexpected_response": "Unexpected response"
+    },
+    "flow_types": {
+      "auth_required": "Correct auth flow",
+      "auth_error": "Correct auth required",
+      "public_access": "Public access",
+      "redirect_chain": "Redirect chain working",
+      "non_dex_redirect": "Non-DEX redirect",
+      "unexpected_dex_response": "Unexpected DEX response",
+      "unexpected_status": "Unexpected status",
+      "server_error": "Server error",
+      "test_error": "Test error"
+    },
+    "messages": {
+      "valid_dex_redirect": "Valid DEX auth redirect",
+      "login_form_detected": "DEX login form detected",
+      "form_action": "Form action",
+      "form_method": "Form method",
+      "auth_flow_working": "Authentication flow working - login form presented",
+      "redirect_chain_working": "Authentication redirect chain working",
+      "further_redirect": "Further redirect",
+      "unexpected_dex": "Unexpected DEX response",
+      "dex_unreachable": "DEX unreachable",
+      "redirects_not_dex": "Redirects but not to DEX auth",
+      "correctly_returns": "Correctly returns",
+      "auth_required_text": "authentication required",
+      "accessible_without_auth": "Endpoint accessible without auth - may be public or pre-authenticated",
+      "backend_issue": "Server error - backend issue",
+      "unexpected_status": "Unexpected status"
+    },
+    "endpoints": {
+      "cog_iframe_prod": "COG iframe (Production)",
+      "cog_dashboard_dev": "COG Dashboard (Development)",
+      "kubernetes_dashboard": "Kubernetes Dashboard",
+      "pipeline_dashboard": "Pipeline Dashboard",
+      "api_health": "API Health Check",
+      "dex_auth": "DEX Auth Endpoint"
+    },
+    "assessment": {
+      "title": "Assessment",
+      "endpoints_tested": "endpoints tested successfully",
+      "proper_auth_flow": "endpoints have proper auth flow",
+      "proxy_working": "Authentication proxy appears to be working correctly",
+      "needs_review": "Authentication proxy may need configuration review"
+    },
+    "next_steps": {
+      "title": "Next Steps",
+      "check_dex_auth": "Check if DEX and AuthService are properly configured",
+      "verify_backend": "Verify backend services are running",
+      "test_credentials": "Test with actual user credentials if available"
+    },
+    "errors": {
+      "request_timeout": "Request timeout",
+      "fatal_error": "Fatal error"
+    }
+  }
+}

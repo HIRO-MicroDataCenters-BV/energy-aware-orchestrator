@@ -1,0 +1,6 @@
+{
+  "name": "nginx-simple",
+  "namespace": "default",
+  "estimated_energy_watts": 15.5,
+  "manifest": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: nginx-simple\n  labels:\n    app: nginx-simple\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: nginx-simple\n  template:\n    metadata:\n      labels:\n        app: nginx-simple\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:1.21\n        ports:\n        - containerPort: 80\n        resources:\n          requests:\n            cpu: 100m\n            memory: 128Mi\n          limits:\n            cpu: 200m\n            memory: 256Mi\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: nginx-simple-service\nspec:\n  selector:\n    app: nginx-simple\n  ports:\n  - protocol: TCP\n    port: 80\n    targetPort: 80\n  type: ClusterIP"
+}

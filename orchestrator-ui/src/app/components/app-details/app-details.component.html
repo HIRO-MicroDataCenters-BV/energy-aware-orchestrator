@@ -1,0 +1,82 @@
+<div>
+  <div hlm class="container-details">
+    <div *ngIf="data && struct; else noData">
+      <div
+        *ngFor="let group of struct"
+        class="border-b border-b-gray-300 mb-6 group"
+      >
+        <header *ngIf="group && group?.title" class="px-4">
+          <p class="text-sm mb-6">{{ `details.${group.title}` | transloco }}</p>
+        </header>
+        <section class="list">
+          <ng-content *ngFor="let item of group.items">
+            <div
+              *ngIf="testCondition(item.prop, data, item?.condition)"
+              class="grid grid-cols-2 mb-6 px-4"
+            >
+              <div class="flex text-gray-500">
+                <div>
+                  <div class="flex gap-2">
+                    <span class="flex items-center"
+                      ><ng-icon hlm [svg]="getIcon(item.icon)" /></span
+                    ><span>{{`details.${item.prop}` | transloco}}</span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="data" class="text-ellipsis w-full">
+                <span>
+                  <span *ngIf="getValueType(data[item.prop]) === 'date'">
+                    <span class="text-sm">{{
+                      data[item.prop] | date : 'dd/MM/yyyy'
+                    }}</span>
+                    <span class="text-sm text-gray-400">
+                      {{ data[item.prop] | date : 'HH:mm:ss' }}
+                    </span>
+                  </span>
+
+                  <span *ngIf="getValueType(data[item.prop]) !== 'date'">
+                    {{ data[item.prop] }}
+                  </span>
+                  <span *ngIf="item.prop == 'duration'"
+                    >{{ getDuration(data['created_at'], data['updated_at'])
+                    }}{{ 'hint.s' | transloco }}</span
+                  >
+                  <span *ngIf="item.prop == 'date'">{{
+                    data['created_at'] | date : 'dd MMM yyyy'
+                  }}</span>
+                  <span *ngIf="item.prop == 'time'">{{
+                    data['created_at'] | date : 'HH:mm:ss'
+                  }}</span>
+
+                  <span *ngIf="item.prop === 'cpu'">
+                    <div class="text-sm">
+                      {{ data['demand_cpu'] }}{{ 'hint.m' | transloco }}
+                    </div>
+                    <div class="text-sm text-gray-400">
+                      {{ 'hint.slack' | transloco }}
+                      {{ data['demand_slack_cpu'] }}{{ 'hint.m' | transloco }}
+                    </div>
+                  </span>
+                  <span *ngIf="item.prop === 'memory'">
+                    <div class="text-sm">
+                      {{ data['demand_memory'] }}{{ 'hint.m' | transloco }}
+                    </div>
+                    <div class="text-sm text-gray-400">
+                      {{ 'hint.slack' | transloco }}
+                      {{ data['demand_slack_memory']
+                      }}{{ 'hint.mi' | transloco }}
+                    </div>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </ng-content>
+        </section>
+      </div>
+    </div>
+
+    <ng-template #noData>
+      <p>{{ 'hint.no_data' | transloco }}</p>
+    </ng-template>
+  </div>
+</div>

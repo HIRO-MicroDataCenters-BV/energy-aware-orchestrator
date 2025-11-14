@@ -1,0 +1,8 @@
+apiVersion: v2
+name: orchestrator-library-ui
+description: A Helm chart for deploying the Orchestration Library Angular UI
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+icon: https://raw.githubusercontent.com/helm/helm/main/assets/images/helm.svg
+ 
