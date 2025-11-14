@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workload-type-1-config
+  namespace: workspace
+  labels:
+    app: workload-type-1
+    component: workload
+data:
+  # Time windows in 24-hour format
+  morning_start: "08:00"
+  morning_end: "10:00"
+  evening_start: "18:00"
+  evening_end: "21:00"
+  # Computation duration in hours
+  computation_duration: "2"
+  # Logging configuration
+  log_level: "INFO"
+  # Resource configuration
+  max_cpu_cores: "0"  # 0 = use all available cores

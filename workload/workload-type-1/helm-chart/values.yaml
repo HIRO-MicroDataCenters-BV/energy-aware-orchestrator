@@ -1,0 +1,90 @@
+replicaCount: 1
+
+image:
+  repository: hiroregistry/shift2dc
+  tag: workload-type-1-v1
+  pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: workspace
+
+service:
+  type: NodePort
+  port: 8001
+  targetPort: http
+  nodePort: 32003
+  name: http
+
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "200m"
+  limits:
+    memory: "8Gi"
+    cpu: "4000m"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 60
+  timeoutSeconds: 30
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 15
+  failureThreshold: 3
+
+env:
+  PYTHONUNBUFFERED: "1"
+  TZ: "UTC"
+
+configMap:
+  morningStart: "08:00"
+  morningEnd: "10:00"
+  eveningStart: "18:00"
+  eveningEnd: "21:00"
+  computationDuration: "2"
+  logLevel: "INFO"
+  maxCpuCores: "0"
+
+labels:
+  app: workload-type-1
+  component: workload
+  type: scheduled-workload
+  version: v1.0.0
+
+annotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8001"
+  prometheus.io/path: "/metrics"
+  energy.monitoring/track: "true"
+  energy.monitoring/type: "scheduled-workload"
+
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+    - ALL
+
+podSecurityContext:
+  fsGroup: 1000
+
+volumes:
+  tmp:
+    enabled: true
+    sizeLimit: 2Gi
+
+terminationGracePeriodSeconds: 300
