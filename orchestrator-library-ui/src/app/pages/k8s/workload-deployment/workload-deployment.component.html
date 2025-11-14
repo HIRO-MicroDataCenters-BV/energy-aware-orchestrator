@@ -116,8 +116,6 @@
               <th class="px-2 py-1 text-left font-medium">Status</th>
               <th class="px-2 py-1 text-left font-medium">Type</th>
               <th class="px-2 py-1 text-left font-medium">Energy (W)</th>
-              <th class="px-2 py-1 text-left font-medium">Scheduled</th>
-              <th class="px-2 py-1 text-left font-medium">Deployed</th>
               <th class="px-2 py-1 text-left font-medium">Actions</th>
             </tr>
             </thead>
@@ -150,8 +148,6 @@
                     </span>
                 </td>
                 <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{request.estimated_energy_watts || '-'}}</td>
-                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{formatDateString(request.scheduled_at)}}</td>
-                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{formatDateString(request.deployed_at)}}</td>
                 <td class="px-2 py-2">
                   <button
                     (click)="$event.stopPropagation(); openDeleteConfirmDialog(request)"
@@ -164,7 +160,7 @@
 
               <!-- Expanded Details Row -->
               <tr *ngIf="isRequestExpanded(request.id)" class="bg-gray-50 border-l-2 border-yellow-300">
-                <td colspan="7" class="px-4 py-3">
+                <td colspan="5" class="px-4 py-3">
                   <div class="space-y-2 text-xs">
                     <div class="grid grid-cols-2 gap-3">
                       <div>
@@ -206,7 +202,7 @@
               </tr>
             </ng-container>
             <tr *ngIf="getCreatedRequests().length === 0">
-              <td class="px-2 py-2 text-center text-gray-500" colspan="7">No Pending workloads found</td>
+              <td class="px-2 py-2 text-center text-gray-500" colspan="5">No Pending workloads found</td>
             </tr>
             </tbody>
           </table>
