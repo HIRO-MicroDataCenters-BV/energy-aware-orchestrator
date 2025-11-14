@@ -7,9 +7,11 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from enum import Enum
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.servicesv2.kubernetes_pods_service import KubernetesPodService
 from app.servicesv2.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
+from app.servicesv2.energy_availability_service import EnergyAvailabilityService
 from app.services.energy_forecasting_service import EnergyForecastingService
 
 
@@ -23,9 +25,10 @@ class DeploymentStatus(Enum):
 class KubernetesDeploymentService:
     """Service to manage Kubernetes deployments with energy awareness."""
 
-    def __init__(self):
+    def __init__(self, db_session: Optional[AsyncSession] = None):
         self.k8s_service = KubernetesPodService()
         self.metrics_service = PrometheusMetricsServiceV2()
+        self.energy_availability_service = EnergyAvailabilityService(db_session)
         self.forecasting_service = None
         self._forecasting_service_initialized = False
 
@@ -41,86 +44,46 @@ class KubernetesDeploymentService:
                 logging.warning(f"Energy forecasting service not available: {e}")
             self._forecasting_service_initialized = True
 
-    async def check_energy_availability(self, required_energy_watts: float = None) -> Dict[str, Any]:
+    async def check_energy_availability(
+        self,
+        required_energy_watts: float = None,
+        db_session: Optional[AsyncSession] = None
+    ) -> Dict[str, Any]:
         """
-        Check if cluster has sufficient energy for deployment.
+        Check if cluster has sufficient energy for deployment using EnergyAvailabilityService.
+
+        This method now uses the current time slot's available energy from EnergyAvailabilityRepository
+        and subtracts the current K8s container energy consumption to get actual available energy.
 
         Args:
             required_energy_watts: Estimated energy requirement for the deployment
+            db_session: Database session for accessing energy availability data
 
         Returns:
             Dict with availability status and current energy metrics
         """
         try:
-            # Get current energy metrics from last hour
-            # Wrap the metrics call in a try-catch to handle any greenlet/async issues
-            try:
-                current_metrics = await self.metrics_service.scrape_and_transform_range(hours_back=1)
-            except Exception as metrics_error:
-                logging.warning(f"Failed to get metrics from Prometheus: {metrics_error}")
-                current_metrics = []
-
-            if not current_metrics:
-                return {
-                    "sufficient": False,
-                    "reason": "No energy metrics available",
-                    "current_energy_watts": None,
-                    "available_capacity_watts": None
-                }
-
-            # Calculate current total energy consumption across all nodes
-            total_current_energy = 0
-            node_energies = {}
-
-            for metric in current_metrics:
-                if metric.energy_watts is not None:
-                    total_current_energy += metric.energy_watts
-                    node_energies[metric.node_name] = metric.energy_watts
-
-            # Get energy forecast if forecasting service is available
-            forecasted_energy = None
-            # Temporarily disable forecasting to isolate async issues
-            # self._init_forecasting_service()
-            # if self.forecasting_service and current_metrics:
-            #     try:
-            #         # Use latest metrics for forecasting
-            #         latest_metric = current_metrics[0]
-            #         forecast = self.forecasting_service.predict_single(
-            #             cpu_utilization=latest_metric.cpu_utilization_percent,
-            #             memory_utilization=latest_metric.memory_utilization_percent
-            #         )
-            #         forecasted_energy = forecast.get('predicted_energy_watts', None)
-            #     except Exception as e:
-            #         logging.warning(f"Energy forecasting failed: {e}")
-
-            # Estimate maximum sustainable energy (could be configurable)
-            max_sustainable_energy = 1000.0  # watts - should be configurable
-            available_capacity = max_sustainable_energy - total_current_energy
-
-            # Check if we have sufficient energy
+            # Default required energy if not specified
             if required_energy_watts is None:
                 required_energy_watts = 50.0  # Default estimate for small deployment
 
-            sufficient = available_capacity >= required_energy_watts
+            # Use EnergyAvailabilityService to check energy sufficiency
+            energy_check = await self.energy_availability_service.check_energy_sufficient_for_deployment(
+                required_energy_watts=required_energy_watts,
+                db_session=db_session
+            )
 
-            return {
-                "sufficient": sufficient,
-                "current_energy_watts": round(total_current_energy, 2),
-                "required_energy_watts": required_energy_watts,
-                "available_capacity_watts": round(available_capacity, 2),
-                "max_sustainable_watts": max_sustainable_energy,
-                "forecasted_energy_watts": round(forecasted_energy, 2) if forecasted_energy else None,
-                "node_energies": node_energies,
-                "reason": "Sufficient energy available" if sufficient else f"Insufficient energy: need {required_energy_watts}W, only {available_capacity:.2f}W available"
-            }
+            # Return the result from the energy availability service
+            return energy_check
 
         except Exception as e:
             logging.error(f"Error checking energy availability: {e}")
             return {
                 "sufficient": False,
                 "reason": f"Error checking energy: {str(e)}",
-                "current_energy_watts": None,
-                "available_capacity_watts": None
+                "total_available_watts": None,
+                "slot_energy_watts": None,
+                "current_consumption_watts": None
             }
 
     async def deploy_to_kubernetes(self, manifest: str, namespace: str = "default", custom_labels: Dict[str, str] = None) -> Dict[str, Any]:

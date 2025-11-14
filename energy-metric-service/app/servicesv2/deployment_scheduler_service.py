@@ -123,11 +123,13 @@ class DeploymentSchedulerService:
             energy_check = {"sufficient": True, "reason": "Critical workload - energy check bypassed"}
         else:
             # For Preferred and Optional workloads, check energy availability
-            # Temporarily bypass energy check until Prometheus/Kepler is configured
-            logger.info(f"Energy check temporarily bypassed for '{app_definition.name}' - will add energy check later")
-            energy_check = {"sufficient": True, "reason": "Energy check temporarily bypassed"}
-            # TODO: Uncomment when Prometheus/Kepler is ready:
-            # energy_check = await self.deployment_service.check_energy_availability(estimated_energy)
+            # Use EnergyAvailabilityService to calculate available energy
+            # Available energy = Energy available from current time slot - Current K8s consumption
+            energy_check = await self.deployment_service.check_energy_availability(
+                required_energy_watts=estimated_energy,
+                db_session=db
+            )
+            logger.info(f"Energy check for '{app_definition.name}': {energy_check}")
 
         # If sufficient energy, deploy
         if energy_check["sufficient"]:
