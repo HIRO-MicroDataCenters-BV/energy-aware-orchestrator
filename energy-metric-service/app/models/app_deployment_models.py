@@ -15,6 +15,17 @@ class ApplicationDeploymentRequestModel(BaseModel):
     estimated_energy_watts: Optional[float] = Field(None, description="Estimated energy consumption")
 
 
+class ApplicationDeploymentUpdateModel(BaseModel):
+    status: str = Field(..., description="New status - Currently only 'Scheduled' is allowed")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "Scheduled"
+            }
+        }
+
+
 class ApplicationDeploymentResponse(BaseModel):
     id: UUID
     app_definition_id: UUID
