@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workload-type-2-config
+  namespace: workspace
+  labels:
+    app: workload-type-2
+    component: workload
+data:
+  # Application configuration
+  log_level: "INFO"
+  computation_interval: "300"  # 5 minutes in seconds
+  computation_duration: "30"   # 30 seconds
+  max_cpu_cores: "0"          # 0 means use all available cores
+  
+  # Monitoring configuration
+  metrics_enabled: "true"
+  health_check_interval: "30"
+  
+  # Performance tuning
+  python_buffered: "0"
+  uvicorn_workers: "1"
