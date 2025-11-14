@@ -61,6 +61,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
   pods: any[] = [];
   appPods: any[] = [];
   expandedApps: Set<string> = new Set();
+  expandedRequests: Set<string> = new Set();
   availableEnergy = 0;
   totalEnergyDemand = 0;
   energyForecast: any[] = [];
@@ -801,6 +802,23 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
 
   isAppExpanded(appName: string): boolean {
     return this.expandedApps.has(appName);
+  }
+
+  toggleRequestExpansion(requestId: string): void {
+    console.log('toggleRequestExpansion called with ID:', requestId);
+    console.log('Current expandedRequests:', Array.from(this.expandedRequests));
+    if (this.expandedRequests.has(requestId)) {
+      this.expandedRequests.delete(requestId);
+      console.log('Collapsed request:', requestId);
+    } else {
+      this.expandedRequests.add(requestId);
+      console.log('Expanded request:', requestId);
+    }
+    console.log('Updated expandedRequests:', Array.from(this.expandedRequests));
+  }
+
+  isRequestExpanded(requestId: string): boolean {
+    return this.expandedRequests.has(requestId);
   }
 
   getContainerNamesFromPod(pod: any): string {

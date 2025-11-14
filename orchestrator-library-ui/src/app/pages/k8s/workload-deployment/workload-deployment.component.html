@@ -122,33 +122,89 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-            <tr *ngFor="let request of getCreatedRequests()" class="group hover:bg-gray-50">
-              <td class="px-2 py-2">
-                <div class="text-gray-900">{{request.app_name || '-'}}</div>
-                <div class="text-[10px] text-gray-500 truncate max-w-32">{{request.app_description || '-'}}</div>
-              </td>
-              <td class="px-2 py-2">
-                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getStatusColor(request.status)">
-                    {{request.status}}
-                  </span>
-              </td>
-              <td class="px-2 py-2">
-                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(request.workload_type)">
-                    {{request.workload_type}}
-                  </span>
-              </td>
-              <td class="px-2 py-2">{{request.estimated_energy_watts || '-'}}</td>
-              <td class="px-2 py-2">{{formatDateString(request.scheduled_at)}}</td>
-              <td class="px-2 py-2">{{formatDateString(request.deployed_at)}}</td>
-              <td class="px-2 py-2">
-                <button
-                  (click)="openDeleteConfirmDialog(request)"
-                  class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
-                  title="Delete deployment request">
-                  <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
-                </button>
-              </td>
-            </tr>
+            <ng-container *ngFor="let request of getCreatedRequests()">
+              <tr class="group hover:bg-gray-50 cursor-pointer">
+                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">
+                      {{isRequestExpanded(request.id) ? '▼' : '▶'}}
+                    </span>
+                    <div>
+                      <div class="text-gray-900">{{request.app_name || '-'}}</div>
+                      <div class="text-[10px] text-gray-500 truncate max-w-32">{{request.app_description || '-'}}</div>
+                      <div *ngIf="request.error_message && !isRequestExpanded(request.id)" class="text-[9px] text-red-600 mt-0.5 flex items-center gap-1">
+                        <span>⚠</span>
+                        <span>Click to view error</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">
+                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getStatusColor(request.status)">
+                      {{request.status}}
+                    </span>
+                </td>
+                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">
+                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(request.workload_type)">
+                      {{request.workload_type}}
+                    </span>
+                </td>
+                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{request.estimated_energy_watts || '-'}}</td>
+                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{formatDateString(request.scheduled_at)}}</td>
+                <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{formatDateString(request.deployed_at)}}</td>
+                <td class="px-2 py-2">
+                  <button
+                    (click)="$event.stopPropagation(); openDeleteConfirmDialog(request)"
+                    class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                    title="Delete deployment request">
+                    <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Expanded Details Row -->
+              <tr *ngIf="isRequestExpanded(request.id)" class="bg-gray-50 border-l-2 border-yellow-300">
+                <td colspan="7" class="px-4 py-3">
+                  <div class="space-y-2 text-xs">
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <span class="font-semibold text-gray-600">Request ID:</span>
+                        <span class="ml-1 text-gray-800">{{request.id}}</span>
+                      </div>
+                      <div>
+                        <span class="font-semibold text-gray-600">App Definition ID:</span>
+                        <span class="ml-1 text-gray-800">{{request.app_definition_id || '-'}}</span>
+                      </div>
+                      <div>
+                        <span class="font-semibold text-gray-600">Namespace:</span>
+                        <span class="ml-1 text-gray-800">{{request.app_namespace || '-'}}</span>
+                      </div>
+                      <div>
+                        <span class="font-semibold text-gray-600">Created At:</span>
+                        <span class="ml-1 text-gray-800">{{formatDateString(request.created_at)}}</span>
+                      </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div *ngIf="request.error_message" class="bg-red-50 border border-red-200 rounded p-2 mt-2">
+                      <div class="flex items-start gap-2">
+                        <span class="text-red-600 font-bold">⚠</span>
+                        <div class="flex-1">
+                          <div class="font-semibold text-red-800 mb-1">Error Details:</div>
+                          <div class="text-red-700 text-xs">{{request.error_message}}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Manifest Preview -->
+                    <div *ngIf="request.manifest" class="mt-2">
+                      <div class="font-semibold text-gray-600 mb-1">Manifest Preview:</div>
+                      <pre class="bg-gray-100 border border-gray-300 rounded p-2 text-[10px] overflow-x-auto max-h-40">{{request.manifest}}</pre>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
             <tr *ngIf="getCreatedRequests().length === 0">
               <td class="px-2 py-2 text-center text-gray-500" colspan="7">No Pending workloads found</td>
             </tr>
@@ -178,33 +234,89 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-              <tr *ngFor="let request of getScheduledRequests()" class="group hover:bg-gray-50">
-                <td class="px-2 py-2">
-                  <div class="text-gray-900">{{request.app_name || '-'}}</div>
-                  <div class="text-[10px] text-gray-500 truncate max-w-32">{{request.app_description || '-'}}</div>
-                </td>
-                <td class="px-2 py-2">
-                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getStatusColor(request.status)">
-                    {{request.status}}
-                  </span>
-                </td>
-                <td class="px-2 py-2">
-                  <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(request.workload_type)">
-                    {{request.workload_type}}
-                  </span>
-                </td>
-                <td class="px-2 py-2">{{request.estimated_energy_watts || '-'}}</td>
-                <td class="px-2 py-2">{{formatDateString(request.scheduled_at)}}</td>
-                <td class="px-2 py-2">{{formatDateString(request.deployed_at)}}</td>
-                <td class="px-2 py-2">
-                  <button
-                    (click)="openDeleteConfirmDialog(request)"
-                    class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
-                    title="Delete deployment request">
-                    <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
-                  </button>
-                </td>
-              </tr>
+              <ng-container *ngFor="let request of getScheduledRequests()">
+                <tr class="group hover:bg-gray-50 cursor-pointer">
+                  <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-gray-400">
+                        {{isRequestExpanded(request.id) ? '▼' : '▶'}}
+                      </span>
+                      <div>
+                        <div class="text-gray-900">{{request.app_name || '-'}}</div>
+                        <div class="text-[10px] text-gray-500 truncate max-w-32">{{request.app_description || '-'}}</div>
+                        <div *ngIf="request.error_message && !isRequestExpanded(request.id)" class="text-[9px] text-red-600 mt-0.5 flex items-center gap-1">
+                          <span>⚠</span>
+                          <span>Click to view error</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">
+                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getStatusColor(request.status)">
+                      {{request.status}}
+                    </span>
+                  </td>
+                  <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">
+                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(request.workload_type)">
+                      {{request.workload_type}}
+                    </span>
+                  </td>
+                  <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{request.estimated_energy_watts || '-'}}</td>
+                  <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{formatDateString(request.scheduled_at)}}</td>
+                  <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{formatDateString(request.deployed_at)}}</td>
+                  <td class="px-2 py-2">
+                    <button
+                      (click)="$event.stopPropagation(); openDeleteConfirmDialog(request)"
+                      class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                      title="Delete deployment request">
+                      <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Expanded Details Row -->
+                <tr *ngIf="isRequestExpanded(request.id)" class="bg-gray-50 border-l-2 border-green-300">
+                  <td colspan="7" class="px-4 py-3">
+                    <div class="space-y-2 text-xs">
+                      <div class="grid grid-cols-2 gap-3">
+                        <div>
+                          <span class="font-semibold text-gray-600">Request ID:</span>
+                          <span class="ml-1 text-gray-800">{{request.id}}</span>
+                        </div>
+                        <div>
+                          <span class="font-semibold text-gray-600">App Definition ID:</span>
+                          <span class="ml-1 text-gray-800">{{request.app_definition_id || '-'}}</span>
+                        </div>
+                        <div>
+                          <span class="font-semibold text-gray-600">Namespace:</span>
+                          <span class="ml-1 text-gray-800">{{request.app_namespace || '-'}}</span>
+                        </div>
+                        <div>
+                          <span class="font-semibold text-gray-600">Created At:</span>
+                          <span class="ml-1 text-gray-800">{{formatDateString(request.created_at)}}</span>
+                        </div>
+                      </div>
+
+                      <!-- Error Message -->
+                      <div *ngIf="request.error_message" class="bg-red-50 border border-red-200 rounded p-2 mt-2">
+                        <div class="flex items-start gap-2">
+                          <span class="text-red-600 font-bold">⚠</span>
+                          <div class="flex-1">
+                            <div class="font-semibold text-red-800 mb-1">Error Details:</div>
+                            <div class="text-red-700 text-xs">{{request.error_message}}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Manifest Preview -->
+                      <div *ngIf="request.manifest" class="mt-2">
+                        <div class="font-semibold text-gray-600 mb-1">Manifest Preview:</div>
+                        <pre class="bg-gray-100 border border-gray-300 rounded p-2 text-[10px] overflow-x-auto max-h-40">{{request.manifest}}</pre>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
               <tr *ngIf="getScheduledRequests().length === 0">
                 <td class="px-2 py-2 text-center text-gray-500" colspan="7">No scheduled workloads found</td>
               </tr>
