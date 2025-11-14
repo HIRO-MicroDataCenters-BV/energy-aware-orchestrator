@@ -153,7 +153,7 @@ class DeploymentSchedulerService:
                         request_id=deployment.id,
                         status=RequestStatus.DEPLOYED.value,
                         deployed_at=datetime.utcnow(),
-                        error_message=None
+                        error_message=''
                     )
                     logger.info(f"Successfully deployed '{app_definition.name}' via scheduler")
                 else:
