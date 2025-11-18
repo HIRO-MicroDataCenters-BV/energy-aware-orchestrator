@@ -14,12 +14,41 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name }}
-          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          image: '{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}'
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           ports:
-            - containerPort: 4000
+            - containerPort: 80
+              name: http
           env:
-            - name: PORT
-              value: "4000"
             - name: NODE_ENV
-              value: "production"
+              value: 'production'
+            - name: API_TARGET
+              value: '{{ .Values.app.env.API_TARGET }}'
+            - name: DEX_TARGET
+              value: '{{ .Values.app.env.DEX_TARGET }}'
+            - name: DASHBOARD_TARGET
+              value: '{{ .Values.app.env.DASHBOARD_TARGET }}'
+            - name: GRAFANA_TARGET
+              value: '{{ .Values.app.env.GRAFANA_TARGET }}'
+            - name: COG_TARGET
+              value: '{{ .Values.app.env.COG_TARGET }}'
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+          - name: env-config
+            mountPath: /usr/share/nginx/html/assets/env.js
+            subPath: env.js
+      volumes:
+        - name: env-config
+          configMap:
+            name: {{ .Values.app.configMap.envName }}

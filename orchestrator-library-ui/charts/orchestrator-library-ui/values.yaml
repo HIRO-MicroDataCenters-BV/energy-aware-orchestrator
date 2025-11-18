@@ -1,15 +1,60 @@
 app:
-  namespace: aces-orchestration-library-ui
   name: aces-orchestrator-library-ui
   replicaCount: 1
-
+  configMap:
+    envName: aces-orchestrator-library-ui-env-config
   image:
     repository: orchestrator-library-ui
     tag: alpha1
     pullPolicy: Always
-
   service:
-    type: ClusterIP
-    port: 4000
+    type: NodePort
+    port: 80
     nodePort: 30010
+  env:
+    API_TARGET: 'http://51.44.28.47:30015'
+    DEX_TARGET: 'http://51.44.28.47:30080'
+    DASHBOARD_TARGET: 'http://51.44.28.47:30016'
+    GRAFANA_TARGET: 'http://51.44.28.47:30000'
+    COG_TARGET: 'https://dashboard.cog.hiro-develop.nl'
+    K8S_PROXY_TARGET: 'http://51.44.28.47:30020'
+    OIDC_AUTHORITY: 'http://51.44.28.47:30015/dex'
+    OIDC_CLIENT_ID: 'authservice-oidc'
+    OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET}'
+    OIDC_SCOPE: 'openid profile email groups'
+    OIDC_RESPONSE_TYPE: 'code'
+    OIDC_REDIRECT_URI: 'http://51.44.28.47:30015/authservice/oidc/callback'
+    OIDC_POST_LOGOUT_REDIRECT_URI: 'http://51.44.28.47:30015/auth/login'
+  ingress:
+    enabled: true
+    className: nginx
+    host: dashboard.aces.hiro-develop.nl
+    path: /
+    tls: true
+    tlsSecretName: orchestrator-ui-tls-secret
+  
 
+  k8sProxy:
+    enabled: true
+    name: aces-orchestrator-k8s-proxy
+    configMap:
+      name: aces-orchestrator-k8s-proxy-env-config
+    image:
+      repository: node
+      tag: '20-alpine3.20'
+    service:
+      type: NodePort
+      port: 3000
+      nodePort: 30020
+    env:
+      API_BACKEND_URL: 'http://51.44.28.47:30015'
+      K8S_DASHBOARD_URL: 'http://51.44.28.47:30016'
+      K8S_NAMESPACE: 'hiros'
+      K8S_SERVICE_ACCOUNT: 'readonly-user'
+    ingress:
+      enabled: true
+      className: nginx
+      host: k8s-proxy.aces.hiro-develop.nl
+      path: /
+      tls: true
+      tlsSecretName: k8s-proxy-tls-secret

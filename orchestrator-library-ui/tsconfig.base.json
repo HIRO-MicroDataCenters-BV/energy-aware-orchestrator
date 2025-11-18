@@ -6,6 +6,8 @@
     "target": "ES2022",
     "module": "preserve",
     "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
       "@spartan-ng/ui-accordion-helm": [

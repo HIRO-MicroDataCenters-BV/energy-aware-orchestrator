@@ -1,0 +1,31 @@
+{{- if .Values.app.k8sProxy.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  name: {{ .Values.app.k8sProxy.name }}-ingress
+  labels:
+    app: {{ .Values.app.name }}
+spec:
+  {{- if .Values.app.k8sProxy.ingress.className }}
+  ingressClassName: {{ .Values.app.k8sProxy.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.app.k8sProxy.ingress.host }}
+      http:
+        paths:
+          - path: {{ .Values.app.k8sProxy.ingress.path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.app.k8sProxy.name }}
+                port:
+                  number: {{ .Values.app.k8sProxy.service.port }}
+  {{- if .Values.app.k8sProxy.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.app.k8sProxy.ingress.host }}
+      secretName: {{ .Values.app.k8sProxy.ingress.tlsSecretName }}
+  {{- end }}
+{{- end }}

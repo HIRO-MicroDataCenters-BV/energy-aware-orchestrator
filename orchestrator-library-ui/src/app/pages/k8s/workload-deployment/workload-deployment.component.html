@@ -149,12 +149,20 @@
                 </td>
                 <td class="px-2 py-2" (click)="toggleRequestExpansion(request.id)">{{request.estimated_energy_watts || '-'}}</td>
                 <td class="px-2 py-2">
-                  <button
-                    (click)="$event.stopPropagation(); openDeleteConfirmDialog(request)"
-                    class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
-                    title="Delete deployment request">
-                    <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
-                  </button>
+                  <div class="flex items-center gap-1">
+                    <button
+                      (click)="$event.stopPropagation(); openScheduleDialog(request)"
+                      class="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                      title="Schedule this workload">
+                      <ng-icon hlm size="sm" name="lucideCalendarCheck"></ng-icon>
+                    </button>
+                    <button
+                      (click)="$event.stopPropagation(); openDeleteConfirmDialog(request)"
+                      class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                      title="Delete deployment request">
+                      <ng-icon hlm size="sm" name="lucideTrash2"></ng-icon>
+                    </button>
+                  </div>
                 </td>
               </tr>
 
@@ -581,6 +589,9 @@
     </div>
   </div>
 </div>
+
+<!-- Schedule Workload Dialog -->
+<app-schedule-workload-dialog #scheduleDialog (scheduled)="onScheduleConfirmed($event)"></app-schedule-workload-dialog>
 
 <!-- Delete Confirmation Dialog -->
 <hlm-alert-dialog #deleteConfirmDialog>
