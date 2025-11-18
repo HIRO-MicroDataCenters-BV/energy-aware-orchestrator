@@ -735,7 +735,8 @@ export class SystemUtilizationComponent implements OnInit, OnDestroy {
   }
 
   private getHoursFromTimePeriod(timePeriod: string): number {
-    return parseInt(timePeriod, 10) || 1; // Convert string to number, default to 1 hour
+    const parsed = parseFloat(timePeriod);
+    return Number.isNaN(parsed) ? 1 : parsed; // Support fractional hours (e.g., 0.25 = 15 min)
   }
 
   private extractAvailableNodes(response: any): void {
