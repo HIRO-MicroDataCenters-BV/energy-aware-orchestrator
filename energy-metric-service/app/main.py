@@ -23,11 +23,11 @@ from app.utils.exception_handlers import init_exception_handlers
 
 metrics_scheduler = None
 if os.environ.get("ENABLE_METRICS_SCHEDULER", "false").lower() == "true":
-    metrics_scheduler = MetricCollectorScheduler(interval_seconds=60)
+    metrics_scheduler = MetricCollectorScheduler(interval_seconds=30)
 
 deployment_scheduler = None
 if os.environ.get("ENABLE_DEPLOYMENT_SCHEDULER", "true").lower() == "true":
-    deployment_scheduler = DeploymentScheduler(interval_seconds=60)  # Runs every 1 minute
+    deployment_scheduler = DeploymentScheduler(interval_seconds=30)  # Runs every 1 minute
 
 
 @asynccontextmanager

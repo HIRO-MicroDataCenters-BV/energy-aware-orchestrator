@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil, interval, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideTrash2, lucideRefreshCw } from '@ng-icons/lucide';
+import { lucideTrash2, lucideRefreshCw, lucideCalendarCheck } from '@ng-icons/lucide';
 import { HlmIconDirective } from '@spartan-ng/ui-icon-helm';
 import { HlmAlertDialogComponent, HlmAlertDialogImports } from '@spartan-ng/ui-alertdialog-helm';
 import { BrnAlertDialogContentDirective } from '@spartan-ng/brain/alert-dialog';
 import { AddWorkloadDialogComponent } from './add-workload-dialog.component';
+import { ScheduleWorkloadDialogComponent } from './schedule-workload-dialog.component';
 import { WorkloadService } from '../../../shared/services/workload.service';
 // The pods API response has fields like phase, node_name, containers, etc.
 import { HlmSidebarService } from '../../../../../libs/ui/ui-sidebar-helm/src/lib/hlm-sidebar.service';
@@ -46,21 +47,24 @@ export interface EnergySchedulingRule {
 @Component({
   selector: 'app-workload-deployment',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmIconDirective, ...HlmAlertDialogImports, BrnAlertDialogContentDirective, AddWorkloadDialogComponent, HighchartsChartComponent],
-  providers: [provideIcons({ lucideTrash2, lucideRefreshCw })],
+  imports: [CommonModule, FormsModule, NgIcon, HlmIconDirective, ...HlmAlertDialogImports, BrnAlertDialogContentDirective, AddWorkloadDialogComponent, ScheduleWorkloadDialogComponent, HighchartsChartComponent],
+  providers: [provideIcons({ lucideTrash2, lucideRefreshCw, lucideCalendarCheck })],
   templateUrl: './workload-deployment.component.html',
   styleUrls: ['./workload-deployment.component.css']
 })
 export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
   @ViewChild('deleteConfirmDialog', { static: false }) deleteConfirmDialog!: HlmAlertDialogComponent;
+  @ViewChild('scheduleDialog', { static: false }) scheduleDialog!: ScheduleWorkloadDialogComponent;
 
   private destroy$ = new Subject<void>();
+  private workloadToSchedule: any = null;
 
   workloads: WorkloadItem[] = [];
   deploymentRequests: any[] = [];
   pods: any[] = [];
   appPods: any[] = [];
   expandedApps: Set<string> = new Set();
+  expandedRequests: Set<string> = new Set();
   availableEnergy = 0;
   totalEnergyDemand = 0;
   energyForecast: any[] = [];
@@ -649,6 +653,38 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
       });
   }
 
+  openScheduleDialog(request: any): void {
+    if (!request?.id) return;
+    this.workloadToSchedule = request;
+    this.scheduleDialog.open(request);
+  }
+
+  onScheduleConfirmed(event: { scheduledAt: string }): void {
+    if (!this.workloadToSchedule?.id) return;
+
+    const appName = this.workloadToSchedule.app_name || 'Deployment request';
+
+    this.workloadService.updateDeploymentRequestStatus(
+      this.workloadToSchedule.id,
+      'Scheduled',
+      event.scheduledAt
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          console.log('✅ Deployment request status updated to Scheduled');
+          this.showNotification('success', `"${appName}" has been scheduled successfully`);
+          this.loadDeploymentRequests();
+          this.workloadToSchedule = null;
+        },
+        error: (err) => {
+          console.error('❌ Failed to update deployment request status:', err);
+          this.showNotification('error', `Failed to schedule "${appName}". ${err?.error?.message || 'Please try again.'}`);
+          this.workloadToSchedule = null;
+        }
+      });
+  }
+
   getWorkloadsByStatus(status: string): WorkloadItem[] {
     return this.workloads.filter(w => w.status === status);
   }
@@ -801,6 +837,23 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
 
   isAppExpanded(appName: string): boolean {
     return this.expandedApps.has(appName);
+  }
+
+  toggleRequestExpansion(requestId: string): void {
+    console.log('toggleRequestExpansion called with ID:', requestId);
+    console.log('Current expandedRequests:', Array.from(this.expandedRequests));
+    if (this.expandedRequests.has(requestId)) {
+      this.expandedRequests.delete(requestId);
+      console.log('Collapsed request:', requestId);
+    } else {
+      this.expandedRequests.add(requestId);
+      console.log('Expanded request:', requestId);
+    }
+    console.log('Updated expandedRequests:', Array.from(this.expandedRequests));
+  }
+
+  isRequestExpanded(requestId: string): boolean {
+    return this.expandedRequests.has(requestId);
   }
 
   getContainerNamesFromPod(pod: any): string {

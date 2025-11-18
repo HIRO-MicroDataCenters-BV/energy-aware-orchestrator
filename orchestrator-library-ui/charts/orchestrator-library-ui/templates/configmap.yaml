@@ -1,6 +1,32 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.app.name }}-config
+  name: {{ .Values.app.configMap.envName }}
 data:
-  # Add environment variables or config here if needed
+  env.js: |
+    window.__env = {
+      apiUrl: "{{ .Values.app.env.API_TARGET }}",
+      dashboardUrl: "{{ .Values.app.env.DASHBOARD_TARGET }}",
+      grafanaUrl: "{{ .Values.app.env.GRAFANA_TARGET }}",
+      dexUrl: "{{ .Values.app.env.DEX_TARGET }}",
+      cogUrl: "{{ .Values.app.env.COG_TARGET }}",
+      k8sProxyUrl: "{{ .Values.app.env.K8S_PROXY_TARGET | default .Values.app.k8sProxy.ingress.host }}",
+      oidcAuthority: "{{ .Values.app.env.OIDC_AUTHORITY | default "" }}",
+      oidcClientId: "{{ .Values.app.env.OIDC_CLIENT_ID | default "" }}",
+      oidcClientSecret: "{{ .Values.app.env.OIDC_CLIENT_SECRET | default "" }}",
+      oidcScope: "{{ .Values.app.env.OIDC_SCOPE | default "openid profile email groups" }}",
+      oidcResponseType: "{{ .Values.app.env.OIDC_RESPONSE_TYPE | default "code" }}",
+      oidcSilentRenew: {{ .Values.app.env.OIDC_SILENT_RENEW | default true }},
+      oidcUseRefreshToken: {{ .Values.app.env.OIDC_USE_REFRESH_TOKEN | default true }},
+      oidcRenewTimeBeforeTokenExpiresInSeconds: {{ .Values.app.env.OIDC_RENEW_TIME_BEFORE_TOKEN_EXPIRES_IN_SECONDS | default 60 }},
+      oidcHistoryCleanupOff: {{ .Values.app.env.OIDC_HISTORY_CLEANUP_OFF | default true }},
+      oidcAutoUserInfo: {{ .Values.app.env.OIDC_AUTO_USER_INFO | default true }},
+      oidcTriggerRefreshWhenIdTokenExpired: {{ .Values.app.env.OIDC_TRIGGER_REFRESH_WHEN_ID_TOKEN_EXPIRED | default true }},
+      oidcLogLevel: {{ .Values.app.env.OIDC_LOG_LEVEL | default 3 }},
+      oidcRedirectUri: "{{ .Values.app.env.OIDC_REDIRECT_URI | default "" }}",
+      oidcPostLogoutRedirectUri: "{{ .Values.app.env.OIDC_POST_LOGOUT_REDIRECT_URI | default "" }}",
+      oidcTokenEndpoint: "{{ .Values.app.env.OIDC_TOKEN_ENDPOINT | default "/dex/token" }}",
+      oidcAuthorizationEndpoint: "{{ .Values.app.env.OIDC_AUTHORIZATION_ENDPOINT | default "/dex/auth" }}",
+      oidcUserInfoEndpoint: "{{ .Values.app.env.OIDC_USER_INFO_ENDPOINT | default "/dex/userinfo" }}",
+      oidcEndSessionEndpoint: "{{ .Values.app.env.OIDC_END_SESSION_ENDPOINT | default "/dex/auth/logout" }}"
+    };

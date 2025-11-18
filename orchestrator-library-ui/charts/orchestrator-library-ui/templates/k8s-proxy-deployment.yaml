@@ -1,0 +1,56 @@
+{{- if .Values.app.k8sProxy.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.k8sProxy.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.app.k8sProxy.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.k8sProxy.name }}
+    spec:
+      containers:
+        - name: k8s-dashboard-proxy
+          image: '{{ .Values.app.k8sProxy.image.repository }}:{{ .Values.app.k8sProxy.image.tag }}'
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: PORT
+              value: '3000'
+            - name: API_BACKEND_URL
+              value: '{{ .Values.app.k8sProxy.env.API_BACKEND_URL }}'
+            - name: K8S_DASHBOARD_URL
+              value: '{{ .Values.app.k8sProxy.env.K8S_DASHBOARD_URL }}'
+            - name: K8S_NAMESPACE
+              value: '{{ .Values.app.k8sProxy.env.K8S_NAMESPACE }}'
+            - name: K8S_SERVICE_ACCOUNT
+              value: '{{ .Values.app.k8sProxy.env.K8S_SERVICE_ACCOUNT }}'
+          volumeMounts:
+            - name: proxy-script
+              mountPath: /app
+              readOnly: true
+          workingDir: /app
+          command: ['sh', '-c', 'node k8s-proxy.js']
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: proxy-script
+          configMap:
+            name: {{ .Values.app.k8sProxy.configMap.name }}
+            defaultMode: 0755
+{{- end }}

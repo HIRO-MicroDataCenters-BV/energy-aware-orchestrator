@@ -162,6 +162,23 @@ export class WorkloadService {
   }
 
   /**
+   * Update deployment request status
+   * @param id - Deployment request ID
+   * @param status - New status (e.g., 'Scheduled')
+   * @param scheduledAt - Optional scheduled date/time (ISO string)
+   */
+  updateDeploymentRequestStatus(id: string, status: string, scheduledAt?: string): Observable<any> {
+    const url = `${this.deploymentApiUrl}/requests/${id}/status`;
+    const body: any = { status };
+
+    if (scheduledAt) {
+      body.scheduled_at = scheduledAt;
+    }
+
+    return this.http.patch<any>(url, body);
+  }
+
+  /**
    * Test Kubernetes cluster connection
    * @returns Observable with connection status
    */

@@ -34,6 +34,7 @@ import { HlmSidebarMenuDirective } from '../../../../libs/ui/ui-sidebar-helm/src
 import { HlmSidebarMenuItemDirective } from '../../../../libs/ui/ui-sidebar-helm/src/lib/hlm-sidebar-menu-item.directive';
 import { HlmSidebarFooterDirective } from '../../../../libs/ui/ui-sidebar-helm/src/lib/hlm-sidebar-footer.directive';
 import { HlmSidebarService } from '../../../../libs/ui/ui-sidebar-helm/src/lib/hlm-sidebar.service';
+import { HlmSidebarWrapperDirective } from '../../../../libs/ui/ui-sidebar-helm/src/lib/hlm-sidebar-wrapper.directive';
 
 import { AppHeaderComponent } from '../../components/app-header/app-header.component';
 import { NgIf, NgFor } from '@angular/common';
@@ -55,6 +56,7 @@ import { NgIf, NgFor } from '@angular/common';
     HlmSidebarMenuDirective,
     HlmSidebarMenuItemDirective,
     HlmSidebarFooterDirective,
+    HlmSidebarWrapperDirective,
     AppHeaderComponent,
     NgIf,
     NgFor,

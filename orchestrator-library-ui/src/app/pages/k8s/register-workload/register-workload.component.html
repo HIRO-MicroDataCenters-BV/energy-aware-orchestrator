@@ -26,7 +26,10 @@
         </thead>
         <tbody class="divide-y divide-gray-200">
           <tr *ngFor="let w of workloads" class="hover:bg-gray-50 cursor-pointer" (click)="showWorkloadDetails(w)">
-            <td class="px-2 py-3">{{ w.name }}</td>
+            <td class="px-2 py-3">
+              <div class="text-gray-900">{{ w.name }}</div>
+              <div *ngIf="w.description" class="text-[10px] text-gray-500 mt-0.5">{{ w.description }}</div>
+            </td>
             <td class="px-2 py-3">{{ w.namespace }}</td>
             <td class="px-2 py-3">
               <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(w.workload_type)">{{ w.workload_type }}</span>

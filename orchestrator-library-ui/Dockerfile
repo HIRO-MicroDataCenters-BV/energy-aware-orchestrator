@@ -14,24 +14,31 @@ RUN pnpm install
 COPY . .
 
 # Build the Angular app
-RUN pnpm build
+RUN pnpm run build:prod
 
-# Stage 2: Setup for SSR
-FROM node:20-alpine3.20
+# Stage 2: Production image with nginx only
+FROM nginx:alpine
 
-WORKDIR /usr/app
+WORKDIR /usr/share/nginx/html
 
-# Copy the dist folder from the builder stage
-COPY --from=builder /app/dist ./dist
+# Remove default nginx files
+RUN rm -rf ./*
 
-# Copy package.json for potential dependencies
-COPY --from=builder /app/package.json ./
+# Copy the built Angular app
+COPY --from=builder /app/dist/orchestration_library-front/browser ./
+
+# Rename index.csr.html to index.html for nginx
+RUN mv index.csr.html index.html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Expose the port the app runs on
-EXPOSE 4000
+# Expose port
+EXPOSE 80
 
-# Command to run the application
-CMD ["node", "dist/orchestration_library-front/server/server.mjs"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget -qO- http://localhost:80 > /dev/null || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

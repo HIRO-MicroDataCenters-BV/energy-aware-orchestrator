@@ -25,7 +25,7 @@ class DeploymentSchedulerService:
 
     async def process_pending_deployments(self) -> int:
         """
-        Process all pending deployment requests (status = 'Created').
+        Process all pending deployment requests (status = 'Created' or 'Scheduled').
 
         Returns:
             Number of deployments processed
@@ -37,9 +37,9 @@ class DeploymentSchedulerService:
                 deployment_repo = ApplicationDeploymentRepository(db)
                 app_definition_repo = ApplicationDefinitionRepository(db)
 
-                # Get all pending deployments (status = 'Created')
-                pending_deployments = await deployment_repo.get_all(
-                    status=RequestStatus.CREATED.value,
+                # Get all pending deployments (status = 'Created' or 'Scheduled')
+                pending_deployments = await deployment_repo.get_by_statuses(
+                    statuses=[RequestStatus.CREATED.value, RequestStatus.SCHEDULED.value],
                     limit=100
                 )
 
@@ -123,11 +123,13 @@ class DeploymentSchedulerService:
             energy_check = {"sufficient": True, "reason": "Critical workload - energy check bypassed"}
         else:
             # For Preferred and Optional workloads, check energy availability
-            # Temporarily bypass energy check until Prometheus/Kepler is configured
-            logger.info(f"Energy check temporarily bypassed for '{app_definition.name}' - will add energy check later")
-            energy_check = {"sufficient": True, "reason": "Energy check temporarily bypassed"}
-            # TODO: Uncomment when Prometheus/Kepler is ready:
-            # energy_check = await self.deployment_service.check_energy_availability(estimated_energy)
+            # Use EnergyAvailabilityService to calculate available energy
+            # Available energy = Energy available from current time slot - Current K8s consumption
+            energy_check = await self.deployment_service.check_energy_availability(
+                required_energy_watts=estimated_energy,
+                db_session=db
+            )
+            logger.info(f"Energy check for '{app_definition.name}': {energy_check}")
 
         # If sufficient energy, deploy
         if energy_check["sufficient"]:
@@ -151,7 +153,7 @@ class DeploymentSchedulerService:
                         request_id=deployment.id,
                         status=RequestStatus.DEPLOYED.value,
                         deployed_at=datetime.utcnow(),
-                        error_message=None
+                        error_message=''
                     )
                     logger.info(f"Successfully deployed '{app_definition.name}' via scheduler")
                 else:

@@ -12,6 +12,7 @@ import logging
 from app.models.ApplicationDeployment import ApplicationDeployment, RequestStatus
 from app.models.app_deployment_models import (
     ApplicationDeploymentRequestModel,
+    ApplicationDeploymentUpdateModel,
     ApplicationDeploymentResponse,
     build_deployment_response
 )
@@ -195,6 +196,63 @@ async def get_deployment_requests(
     except Exception as e:
         logger.error(f"Error retrieving application deployments: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve application deployments: {str(e)}")
+
+
+@router.patch("/requests/{request_id}", response_model=ApplicationDeploymentResponse)
+async def update_deployment_request(
+    request_id: UUID,
+    update_data: ApplicationDeploymentUpdateModel,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Update a deployment request's status to 'Scheduled'.
+
+    This endpoint updates the deployment status to 'Scheduled' only.
+
+    Note: Currently, only 'Scheduled' status is allowed for manual updates.
+    This will be expanded in the future to support other status transitions.
+
+    Returns the updated deployment request with application definition details.
+    """
+    try:
+        repository = ApplicationDeploymentRepository(db)
+
+        # Check if the deployment request exists
+        existing_request = await repository.get_by_id(request_id)
+        if not existing_request:
+            raise HTTPException(status_code=404, detail="Deployment request not found")
+
+        # Validate status - Currently only allow 'Scheduled' status
+        # TODO: In the future, expand this to allow other status transitions
+        allowed_statuses = [RequestStatus.SCHEDULED.value]
+
+        if update_data.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Currently, only 'Scheduled' status is allowed. Provided: {update_data.status}"
+            )
+
+        # Update only the status field
+        updated_request = await repository.update_deployment_request(
+            request_id=request_id,
+            status=update_data.status
+        )
+
+        if not updated_request:
+            raise HTTPException(status_code=500, detail="Failed to update deployment request")
+
+        await db.commit()
+        await db.refresh(updated_request)
+
+        # Return the updated request with app definition details
+        return build_deployment_response(updated_request)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error updating deployment request: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update deployment request: {str(e)}")
 
 
 @router.delete("/requests/{request_id}")
