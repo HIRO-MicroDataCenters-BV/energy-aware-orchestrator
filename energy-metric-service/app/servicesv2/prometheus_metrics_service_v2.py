@@ -13,10 +13,12 @@ class PrometheusMetricsServiceV2:
     def __init__(self):
         self._previous_metrics = {}
 
-    async def fetch_all_container_metrics_range(self, hours_back: int = 1) -> Dict[str, Dict[str, Any]]:
-        """Fetch last 1 hour of container and Kepler energy metrics using range queries."""
+    async def fetch_all_container_metrics_range(self, hours_back: float = 1.0) -> Dict[str, Dict[str, Any]]:
+        """Fetch a recent time window of container and Kepler energy metrics using range queries.
+        The window is specified in hours (supports fractional hours).
+        """
 
-        # Calculate time range (last 1 hour)
+        # Calculate time range
         end_time = datetime.now()
         start_time = end_time - timedelta(hours=hours_back)
 
@@ -204,8 +206,10 @@ class PrometheusMetricsServiceV2:
 
         return latest_values
 
-    async def scrape_and_transform_range(self, hours_back: int = 1) -> List[NodeMetricsCreate]:
-        """Scrape last 1 hour of container and Kepler energy metrics from Prometheus and transform to NodeMetricsCreate objects."""
+    async def scrape_and_transform_range(self, hours_back: float = 1.0) -> List[NodeMetricsCreate]:
+        """Scrape a recent time window of container and Kepler energy metrics from Prometheus and transform to NodeMetricsCreate objects.
+        The window is specified in hours (supports fractional hours).
+        """
         results = []
         current_timestamp = int(time.time())  # Unix timestamp for BigInt
 
@@ -298,9 +302,9 @@ class PrometheusMetricsServiceV2:
             logging.error(f"Error scraping Prometheus container metrics range: {e}")
             return []
 
-    async def get_time_series_data(self, hours_back: int = 1) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
+    async def get_time_series_data(self, hours_back: float = 1.0) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
         """
-        Get full time series data for the last N hours instead of just latest values.
+        Get full time series data for the specified recent window (in hours, supports fractional) instead of just latest values.
         Returns data organized by metric type and node name.
         """
         try:
