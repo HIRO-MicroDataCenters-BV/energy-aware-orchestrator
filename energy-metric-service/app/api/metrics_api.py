@@ -330,7 +330,7 @@ async def get_latest_metrics_v2(
 
 @router.get("/prometheus/metrics-v2/timeseries")
 async def get_timeseries_metrics_v2(
-    hours_back: float = Query(1.0, ge=0.25, le=168, description="Hours of historical data to fetch (supports fractional, e.g., 0.25, 0.5)"),
+    hours_back: int = Query(1, ge=1, le=168, description="Hours of historical data to fetch (1-168)"),
     node_name: Optional[str] = Query(None, description="Filter by specific node name")
 ):
     """
@@ -343,7 +343,7 @@ async def get_timeseries_metrics_v2(
     - Total energy time series (calculated from package + memory + platform + uncore watts)
     - CPU and memory utilization time series for context
     - Each data point includes timestamp and value
-    - Data covers the specified hours_back window (supports fractional hours)
+    - Data covers the specified number of hours back
     """
     try:
         prometheus_service_v2 = PrometheusMetricsServiceV2()
