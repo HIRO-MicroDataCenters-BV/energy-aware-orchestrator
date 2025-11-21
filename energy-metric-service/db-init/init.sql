@@ -676,6 +676,7 @@ CREATE TABLE IF NOT EXISTS app_deployments_request (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deployed_at TIMESTAMP WITH TIME ZONE,
+    schedule_at TIMESTAMP WITH TIME ZONE,
 
     -- Foreign key constraint
     CONSTRAINT fk_deployment_app FOREIGN KEY (app_definition_id)
