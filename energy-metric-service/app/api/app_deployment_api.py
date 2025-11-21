@@ -114,7 +114,8 @@ async def request_deployment(
         db_request = ApplicationDeployment(
             app_definition_id=deployment_request.app_definition_id,
             estimated_energy_watts=estimated_energy,
-            status=RequestStatus.CREATED.value
+            status=RequestStatus.CREATED.value,
+            schedule_at=deployment_request.schedule_at
         )
 
         logger.info(f"Created deployment request for '{app_definition.name}' - will be processed by scheduler")
@@ -152,6 +153,7 @@ async def request_deployment(
             estimated_energy_watts=saved_request.estimated_energy_watts,
             created_at=saved_request.created_at,
             deployed_at=saved_request.deployed_at,
+            schedule_at=saved_request.schedule_at,
             error_message=saved_request.error_message,
             # Include application definition details
             app_name=app_name,

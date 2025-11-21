@@ -13,6 +13,7 @@ from app.models.ApplicationDeployment import ApplicationDeployment
 class ApplicationDeploymentRequestModel(BaseModel):
     app_definition_id: UUID = Field(..., description="UUID of the app definition to deploy")
     estimated_energy_watts: Optional[float] = Field(None, description="Estimated energy consumption")
+    schedule_at: Optional[datetime] = Field(None, description="Scheduled deployment time in ISO format (e.g., 2025-11-21T10:43:00)")
 
 
 class ApplicationDeploymentUpdateModel(BaseModel):
@@ -33,6 +34,7 @@ class ApplicationDeploymentResponse(BaseModel):
     estimated_energy_watts: Optional[float]
     created_at: datetime
     deployed_at: Optional[datetime]
+    schedule_at: Optional[datetime]
     error_message: Optional[str]
 
     # App definition details (from the relationship)
@@ -70,6 +72,7 @@ def build_deployment_response(application_deployment: ApplicationDeployment) -> 
         estimated_energy_watts=application_deployment.estimated_energy_watts,
         created_at=application_deployment.created_at,
         deployed_at=application_deployment.deployed_at,
+        schedule_at=application_deployment.schedule_at,
         error_message=application_deployment.error_message,
         # Include app definition details if available
         app_name=application.name if application else None,

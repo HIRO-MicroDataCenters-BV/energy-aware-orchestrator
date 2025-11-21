@@ -29,6 +29,7 @@ class ApplicationDeployment(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     deployed_at = Column(DateTime, nullable=True)
+    schedule_at = Column(DateTime, nullable=True)  # Scheduled deployment time
 
     # Relationship to ApplicationDefinition
     application_definition = relationship("ApplicationDefinition", back_populates="application_deployments")
