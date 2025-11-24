@@ -2,12 +2,13 @@ import { Component, EventEmitter, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HlmAlertDialogComponent, HlmAlertDialogImports } from '@spartan-ng/ui-alertdialog-helm';
+import { HlmDatePickerComponent } from '@spartan-ng/ui-datepicker-helm';
 import { BrnAlertDialogContentDirective } from '@spartan-ng/brain/alert-dialog';
 
 @Component({
   selector: 'app-schedule-workload-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ...HlmAlertDialogImports, BrnAlertDialogContentDirective],
+  imports: [CommonModule, FormsModule, ...HlmAlertDialogImports, BrnAlertDialogContentDirective, HlmDatePickerComponent],
   template: `
     <hlm-alert-dialog #dialog>
       <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="sm:max-w-[500px]">
@@ -31,13 +32,12 @@ import { BrnAlertDialogContentDirective } from '@spartan-ng/brain/alert-dialog';
               Schedule Date
               <span class="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              [(ngModel)]="scheduledDate"
-              [min]="minDate"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
+            <hlm-date-picker
+              [(ngModel)]="scheduledDateObj"
+              [min]="minDateObj"
+            >
+              Pick a date
+            </hlm-date-picker>
             <p class="text-xs text-gray-500">Select the date for deployment</p>
           </div>
 
@@ -106,17 +106,21 @@ export class ScheduleWorkloadDialogComponent {
   workloadName: string = '';
   workloadDescription: string = '';
   scheduledDate: string = '';
+  scheduledDateObj?: Date;
   scheduledTime: string = '';
   minDate: string = '';
+  minDateObj?: Date;
   errorMessage: string = '';
 
   constructor() {
     // Set minimum date to today
     const today = new Date();
     this.minDate = today.toISOString().split('T')[0];
+    this.minDateObj = new Date(this.minDate + 'T00:00:00');
 
     // Set default date to today
     this.scheduledDate = this.minDate;
+    this.scheduledDateObj = new Date(this.minDate + 'T00:00:00');
 
     // Set default time to current time + 1 hour
     const defaultTime = new Date(today.getTime() + 60 * 60 * 1000);
@@ -132,6 +136,8 @@ export class ScheduleWorkloadDialogComponent {
     // Reset to defaults
     const today = new Date();
     this.scheduledDate = today.toISOString().split('T')[0];
+    this.minDateObj = new Date(this.scheduledDate + 'T00:00:00');
+    this.scheduledDateObj = new Date(this.scheduledDate + 'T00:00:00');
     const defaultTime = new Date(today.getTime() + 60 * 60 * 1000);
     this.scheduledTime = defaultTime.toTimeString().slice(0, 5);
 
@@ -145,7 +151,12 @@ export class ScheduleWorkloadDialogComponent {
     }
 
     // Validate that the scheduled time is not in the past
-    const scheduledDateTime = new Date(`${this.scheduledDate}T${this.scheduledTime}`);
+    const baseDate = this.scheduledDateObj
+      ? new Date(this.scheduledDateObj.getFullYear(), this.scheduledDateObj.getMonth(), this.scheduledDateObj.getDate())
+      : new Date(`${this.scheduledDate}T00:00:00`);
+    const [hh, mm] = this.scheduledTime.split(':').map(Number);
+    const scheduledDateTime = new Date(baseDate);
+    scheduledDateTime.setHours(hh || 0, mm || 0, 0, 0);
     const now = new Date();
 
     if (scheduledDateTime < now) {
@@ -153,8 +164,8 @@ export class ScheduleWorkloadDialogComponent {
       return;
     }
 
-    // Create ISO string for the scheduled time
-    const scheduledAt = scheduledDateTime.toISOString();
+    // Create backend-friendly datetime string without milliseconds or timezone (YYYY-MM-DDTHH:mm:ss)
+    const scheduledAt = this.formatLocalDateTime(scheduledDateTime);
 
     // Emit the scheduled event
     this.scheduled.emit({ scheduledAt });
@@ -165,22 +176,28 @@ export class ScheduleWorkloadDialogComponent {
   }
 
   isFormValid(): boolean {
-    return !!this.scheduledDate && !!this.scheduledTime;
+    return (!!this.scheduledDate || !!this.scheduledDateObj) && !!this.scheduledTime;
   }
 
   getFormattedDateTime(): string {
-    if (!this.scheduledDate || !this.scheduledTime) return '';
+    if ((!this.scheduledDate && !this.scheduledDateObj) || !this.scheduledTime) return '';
 
-    const dateTime = new Date(`${this.scheduledDate}T${this.scheduledTime}`);
-    return dateTime.toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+    const baseDate = this.scheduledDateObj
+      ? new Date(this.scheduledDateObj.getFullYear(), this.scheduledDateObj.getMonth(), this.scheduledDateObj.getDate())
+      : new Date(`${this.scheduledDate}T00:00:00`);
+    const [hh, mm] = this.scheduledTime.split(':').map(Number);
+    const dateTime = new Date(baseDate);
+    dateTime.setHours(hh || 0, mm || 0, 0, 0);
+    const datePart = dateTime.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: '2-digit'
     });
+    const timePart = dateTime.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    return `${datePart} ${timePart}`;
   }
 
   resetForm(): void {
@@ -192,7 +209,19 @@ export class ScheduleWorkloadDialogComponent {
     // Reset to defaults
     const today = new Date();
     this.scheduledDate = today.toISOString().split('T')[0];
+    this.minDateObj = new Date(this.scheduledDate + 'T00:00:00');
+    this.scheduledDateObj = new Date(this.scheduledDate + 'T00:00:00');
     const defaultTime = new Date(today.getTime() + 60 * 60 * 1000);
     this.scheduledTime = defaultTime.toTimeString().slice(0, 5);
+  }
+
+  private formatLocalDateTime(dt: Date): string {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mm = String(dt.getMinutes()).padStart(2, '0');
+    const ss = String(dt.getSeconds()).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
   }
 }

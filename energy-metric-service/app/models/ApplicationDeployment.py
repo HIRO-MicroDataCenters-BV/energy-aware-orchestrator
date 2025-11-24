@@ -9,7 +9,7 @@ from app.db.database import Base
 
 class RequestStatus(str, enum.Enum):
     CREATED = "Created" # when first workload is created
-    SCHEDULED = "Scheduled" # Scheduled to be deployed, may be waiting because energy is not available
+    SCHEDULE = "Schedule" # Schedule to be deployed, may be waiting because energy is not available
     DEPLOYED = "Deployed" # Deployed in k8s and running
     FAILED = "Failed" # Failed or not deployed after when it is scheduled for deployment
 

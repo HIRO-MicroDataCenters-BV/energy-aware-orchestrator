@@ -362,7 +362,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
           this.deploymentRequests = items || [];
         },
         error: (err) => {
-          console.error('❌ Error loading deployment requests:', err);
+          console.error('Error loading deployment requests:', err);
           this.deploymentRequests = [];
         }
       });
@@ -521,7 +521,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
           this.appPods = res?.apps ?? [];
         },
         error: (err) => {
-          console.error('❌ Error loading app pods:', err);
+          console.error('Error loading app pods:', err);
           this.appPods = [];
         }
       });
@@ -617,13 +617,13 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          console.log('✅ Deployment request deleted successfully');
+          console.log('Deployment request deleted successfully');
           this.showNotification('success', `"${appName}" deleted successfully`);
           this.loadDeploymentRequests();
           this.requestToDelete = null;
         },
         error: (err) => {
-          console.error('❌ Failed to delete deployment request:', err);
+          console.error('Failed to delete deployment request:', err);
           this.showNotification('error', `Failed to delete "${appName}". ${err?.error?.message || 'Please try again.'}`);
           this.requestToDelete = null;
         }
@@ -647,7 +647,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
           this.loadDeploymentRequests();
         },
         error: (err) => {
-          console.error('❌ Failed to delete deployment request:', err);
+          console.error('Failed to delete deployment request:', err);
           // You could add a toast notification here
         }
       });
@@ -664,22 +664,17 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
 
     const appName = this.workloadToSchedule.app_name || 'Deployment request';
 
-    this.workloadService.updateDeploymentRequestStatus(
-      this.workloadToSchedule.id,
-      'Scheduled',
-      event.scheduledAt
-    )
+    this.workloadService
+      .updateDeploymentRequestSchedule(this.workloadToSchedule.id, event.scheduledAt)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          console.log('✅ Deployment request status updated to Scheduled');
-          this.showNotification('success', `"${appName}" has been scheduled successfully`);
+          this.showNotification('success', `"${appName}" schedule updated successfully`);
           this.loadDeploymentRequests();
           this.workloadToSchedule = null;
         },
         error: (err) => {
-          console.error('❌ Failed to update deployment request status:', err);
-          this.showNotification('error', `Failed to schedule "${appName}". ${err?.error?.message || 'Please try again.'}`);
+          this.showNotification('error', `Failed to update schedule for "${appName}". ${err?.error?.message || 'Please try again.'}`);
           this.workloadToSchedule = null;
         }
       });
@@ -690,14 +685,18 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
   }
 
   getCreatedRequests(): any[] {
+    // Show only truly unscheduled items (status Created and no schedule_at)
     return this.deploymentRequests.filter(r =>
-      r.status === 'Created'
+      r.status === 'Schedule' ||
+      r.status === 'Created' ||
+      !!r.schedule_at
     );
   }
 
   getScheduledRequests(): any[] {
+    // Consider items scheduled if backend marked status OR if schedule_at is set
     return this.deploymentRequests.filter(r =>
-      (r.status === 'Scheduled' || r.status === 'Deployed' )
+      r.status === 'Deployed'
     );
   }
 
@@ -754,12 +753,16 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
 
   formatDate(date: Date | undefined): string {
     if (!date) return '-';
-    return date.toLocaleString('en-US', {
+    const datePart = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
       month: 'short',
-      day: 'numeric',
+      year: '2-digit'
+    });
+    const timePart = date.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit'
     });
+    return `${datePart} ${timePart}`;
   }
 
   getEnergyUtilizationPercentage(): number {
@@ -797,12 +800,16 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
     if (!iso) return '-';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '-';
-    return d.toLocaleString('en-US', {
+    const datePart = d.toLocaleDateString('en-GB', {
+      day: '2-digit',
       month: 'short',
-      day: 'numeric',
+      year: '2-digit'
+    });
+    const timePart = d.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit'
     });
+    return `${datePart} ${timePart}`;
   }
 
   getUniqueNamespaces(pods: any[]): string[] {
