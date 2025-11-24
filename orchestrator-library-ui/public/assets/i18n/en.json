@@ -40,7 +40,12 @@
     "request_decisions": "Request Decisions",
     "actions": "Actions",
     "decision_action_flow": "Decision Action Flow",
-    "overview": "Overview"
+    "overview": "Overview",
+    "Workload Deployment": "Workload Deployment",
+    "energy_metrics": "Energy Metrics",
+    "Register Workload": "Register Workload",
+    "System Utilization": "System Utilization",
+    "workload_deployment": "Workload Deployment"
   },
   "action": {
     "previous": "Previous",
@@ -184,7 +189,7 @@
     }
   },
   "app": {
-    "title": "ACES",
+    "title": "Shift2DC",
     "description": "Orchestration Panel",
     "footer": "All rights reserved",
     "welcome": "Welcome to"
