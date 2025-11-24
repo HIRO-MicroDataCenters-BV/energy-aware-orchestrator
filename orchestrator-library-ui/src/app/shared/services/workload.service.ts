@@ -84,6 +84,7 @@ export class WorkloadService {
   createScheduledDeployment(body: {
     app_definition_id: string;
     estimated_energy_watts: number;
+    schedule_at?: string;
   }): Observable<ScheduledDeployment> {
     const url = `${this.deploymentApiUrl}/deploy`;
     return this.http.post<ScheduledDeployment>(url, body);
@@ -165,17 +166,29 @@ export class WorkloadService {
    * Update deployment request status
    * @param id - Deployment request ID
    * @param status - New status (e.g., 'Scheduled')
-   * @param scheduledAt - Optional scheduled date/time (ISO string)
+   * @param scheduledAt - Optional scheduled date/time (formatted string)
    */
   updateDeploymentRequestStatus(id: string, status: string, scheduledAt?: string): Observable<any> {
     const url = `${this.deploymentApiUrl}/requests/${id}/status`;
     const body: any = { status };
 
     if (scheduledAt) {
-      body.scheduled_at = scheduledAt;
+      body.schedule_at = scheduledAt;
     }
 
     return this.http.patch<any>(url, body);
+  }
+
+  /**
+   * Update only the schedule time for a deployment request
+   * @param id - Deployment request ID
+   * @param scheduleAt - New schedule time (formatted string YYYY-MM-DDTHH:mm:ss)
+   */
+  updateDeploymentRequestSchedule(id: string, scheduleAt: string): Observable<any> {
+    const url = `${this.deploymentApiUrl}/requests/${id}/schedule`;
+    const params = new HttpParams().set('schedule_at', scheduleAt);
+    // Backend expects schedule_at as a query param; body can be empty
+    return this.http.patch<any>(url, null, { params });
   }
 
   /**

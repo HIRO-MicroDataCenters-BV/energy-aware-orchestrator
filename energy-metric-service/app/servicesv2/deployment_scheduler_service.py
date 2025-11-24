@@ -39,7 +39,7 @@ class DeploymentSchedulerService:
 
                 # Get all pending deployments (status = 'Created' or 'Scheduled')
                 pending_deployments = await deployment_repo.get_by_statuses(
-                    statuses=[RequestStatus.CREATED.value, RequestStatus.SCHEDULED.value],
+                    statuses=[RequestStatus.CREATED.value, RequestStatus.SCHEDULE.value],
                     limit=100
                 )
 

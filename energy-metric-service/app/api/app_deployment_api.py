@@ -5,6 +5,7 @@ Kubernetes Deployment API endpoints with energy awareness
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional, List
 from uuid import UUID
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -114,7 +115,8 @@ async def request_deployment(
         db_request = ApplicationDeployment(
             app_definition_id=deployment_request.app_definition_id,
             estimated_energy_watts=estimated_energy,
-            status=RequestStatus.CREATED.value
+            status=RequestStatus.SCHEDULE.value,
+            schedule_at=deployment_request.schedule_at
         )
 
         logger.info(f"Created deployment request for '{app_definition.name}' - will be processed by scheduler")
@@ -152,6 +154,7 @@ async def request_deployment(
             estimated_energy_watts=saved_request.estimated_energy_watts,
             created_at=saved_request.created_at,
             deployed_at=saved_request.deployed_at,
+            schedule_at=saved_request.schedule_at,
             error_message=saved_request.error_message,
             # Include application definition details
             app_name=app_name,
@@ -253,6 +256,36 @@ async def update_deployment_request(
         await db.rollback()
         logger.error(f"Error updating deployment request: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update deployment request: {str(e)}")
+
+
+@router.patch("/requests/{request_id}/schedule")
+async def update_deployment_schedule(
+    request_id: UUID,
+    schedule_at: datetime = Query(..., description="Scheduled deployment time in ISO format (e.g., 2025-11-21T10:43:00)"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Update the scheduled deployment time for a deployment request.
+    """
+    try:
+        repository = ApplicationDeploymentRepository(db)
+
+        existing_request = await repository.get_by_id(request_id)
+        if not existing_request:
+            raise HTTPException(status_code=404, detail="Deployment request not found")
+
+        existing_request.schedule_at = schedule_at
+        await db.commit()
+        await db.refresh(existing_request)
+
+        return build_deployment_response(existing_request)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error updating deployment schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update deployment schedule: {str(e)}")
 
 
 @router.delete("/requests/{request_id}")
