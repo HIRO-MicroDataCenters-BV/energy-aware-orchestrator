@@ -5,11 +5,9 @@ from typing import Any, Dict, List
 import kopf
 from kubernetes import client, config
 
-
 API_GROUP = "eas.hiro.io"
 API_VERSION = "v1"
 PLURAL = "energyawareorchestrations"
-
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +38,14 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     settings.posting.level = logging.INFO
     settings.posting.enabled = True
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
-        prefix="eas.hiro.io/progress"
+        prefix="eas.hiro.io"
     )
+    settings.persistence.finalizer = None  # Disable finalizers for easier cleanup
 
 
 def _generate_schedule(
-    energy_consumption: int,
-    forecast_window_days: int,
+        energy_consumption: int,
+        forecast_window_days: int,
 ) -> Dict[str, Any]:
     """
     Naive placeholder implementation that generates a simple execution schedule.
@@ -89,53 +88,43 @@ def _extract_spec_field(spec: Dict[str, Any], field: str, default: Any = None) -
 
 
 @kopf.on.create(API_GROUP, API_VERSION, PLURAL)
-@kopf.on.update(API_GROUP, API_VERSION, PLURAL)
-@kopf.on.resume(API_GROUP, API_VERSION, PLURAL)
-def reconciling_handler(
-    spec: Dict[str, Any],
-    status: Dict[str, Any],
-    name: str,
-    namespace: str,
-    logger: kopf.Logger,
-    **_: Any,
-) -> Dict[str, Any]:
+def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace: str, logger: kopf.Logger,
+              **_: Any, ) -> str:
     """
     Main reconciliation handler for EnergyAwareOrchestration resources.
 
     - Reads desired state from `.spec`.
     - Computes / refreshes `.status.executionSchedule`.
     """
+    logger.info(f"CREATE handler triggered for {name} in namespace {namespace}")
+
     energy_consumption = int(_extract_spec_field(spec, "energyConsumption", 0))
     forecast_window_days = int(_extract_spec_field(spec, "forecastWindowDays", 7))
-
     priority = _extract_spec_field(spec, "priority", "NonCritical")
     application_ref = _extract_spec_field(spec, "applicationRef", {})
 
-    logger.info(
-        "Reconciling EnergyAwareOrchestration",
-        name=name,
-        namespace=namespace,
-        priority=priority,
-        application_ref=application_ref,
-    )
+    logger.info(f"Spec values - energyConsumption: {energy_consumption}, forecastWindowDays: {forecast_window_days}, priority: {priority}")
 
-    execution_schedule = _generate_schedule(
-        energy_consumption=energy_consumption,
-        forecast_window_days=forecast_window_days,
-    )
+    logger.info(f"Current status: {status}")
 
-    new_status: Dict[str, Any] = dict(status or {})
-    new_status["executionSchedule"] = execution_schedule
+    # execution_schedule = _generate_schedule(
+    #     energy_consumption=energy_consumption,
+    #     forecast_window_days=forecast_window_days,
+    # )
+    #
+    # new_status: Dict[str, Any] = dict(status or {})
+    # new_status["executionSchedule"] = execution_schedule
 
-    return new_status
+    logger.info(f"Finished processing {name}")
+    return "ok"
 
 
 @kopf.on.delete(API_GROUP, API_VERSION, PLURAL)
 def deletion_handler(
-    name: str,
-    namespace: str,
-    logger: kopf.Logger,
-    **_: Any,
+        name: str,
+        namespace: str,
+        logger: kopf.Logger,
+        **_: Any,
 ) -> None:
     """
     Cleanup hook for CR deletion.
@@ -148,6 +137,3 @@ def deletion_handler(
         name=name,
         namespace=namespace,
     )
-
-
-

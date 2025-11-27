@@ -1,0 +1,26 @@
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: sample-eao
+  namespace: default
+spec:
+  energyConsumption: 120        # Arbitrary units (e.g., kWh)
+  forecastWindowDays: 7         # Must be between 1–30
+  priority: Critical            # Critical | NonCritical | Optional
+status:
+  executionSchedule:
+    updated: "2025-01-15T10:30:00Z"
+    schedule:
+      - date: "2025-01-16"
+        times:
+          - start: "02:00:00"
+            stop: "04:00:00"
+            cost: 0.12
+          - start: "14:00:00"
+            stop: "15:00:00"
+            cost: 0.22
+      - date: "2025-01-17"
+        times:
+          - start: "01:00:00"
+            stop: "03:00:00"
+            cost: 0.10

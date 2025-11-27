@@ -15,12 +15,10 @@ spec:
     - name: v1
       served: true
       storage: true
-      subresources:
-        status: {}
       schema:
         openAPIV3Schema:
           type: object
-          description: Energy-aware orchestration spec and schedule.
+          description: Energy-aware orchestration schedule application.
           properties:
             apiVersion:
               type: string
@@ -30,29 +28,12 @@ spec:
               type: object
             spec:
               type: object
-              required:
-                - applicationRef
-                - energyConsumption
-                - forecastWindowDays
-                - priority
               properties:
-                applicationRef:
-                  type: object
-                  description: Reference to the target application.
-                  required:
-                    - name
-                    - namespace
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
                 energyConsumption:
                   type: integer
                   format: int64
                   description: >
-                    Estimated energy consumption (arbitrary units, e.g. Wh or kWh)
-                    for a single execution of the application.
+                    Estimated energy consumption (arbitrary units, e.g. kWh)
                   minimum: 0
                 forecastWindowDays:
                   type: integer
@@ -110,19 +91,3 @@ spec:
                                 cost:
                                   type: number
                                   format: double
-      additionalPrinterColumns:
-        - name: Priority
-          type: string
-          jsonPath: .spec.priority
-        - name: App
-          type: string
-          jsonPath: .spec.applicationRef.name
-        - name: WindowDays
-          type: integer
-          jsonPath: .spec.forecastWindowDays
-        - name: LastUpdated
-          type: date
-          jsonPath: .status.executionSchedule.updated
-
-
-

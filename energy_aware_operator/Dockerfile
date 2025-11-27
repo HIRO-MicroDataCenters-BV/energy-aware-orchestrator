@@ -7,7 +7,11 @@ RUN pip install --no-cache-dir --upgrade pip uv
 
 # Copy project metadata and source so uv can resolve and install dependencies
 COPY pyproject.toml .
-COPY energy_aware_orchestrator ./energy_aware_orchestrator
+COPY .python-version .
+COPY operator.py .
+COPY __init__.py .
+COPY app ./app
+COPY crd ./crd
 
 # Create a virtual environment and install project dependencies with uv
 RUN uv sync --no-dev
@@ -16,4 +20,4 @@ RUN uv sync --no-dev
 ENV PATH="/app/.venv/bin:${PATH}"
 
 # Run the Kopf operator for EnergyAwareOrchestration
-CMD ["kopf", "run", "-A", "energy_aware_orchestrator/operator.py"]
+CMD ["kopf", "run", "-A", "operator.py"]

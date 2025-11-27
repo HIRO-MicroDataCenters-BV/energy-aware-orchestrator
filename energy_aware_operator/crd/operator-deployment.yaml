@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-operator
+  template:
+        metadata:
+          labels:
+            app: example-operator
+        spec:
+          containers:
+          - name: example-operator
+            image: <your-docker-username>/example-operator:v1
