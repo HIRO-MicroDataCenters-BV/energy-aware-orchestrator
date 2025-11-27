@@ -40,7 +40,6 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
         prefix="eas.hiro.io"
     )
-    settings.persistence.finalizer = None  # Disable finalizers for easier cleanup
 
 
 def _generate_schedule(
@@ -89,12 +88,12 @@ def _extract_spec_field(spec: Dict[str, Any], field: str, default: Any = None) -
 
 @kopf.on.create(API_GROUP, API_VERSION, PLURAL)
 def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace: str, logger: kopf.Logger,
-              **_: Any, ) -> str:
+              **_: Any, ) -> None:
     """
     Main reconciliation handler for EnergyAwareOrchestration resources.
 
     - Reads desired state from `.spec`.
-    - Computes / refreshes `.status.executionSchedule`.
+    - Logs the execution schedule from `.status.executionSchedule`.
     """
     logger.info(f"CREATE handler triggered for {name} in namespace {namespace}")
 
@@ -105,18 +104,27 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
 
     logger.info(f"Spec values - energyConsumption: {energy_consumption}, forecastWindowDays: {forecast_window_days}, priority: {priority}")
 
-    logger.info(f"Current status: {status}")
+    # Get execution schedule from status
+    execution_schedule = status.get("executionSchedule", {}) if status else {}
 
-    # execution_schedule = _generate_schedule(
-    #     energy_consumption=energy_consumption,
-    #     forecast_window_days=forecast_window_days,
-    # )
-    #
-    # new_status: Dict[str, Any] = dict(status or {})
-    # new_status["executionSchedule"] = execution_schedule
+    if execution_schedule:
+        logger.info(f"Execution Schedule:")
+        logger.info(f"  Updated: {execution_schedule.get('updated', 'N/A')}")
+        schedule_list = execution_schedule.get("schedule", [])
+        logger.info(f"  Number of days scheduled: {len(schedule_list)}")
+        for day_schedule in schedule_list:
+            date = day_schedule.get("date", "N/A")
+            times = day_schedule.get("times", [])
+            logger.info(f"  Date: {date}, Time slots: {len(times)}")
+            for time_slot in times:
+                start = time_slot.get("start", "N/A")
+                stop = time_slot.get("stop", "N/A")
+                cost = time_slot.get("cost", "N/A")
+                logger.info(f"    {start} - {stop}, cost: {cost}")
+    else:
+        logger.info("No execution schedule found in status")
 
     logger.info(f"Finished processing {name}")
-    return "ok"
 
 
 @kopf.on.delete(API_GROUP, API_VERSION, PLURAL)
@@ -132,8 +140,4 @@ def deletion_handler(
     Currently this only logs, but this is the right place to clean up any
     external resources (jobs, database records, etc.).
     """
-    logger.info(
-        "EnergyAwareOrchestration deleted. Cleaning up external resources.",
-        name=name,
-        namespace=namespace,
-    )
+    logger.info(f"EnergyAwareOrchestration {name} deleted from namespace {namespace}. Cleaning up external resources.")
