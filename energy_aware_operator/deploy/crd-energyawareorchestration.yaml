@@ -50,6 +50,24 @@ spec:
                     - Critical
                     - NonCritical
                     - Optional
+                applicationRef:
+                  type: object
+                  description: Reference to the application to be deployed
+                  required:
+                    - name
+                    - image
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the application
+                    image:
+                      type: string
+                      description: >
+                        Container image to deploy (e.g., nginx:latest, redis:7.0).
+                        This field is required.
+                    namespace:
+                      type: string
+                      description: Target namespace for the application deployment
             status:
               type: object
               properties:

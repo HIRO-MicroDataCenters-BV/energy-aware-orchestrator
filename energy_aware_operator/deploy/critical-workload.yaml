@@ -1,9 +1,13 @@
 apiVersion: eas.hiro.io/v1
 kind: EnergyAwareOrchestration
 metadata:
-  name: sample-eao
+  name: critical-workload-app-eao
   namespace: default
 spec:
+  applicationRef:
+    name: my-app
+    image: nginx:latest
+    namespace: default
   energyConsumption: 120        # Arbitrary units (e.g., kWh)
   forecastWindowDays: 7         # Must be between 1–30
   priority: Critical            # Critical | NonCritical | Optional

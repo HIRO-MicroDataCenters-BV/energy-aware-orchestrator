@@ -86,6 +86,70 @@ def _extract_spec_field(spec: Dict[str, Any], field: str, default: Any = None) -
     return spec.get(field, default)
 
 
+def _create_deployment(name: str, namespace: str, image: str, logger: kopf.Logger) -> None:
+    """
+    Create a simple Deployment for the given EnergyAwareOrchestration resource.
+    """
+    apps_v1 = client.AppsV1Api()
+
+    # Define the deployment
+    deployment = client.V1Deployment(
+        metadata=client.V1ObjectMeta(
+            name=f"app-{name}",
+            namespace=namespace,
+            labels={
+                "app": name,
+                "managed-by": "energy-aware-orchestrator",
+                "eao-name": name
+            }
+        ),
+        spec=client.V1DeploymentSpec(
+            replicas=1,
+            selector=client.V1LabelSelector(
+                match_labels={
+                    "app": name,
+                    "eao-name": name
+                }
+            ),
+            template=client.V1PodTemplateSpec(
+                metadata=client.V1ObjectMeta(
+                    labels={
+                        "app": name,
+                        "eao-name": name
+                    }
+                ),
+                spec=client.V1PodSpec(
+                    containers=[
+                        client.V1Container(
+                            name="app",
+                            image=image,
+                            ports=[client.V1ContainerPort(container_port=80)]
+                        )
+                    ]
+                )
+            )
+        )
+    )
+
+    deployment_name = f"app-{name}"
+
+    try:
+        # Check if deployment already exists
+        try:
+            apps_v1.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+            logger.info(f"Deployment {deployment_name} already exists in namespace {namespace}")
+        except client.exceptions.ApiException as e:
+            if e.status == 404:
+                # Deployment doesn't exist, create it
+                apps_v1.create_namespaced_deployment(namespace=namespace, body=deployment)
+                logger.info(f"Successfully created Deployment {deployment_name} with image {image} in namespace {namespace}")
+            else:
+                raise
+    except Exception as e:
+        logger.error(f"Failed to create Deployment: {e}")
+        raise
+
+
 @kopf.on.create(API_GROUP, API_VERSION, PLURAL)
 def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace: str, logger: kopf.Logger,
               **_: Any, ) -> None:
@@ -94,6 +158,7 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
 
     - Reads desired state from `.spec`.
     - Logs the execution schedule from `.status.executionSchedule`.
+    - Creates a simple nginx Deployment.
     """
     logger.info(f"CREATE handler triggered for {name} in namespace {namespace}")
 
@@ -102,7 +167,19 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
     priority = _extract_spec_field(spec, "priority", "NonCritical")
     application_ref = _extract_spec_field(spec, "applicationRef", {})
 
+    # Extract application details from applicationRef
+    app_name = application_ref.get("name")
+    app_image = application_ref.get("image")
+    app_namespace = application_ref.get("namespace", namespace)
+
+    # Validate required fields
+    if not app_name:
+        raise ValueError("applicationRef.name is required")
+    if not app_image:
+        raise ValueError("applicationRef.image is required")
+
     logger.info(f"Spec values - energyConsumption: {energy_consumption}, forecastWindowDays: {forecast_window_days}, priority: {priority}")
+    logger.info(f"Application - name: {app_name}, image: {app_image}, namespace: {app_namespace}")
 
     # Get execution schedule from status
     execution_schedule = status.get("executionSchedule", {}) if status else {}
@@ -124,6 +201,10 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
     else:
         logger.info("No execution schedule found in status")
 
+    # Create Deployment
+    logger.info(f"Creating Deployment for {app_name} with image {app_image} in namespace {app_namespace}")
+    _create_deployment(app_name, app_namespace, app_image, logger)
+
     logger.info(f"Finished processing {name}")
 
 
@@ -137,7 +218,25 @@ def deletion_handler(
     """
     Cleanup hook for CR deletion.
 
-    Currently this only logs, but this is the right place to clean up any
-    external resources (jobs, database records, etc.).
+    Deletes the nginx Deployment created by this operator.
     """
     logger.info(f"EnergyAwareOrchestration {name} deleted from namespace {namespace}. Cleaning up external resources.")
+
+    # Delete the Deployment
+    apps_v1 = client.AppsV1Api()
+    deployment_name = f"app-{name}"
+
+    try:
+        apps_v1.delete_namespaced_deployment(
+            name=deployment_name,
+            namespace=namespace,
+            body=client.V1DeleteOptions()
+        )
+        logger.info(f"Successfully deleted Deployment {deployment_name} from namespace {namespace}")
+    except client.exceptions.ApiException as e:
+        if e.status == 404:
+            logger.info(f"Deployment {deployment_name} not found, nothing to clean up")
+        else:
+            logger.error(f"Failed to delete Deployment {deployment_name}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error while deleting Deployment: {e}")
