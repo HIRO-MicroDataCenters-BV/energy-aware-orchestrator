@@ -52,22 +52,16 @@ spec:
                     - Optional
                 applicationRef:
                   type: object
-                  description: Reference to the application to be deployed
+                  description: Reference to the application
                   required:
                     - name
-                    - image
                   properties:
                     name:
                       type: string
                       description: Name of the application
-                    image:
-                      type: string
-                      description: >
-                        Container image to deploy (e.g., nginx:latest, redis:7.0).
-                        This field is required.
                     namespace:
                       type: string
-                      description: Target namespace for the application deployment
+                      description: Target namespace for the application
             status:
               type: object
               properties:

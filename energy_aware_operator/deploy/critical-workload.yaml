@@ -5,8 +5,7 @@ metadata:
   namespace: default
 spec:
   applicationRef:
-    name: my-app
-    image: nginx:latest
+    name: nginx-app
     namespace: default
   energyConsumption: 120        # Arbitrary units (e.g., kWh)
   forecastWindowDays: 7         # Must be between 1–30
