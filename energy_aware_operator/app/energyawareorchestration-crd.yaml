@@ -34,11 +34,13 @@ spec:
                 type: integer
                 description: Estimated energy consumption (arbitrary units, e.g. kWh)
                 minimum: 0
+                format: int64
               forecastWindowDays:
                 type: integer
                 description: Number of days to forecast the execution schedule for.
                 minimum: 1
                 maximum: 30
+                format: int32
               priority:
                 type: string
                 description: Priority levels for workload scheduling.
@@ -54,6 +56,7 @@ spec:
                     type: string
                     description: Name of the application
                   namespace:
+                    type: string
                     description: Target namespace for the application
                 required:
                 - name
@@ -63,4 +66,50 @@ spec:
             - applicationRef
           status:
             type: object
-            x-kubernetes-preserve-unknown-fields: true
+            description: Status for EnergyAwareOrchestration resource.
+            properties:
+              executionSchedule:
+                type: object
+                description: Execution schedule with timestamp.
+                properties:
+                  updated:
+                    type: string
+                    description: UTC timestamp of the last schedule computation
+                    format: date-time
+                  schedule:
+                    type: array
+                    description: List of per-day schedules
+                    items:
+                      type: object
+                      description: Daily schedule entry.
+                      properties:
+                        date:
+                          type: string
+                          description: Date in YYYY-MM-DD format
+                          format: date
+                        times:
+                          type: array
+                          description: List of time slots for this date
+                          items:
+                            type: object
+                            description: Time slot for execution.
+                            properties:
+                              start:
+                                type: string
+                                description: Start time in HH:MM:SS format
+                                pattern: ^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$
+                              stop:
+                                type: string
+                                description: Stop time in HH:MM:SS format
+                                pattern: ^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$
+                              cost:
+                                type: number
+                                description: Energy cost for this time slot
+                                format: double
+                            required:
+                            - start
+                            - stop
+                            - cost
+                      required:
+                      - date
+                      - times
