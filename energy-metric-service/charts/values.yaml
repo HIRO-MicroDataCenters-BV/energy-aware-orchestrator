@@ -1,0 +1,25 @@
+runMigration: false
+
+# PostgreSQL Database
+postgres:
+  name: eao-postgres
+  image:
+    repository: postgres
+    tag: "14"
+    pullPolicy: Always
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 5432
+    nodePort: 
+  persistence:
+    enabled: true
+    size: 8Gi
+  credentials:
+    username: postgres
+    password: postgres
+    database: orchestration_db
+
+configmap:
+  databaseURLConfig: orchestration-api-config
+  databaseInitConfig: db-init-script

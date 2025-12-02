@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmap.databaseURLConfig }}
+data:
+  databaseURL: "postgresql+asyncpg://{{ .Values.postgres.credentials.username }}:{{ .Values.postgres.credentials.password }}@{{ .Values.postgres.name }}:{{ .Values.postgres.service.port }}/{{ .Values.postgres.credentials.database }}"
+
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmap.databaseInitConfig }}
+data:
+  init.sql: |
+    DO $$
+    BEGIN
+    RAISE NOTICE 'No Intialization SQL provided, skipping.';
+    END $$;
+
