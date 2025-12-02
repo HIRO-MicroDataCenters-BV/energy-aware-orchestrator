@@ -213,3 +213,4 @@ __marimo__/
 ./orchestrator-ui/.nx
 ./orchestrator-ui/dist
 ./orchestrator-ui/node_modules
+.claude
