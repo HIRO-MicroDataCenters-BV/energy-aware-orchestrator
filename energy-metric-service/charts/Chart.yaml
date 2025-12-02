@@ -1,0 +1,6 @@
+apiVersion: v2
+name: energy-postgres
+description: PostgreSQL database for Energy Aware Orchestrator
+type: application
+version: 1.0.0
+appVersion: "14"

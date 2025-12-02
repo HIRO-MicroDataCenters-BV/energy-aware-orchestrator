@@ -13,8 +13,4 @@ metadata:
   name: {{ .Values.configmap.databaseInitConfig }}
 data:
   init.sql: |
-    DO $$
-    BEGIN
-    RAISE NOTICE 'No Intialization SQL provided, skipping.';
-    END $$;
-
+{{ .Files.Get "db-init.sql" | indent 4 }}
