@@ -178,3 +178,8 @@ Thumbs.db
 .ruff_cache/
 .idea
 .claude
+
+# Helm
+helm/*/charts/
+helm/*/Chart.lock
+*.tgz
