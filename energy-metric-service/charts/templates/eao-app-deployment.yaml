@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    app: {{ .Values.app.name }}
+    version: {{ .Values.app.image.tag | default "latest" }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.app.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.name }}
+        version: {{ .Values.app.image.tag | default "latest" }}
+    spec:
+      containers:
+        - name: {{ .Values.app.name }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.service.targetPort }}
+              protocol: TCP
+          env:
+            # Database connection
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configmap.databaseURLConfig }}
+                  key: databaseURL
+
+            # Or use individual PostgreSQL variables
+            - name: POSTGRES_HOST
+              value: {{ .Values.postgres.name }}
+            - name: POSTGRES_PORT
+              value: "{{ .Values.postgres.service.port }}"
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.credentials.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.credentials.username }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgres.credentials.password }}
+
+            # Application settings
+            {{- if .Values.app.env.ENABLE_METRICS_SCHEDULER }}
+            - name: ENABLE_METRICS_SCHEDULER
+              value: "{{ .Values.app.env.ENABLE_METRICS_SCHEDULER }}"
+            {{- end }}
+            {{- if .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}
+            - name: ENABLE_DEPLOYMENT_SCHEDULER
+              value: "{{ .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}"
+            {{- end }}
+            {{- if .Values.app.env.LOG_LEVEL }}
+            - name: LOG_LEVEL
+              value: "{{ .Values.app.env.LOG_LEVEL }}"
+            {{- end }}
+
+            # Kubernetes settings (if needed)
+            {{- if .Values.app.env.KUBERNETES_NAMESPACE }}
+            - name: KUBERNETES_NAMESPACE
+              value: "{{ .Values.app.env.KUBERNETES_NAMESPACE }}"
+            {{- else }}
+            - name: KUBERNETES_NAMESPACE
+              value: {{ .Release.Namespace }}
+            {{- end }}
+
+            # Additional environment variables
+            {{- range $key, $value := .Values.app.env.additional }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+            {{- end }}
+
+          {{- if .Values.app.resources }}
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          {{- end }}
