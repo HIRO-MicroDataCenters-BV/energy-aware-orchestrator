@@ -149,7 +149,13 @@ if [ "$POSTGRES_ONLY" = false ]; then
     print_info "Installing Application..."
 fi
 
-echo "Helm install"
+HELM_CMD=(helm upgrade --install "$RELEASE_NAME" "$SCRIPT_DIR" \
+    --namespace "$NAMESPACE" \
+    --wait \
+    --timeout 10m)
+print_info "Running Helm command:"
+echo "  ${HELM_CMD[*]}"
+"${HELM_CMD[@]}"
 helm upgrade --install "$RELEASE_NAME" "$SCRIPT_DIR" \
     --namespace "$NAMESPACE" \
     --wait \
@@ -170,6 +176,7 @@ kubectl wait --for=condition=ready pod \
     -n "$NAMESPACE" \
     --timeout=300s || true
 
+echo " "
 if [ "$POSTGRES_ONLY" = false ]; then
     print_info "Waiting for application to be ready..."
     kubectl wait --for=condition=ready pod \
@@ -178,8 +185,11 @@ if [ "$POSTGRES_ONLY" = false ]; then
         --timeout=300s || true
 fi
 
+echo " "
 # Get connection details
 print_info "Deployment complete!"
+echo "<============================================"
+
 echo ""
 echo "============================================"
 echo "  Connection Details"
@@ -213,11 +223,4 @@ echo "kubectl get all -n $NAMESPACE"
 echo ""
 echo "# View logs"
 echo "kubectl logs -n $NAMESPACE -l app=energy-metric-service -f"
-echo ""
-echo "# Connect to PostgreSQL"
-echo "kubectl run psql-client --rm -it --restart=Never \\"
-echo "  --namespace $NAMESPACE \\"
-echo "  --image=postgres:14 \\"
-echo "  --env=\"PGPASSWORD=postgres\" \\"
-echo "  -- psql -h eao-postgres -U postgres -d orchestration_db"
 echo ""
