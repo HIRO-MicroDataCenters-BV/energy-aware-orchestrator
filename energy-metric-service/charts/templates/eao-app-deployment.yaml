@@ -32,18 +32,6 @@ spec:
                   name: {{ .Values.configmap.databaseURLConfig }}
                   key: databaseURL
 
-            # Or use individual PostgreSQL variables
-            - name: POSTGRES_HOST
-              value: {{ .Values.postgres.name }}
-            - name: POSTGRES_PORT
-              value: "{{ .Values.postgres.service.port }}"
-            - name: POSTGRES_DB
-              value: {{ .Values.postgres.credentials.database }}
-            - name: POSTGRES_USER
-              value: {{ .Values.postgres.credentials.username }}
-            - name: POSTGRES_PASSWORD
-              value: {{ .Values.postgres.credentials.password }}
-
             # Application settings
             {{- if .Values.app.env.ENABLE_METRICS_SCHEDULER }}
             - name: ENABLE_METRICS_SCHEDULER
@@ -66,14 +54,3 @@ spec:
             - name: KUBERNETES_NAMESPACE
               value: {{ .Release.Namespace }}
             {{- end }}
-
-            # Additional environment variables
-            {{- range $key, $value := .Values.app.env.additional }}
-            - name: {{ $key }}
-              value: "{{ $value }}"
-            {{- end }}
-
-          {{- if .Values.app.resources }}
-          resources:
-            {{- toYaml .Values.app.resources | nindent 12 }}
-          {{- end }}
