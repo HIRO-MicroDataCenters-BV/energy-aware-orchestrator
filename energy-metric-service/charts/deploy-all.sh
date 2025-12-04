@@ -20,13 +20,13 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-echo -e "${GREEN}╔════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  Energy Metric Service - Complete Deployment      ║${NC}"
-echo -e "${GREEN}╚════════════════════════════════════════════════════╝${NC}"
+echo -e "${GREEN}╔═══════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║  Energy Metric Service - DB & app Complete Deployment ║${NC}"
+echo -e "${GREEN}╚═══════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # Configuration
-RELEASE_NAME="${RELEASE_NAME:-energy-system}"
+RELEASE_NAME="${RELEASE_NAME:-energy-metric}"
 NAMESPACE="${NAMESPACE:-default}"
 BUILD_IMAGE="${BUILD_IMAGE:-true}"
 
@@ -100,9 +100,12 @@ done
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 print_info "Configuration:"
+echo "============================================"
 echo "  Release: $RELEASE_NAME"
 echo "  Namespace: $NAMESPACE"
 echo "  Build Image: $BUILD_IMAGE"
+echo "============================================"
+echo ""
 
 # Create namespace
 if [ "$NAMESPACE" != "default" ]; then
@@ -113,24 +116,30 @@ if [ "$NAMESPACE" != "default" ]; then
 fi
 
 # Step 1: Build Docker image
+echo "============================================>"
 if [ "$BUILD_IMAGE" = true ] && [ "$POSTGRES_ONLY" = false ]; then
-    print_info "Building Docker image..."
+    print_info "Building energy-metric-service app Docker image..."
     cd "$SCRIPT_DIR/.."
     docker build -t energy-metric-service:latest .
 
     # Load into cluster if needed
     if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
-        print_info "Loading image into minikube..."
+        echo "local minikube cluster detected"
+        print_info "Loading image into minikube cluster..."
         minikube image load energy-metric-service:latest
     elif command -v kind &> /dev/null; then
-        print_info "Loading image into kind..."
+        print_info "Loading image into kind cluster..."
         kind load docker-image energy-metric-service:latest 2>/dev/null || true
     fi
     cd "$SCRIPT_DIR"
 fi
+echo "<============================================"
+echo ""
+
 
 # Step 2: Deploy with Helm
-print_info "Deploying to Kubernetes..."
+echo "============================================>"
+print_info "Deploying to Kubernetes using Helm..."
 
 if [ "$APP_ONLY" = false ]; then
     print_info "Installing PostgreSQL..."
@@ -140,14 +149,19 @@ if [ "$POSTGRES_ONLY" = false ]; then
     print_info "Installing Application..."
 fi
 
+echo "Helm install"
 helm upgrade --install "$RELEASE_NAME" "$SCRIPT_DIR" \
     --namespace "$NAMESPACE" \
     --wait \
     --timeout 10m
 
+echo " "
+
 # Step 3: Verify deployment
 print_info "Verifying deployment..."
 kubectl get pods -n "$NAMESPACE"
+
+echo " "
 
 # Wait for pods
 print_info "Waiting for PostgreSQL to be ready..."
