@@ -122,8 +122,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Get script directory
+# Get script directory and project paths
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CHARTS_DIR="$PROJECT_ROOT/charts"
 
 # Uninstall
 if [ "$UNINSTALL" = true ]; then
@@ -177,13 +179,13 @@ fi
 print_info "Deploying PostgreSQL..."
 if helm list -n "$NAMESPACE" | grep -q "^$RELEASE_NAME"; then
     print_info "Upgrading existing release..."
-    helm upgrade "$RELEASE_NAME" "$SCRIPT_DIR" \
+    helm upgrade "$RELEASE_NAME" "$CHARTS_DIR" \
         --namespace "$NAMESPACE" \
         "${HELM_ARGS[@]}" \
         --wait
 else
     print_info "Installing new release..."
-    helm install "$RELEASE_NAME" "$SCRIPT_DIR" \
+    helm install "$RELEASE_NAME" "$CHARTS_DIR" \
         --namespace "$NAMESPACE" \
         "${HELM_ARGS[@]}" \
         --wait
@@ -238,3 +240,4 @@ echo ""
 echo "  # Get ConfigMap with DATABASE_URL:"
 echo "  kubectl get configmap orchestration-api-config -n $NAMESPACE -o jsonpath='{.data.databaseURL}'"
 echo ""
+
