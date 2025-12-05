@@ -16,6 +16,7 @@ spec:
         app: {{ .Values.app.name }}
         version: {{ .Values.app.image.tag | default "latest" }}
     spec:
+      serviceAccountName: {{ .Values.app.name }}-sa
       containers:
         - name: {{ .Values.app.name }}
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default "latest" }}"

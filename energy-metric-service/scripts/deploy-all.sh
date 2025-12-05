@@ -29,6 +29,7 @@ echo ""
 RELEASE_NAME="${RELEASE_NAME:-energy-metric}"
 NAMESPACE="${NAMESPACE:-default}"
 BUILD_IMAGE="${BUILD_IMAGE:-true}"
+REGENERATE_CRD="${REGENERATE_CRD:-true}"
 
 usage() {
     cat << EOF
@@ -41,11 +42,12 @@ Options:
     -n, --namespace NS      Kubernetes namespace (default: default)
     -r, --release NAME      Helm release name (default: energy-system)
     --no-build              Skip Docker image build
+    --no-regenerate-crd     Skip CRD regeneration (use existing files)
     --postgres-only         Deploy only PostgreSQL
     --app-only              Deploy only application
 
 Examples:
-    # Deploy everything
+    # Deploy everything (regenerates CRD, builds image, deploys all)
     $0
 
     # Deploy in production namespace
@@ -56,6 +58,9 @@ Examples:
 
     # Deploy only PostgreSQL
     $0 --postgres-only
+
+    # Quick deploy (skip CRD regeneration and image build)
+    $0 --no-regenerate-crd --no-build
 
 EOF
     exit 0
@@ -81,6 +86,10 @@ while [[ $# -gt 0 ]]; do
             BUILD_IMAGE=false
             shift
             ;;
+        --no-regenerate-crd)
+            REGENERATE_CRD=false
+            shift
+            ;;
         --postgres-only)
             POSTGRES_ONLY=true
             shift
@@ -96,14 +105,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Get script directory
+# Get script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CHARTS_DIR="$PROJECT_ROOT/charts"
 
 print_info "Configuration:"
 echo "============================================"
 echo "  Release: $RELEASE_NAME"
 echo "  Namespace: $NAMESPACE"
 echo "  Build Image: $BUILD_IMAGE"
+echo "  Regenerate CRD: $REGENERATE_CRD"
 echo "============================================"
 echo ""
 
@@ -115,11 +127,28 @@ if [ "$NAMESPACE" != "default" ]; then
     fi
 fi
 
+# Step 0: Regenerate and apply CRD
+echo "============================================>"
+if [ "$REGENERATE_CRD" = true ]; then
+    print_info "Regenerating CRD from Pydantic models..."
+    "$SCRIPT_DIR/generate-crd.sh" || {
+        print_warn "CRD regeneration failed. Using existing CRD files."
+    }
+fi
+
+# Always apply CRD before Helm to handle updates (kubectl apply is idempotent)
+print_info "Applying CRD to cluster..."
+kubectl apply -f "$CHARTS_DIR/crds/energy-aware-orchestration-crd.yaml" || {
+    print_warn "CRD apply failed. Continuing with Helm..."
+}
+echo "<============================================"
+echo ""
+
 # Step 1: Build Docker image
 echo "============================================>"
 if [ "$BUILD_IMAGE" = true ] && [ "$POSTGRES_ONLY" = false ]; then
     print_info "Building energy-metric-service app Docker image..."
-    cd "$SCRIPT_DIR/.."
+    cd "$PROJECT_ROOT"
     docker build -t energy-metric-service:latest .
 
     # Load into cluster if needed
@@ -149,17 +178,13 @@ if [ "$POSTGRES_ONLY" = false ]; then
     print_info "Installing Application..."
 fi
 
-HELM_CMD=(helm upgrade --install "$RELEASE_NAME" "$SCRIPT_DIR" \
+HELM_CMD=(helm upgrade --install "$RELEASE_NAME" "$CHARTS_DIR" \
     --namespace "$NAMESPACE" \
     --wait \
     --timeout 10m)
 print_info "Running Helm command:"
 echo "  ${HELM_CMD[*]}"
 "${HELM_CMD[@]}"
-helm upgrade --install "$RELEASE_NAME" "$SCRIPT_DIR" \
-    --namespace "$NAMESPACE" \
-    --wait \
-    --timeout 10m
 
 echo " "
 
@@ -215,6 +240,18 @@ fi
 
 echo ""
 echo "============================================"
+echo "  CRD Status"
+echo "============================================"
+echo ""
+if kubectl get crd energyawareorchestrations.eas.hiro.io &> /dev/null; then
+    print_info "EnergyAwareOrchestration CRD is installed ✓"
+    kubectl get crd energyawareorchestrations.eas.hiro.io -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp
+else
+    print_warn "EnergyAwareOrchestration CRD not found. It should have been installed by Helm."
+fi
+
+echo ""
+echo "============================================"
 echo "  Useful Commands"
 echo "============================================"
 echo ""
@@ -224,3 +261,10 @@ echo ""
 echo "# View logs"
 echo "kubectl logs -n $NAMESPACE -l app=energy-metric-service -f"
 echo ""
+echo "# List EnergyAwareOrchestration resources"
+echo "kubectl get eao -n $NAMESPACE"
+echo ""
+echo "# Create a sample EnergyAwareOrchestration"
+echo "kubectl apply -f sample_deployments/"
+echo ""
+

@@ -1,0 +1,65 @@
+# RBAC configuration for Energy Metric Service
+# Grants permissions to manage EnergyAwareOrchestration custom resources
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.app.name }}-sa
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.app.name }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.app.name }}-role
+  labels:
+    app: {{ .Values.app.name }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+rules:
+  # EnergyAwareOrchestration CRD permissions
+  - apiGroups: ["eas.hiro.io"]
+    resources: ["energyawareorchestrations"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["eas.hiro.io"]
+    resources: ["energyawareorchestrations/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["eas.hiro.io"]
+    resources: ["energyawareorchestrations/finalizers"]
+    verbs: ["update"]
+  
+  # Core Kubernetes resources (for managing deployments)
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  
+  # Events for status reporting
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  
+  # Namespace access
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.app.name }}-rolebinding
+  labels:
+    app: {{ .Values.app.name }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.app.name }}-sa
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ .Values.app.name }}-role
+  apiGroup: rbac.authorization.k8s.io
+

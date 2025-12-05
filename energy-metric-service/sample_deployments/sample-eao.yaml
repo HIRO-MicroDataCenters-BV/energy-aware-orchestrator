@@ -1,0 +1,49 @@
+# Sample EnergyAwareOrchestration Custom Resource
+# Apply with: kubectl apply -f sample_deployments/sample-eao.yaml
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: ml-training-job
+  namespace: default
+spec:
+  # Estimated energy consumption in kWh
+  energyConsumption: 500
+  
+  # Forecast schedule for the next 7 days
+  forecastWindowDays: 7
+  
+  # Business priority (Critical, NonCritical, Optional)
+  priority: NonCritical
+  
+  # Reference to the application/workload
+  applicationRef:
+    name: ml-training-deployment
+    namespace: default
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: batch-processing-job
+  namespace: default
+spec:
+  energyConsumption: 200
+  forecastWindowDays: 3
+  priority: Optional
+  applicationRef:
+    name: batch-processor
+    namespace: default
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: critical-api-service
+  namespace: default
+spec:
+  energyConsumption: 100
+  forecastWindowDays: 14
+  priority: Critical
+  applicationRef:
+    name: api-gateway
+    namespace: production
+
