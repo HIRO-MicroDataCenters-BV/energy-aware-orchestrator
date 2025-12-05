@@ -124,7 +124,7 @@ roleRef:
 
 **Deploy Service:**
 ```yaml
-# deployment.yaml
+# eao-app-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -155,7 +155,7 @@ spec:
 **Apply:**
 ```bash
 kubectl apply -f rbac.yaml
-kubectl apply -f deployment.yaml
+kubectl apply -f eao-app-deployment.yaml
 ```
 
 ### 3. External Cluster Access

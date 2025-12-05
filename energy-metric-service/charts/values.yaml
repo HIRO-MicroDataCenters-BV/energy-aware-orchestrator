@@ -1,0 +1,61 @@
+runMigration: false
+
+# PostgreSQL Database
+postgres:
+  name: eao-postgres
+  image:
+    repository: postgres
+    tag: "14"
+    pullPolicy: Always
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 5432
+    nodePort:
+  persistence:
+    enabled: true
+    size: 8Gi
+  credentials:
+    username: postgres
+    password: postgres
+    database: orchestration_db
+
+configmap:
+  databaseURLConfig: orchestration-api-config
+  databaseInitConfig: db-init-script
+
+# FastAPI Application
+app:
+  name: energy-metric-service
+  replicaCount: 1
+
+  image:
+    repository: energy-metric-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    nodePort:  # Only used if type is NodePort
+
+  # Environment variables
+  env:
+    ENABLE_METRICS_SCHEDULER: "false"
+    ENABLE_DEPLOYMENT_SCHEDULER: "true"
+    LOG_LEVEL: "INFO"
+    KUBERNETES_NAMESPACE: ""  # Leave empty to use release namespace
+
+    # Additional environment variables
+    additional: {}
+      # CUSTOM_VAR: "value"
+
+  # Resource limits
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
