@@ -1,0 +1,45 @@
+# Energy Metric Service Application Configuration
+
+# Database connection (must match postgres chart)
+database:
+  host: eao-postgres
+  port: 5432
+  name: orchestration_db
+  username: postgres
+  password: postgres
+
+configmap:
+  databaseURLConfig: orchestration-api-config
+
+# FastAPI Application
+app:
+  name: energy-metric-service
+  replicaCount: 1
+
+  image:
+    repository: energy-metric-service
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+
+  # Environment variables
+  env:
+    ENABLE_METRICS_SCHEDULER: "false"
+    ENABLE_DEPLOYMENT_SCHEDULER: "true"
+    ENABLE_OPERATOR: "true"
+    LOG_LEVEL: "INFO"
+    KUBERNETES_NAMESPACE: ""  # Leave empty to use release namespace
+
+  # Resource limits
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
