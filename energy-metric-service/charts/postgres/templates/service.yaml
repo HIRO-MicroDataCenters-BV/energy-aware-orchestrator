@@ -9,5 +9,8 @@ spec:
   ports:
     - port: {{ .Values.postgres.service.port }}
       targetPort: {{ .Values.postgres.service.port }}
+      protocol: TCP
+      name: postgres
   selector:
     app: {{ .Values.postgres.name }}
+

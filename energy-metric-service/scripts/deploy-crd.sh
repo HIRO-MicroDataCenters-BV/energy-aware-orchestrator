@@ -17,7 +17,7 @@ echo "🔧 Regenerating CRD..."
 
 echo ""
 echo "📦 Deploying CRD to Kubernetes..."
-kubectl apply -f charts/crds/energy-aware-orchestration-crd.yaml
+kubectl apply -f charts/app/crds/energy-aware-orchestration-crd.yaml
 
 echo ""
 echo "✅ CRD deployed successfully!"

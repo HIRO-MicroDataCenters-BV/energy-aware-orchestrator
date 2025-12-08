@@ -224,7 +224,7 @@ def main():
     # Output locations
     outputs = {
         "local": script_dir / "energy-aware-orchestration-crd.yaml",
-        "helm_crds": project_root / "charts" / "crds" / "energy-aware-orchestration-crd.yaml",
+        "helm_crds": project_root / "charts" / "app" / "crds" / "energy-aware-orchestration-crd.yaml",
     }
     
     # Generate CRD YAML

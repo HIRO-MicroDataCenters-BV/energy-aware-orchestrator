@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, List
 
 import kopf
-from kubernetes import client, config
+from kubernetes import config
 
 API_GROUP = "eas.hiro.io"
 API_VERSION = "v1"
@@ -139,7 +139,7 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
     logger.info(f"Finished processing {name}")
 
 
-@kopf.on.delete(API_GROUP, API_VERSION, PLURAL)
+@kopf.on.delete(API_GROUP, API_VERSION, PLURAL, optional=True)
 def deletion_handler(
         name: str,
         namespace: str,
@@ -148,5 +148,10 @@ def deletion_handler(
 ) -> None:
     """
     Cleanup hook for CR deletion.
+    
+    Note: optional=True prevents the finalizer from blocking deletion
+    if the operator is not running or can't process the delete event.
     """
-    logger.info(f"EnergyAwareOrchestration {name} deleted from namespace {namespace}.")
+    logger.info(f"DELETE handler triggered for {name} in namespace {namespace}")
+    # Add any cleanup logic here (e.g., delete associated deployments)
+    logger.info(f"EnergyAwareOrchestration {name} cleanup completed.")

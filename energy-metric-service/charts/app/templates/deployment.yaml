@@ -28,26 +28,19 @@ spec:
           env:
             # Database connection
             - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ .Values.configmap.databaseURLConfig }}
-                  key: databaseURL
-
+              value: "postgresql+asyncpg://{{ .Values.database.username }}:{{ .Values.database.password }}@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+            
             # Application settings
-            {{- if .Values.app.env.ENABLE_METRICS_SCHEDULER }}
             - name: ENABLE_METRICS_SCHEDULER
               value: "{{ .Values.app.env.ENABLE_METRICS_SCHEDULER }}"
-            {{- end }}
-            {{- if .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}
             - name: ENABLE_DEPLOYMENT_SCHEDULER
               value: "{{ .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}"
-            {{- end }}
-            {{- if .Values.app.env.LOG_LEVEL }}
+            - name: ENABLE_OPERATOR
+              value: "{{ .Values.app.env.ENABLE_OPERATOR }}"
             - name: LOG_LEVEL
               value: "{{ .Values.app.env.LOG_LEVEL }}"
-            {{- end }}
-
-            # Kubernetes settings (if needed)
+            
+            # Kubernetes namespace
             {{- if .Values.app.env.KUBERNETES_NAMESPACE }}
             - name: KUBERNETES_NAMESPACE
               value: "{{ .Values.app.env.KUBERNETES_NAMESPACE }}"
@@ -55,3 +48,25 @@ spec:
             - name: KUBERNETES_NAMESPACE
               value: {{ .Release.Namespace }}
             {{- end }}
+          
+          readinessProbe:
+            httpGet:
+              path: /docs
+              port: {{ .Values.app.service.targetPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          livenessProbe:
+            httpGet:
+              path: /docs
+              port: {{ .Values.app.service.targetPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+

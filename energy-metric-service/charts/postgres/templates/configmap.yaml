@@ -5,7 +5,6 @@ metadata:
 data:
   databaseURL: "postgresql+asyncpg://{{ .Values.postgres.credentials.username }}:{{ .Values.postgres.credentials.password }}@{{ .Values.postgres.name }}:{{ .Values.postgres.service.port }}/{{ .Values.postgres.credentials.database }}"
 
-
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -14,3 +13,4 @@ metadata:
 data:
   init.sql: |
 {{ .Files.Get "db-init.sql" | indent 4 }}
+
