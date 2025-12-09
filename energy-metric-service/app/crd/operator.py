@@ -90,7 +90,7 @@ def _extract_spec_field(spec: Dict[str, Any], field: str, default: Any = None) -
 
 @kopf.on.create(API_GROUP, API_VERSION, PLURAL)
 def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace: str, logger: kopf.Logger,
-              **_: Any, ) -> None:
+              body: Dict[str, Any], **_: Any) -> None:
     """
     Main reconciliation handler for EnergyAwareOrchestration resources.
 
@@ -111,7 +111,20 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
 
     # Validate required fields
     if not app_name:
+        kopf.event(body, type="Warning", reason="ValidationFailed", message="applicationRef.name is required")
         raise ValueError("applicationRef.name is required")
+
+    # Post Kubernetes event: Resource created
+    try:
+        kopf.event(
+            body,
+            type="Normal",
+            reason="Created",
+            message=f"EnergyAwareOrchestration '{name}' created. App: {app_name}, Priority: {priority}, Energy: {energy_consumption}W"
+        )
+        logger.info(f"Event posted for {name}")
+    except Exception as e:
+        logger.warning(f"Failed to post event for {name}: {e}")
 
     logger.info(f"Spec values - energyConsumption: {energy_consumption}, forecastWindowDays: {forecast_window_days}, priority: {priority}")
     logger.info(f"Application - name: {app_name}, namespace: {app_namespace}")
@@ -136,6 +149,17 @@ def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace
     else:
         logger.info("No execution schedule found in status")
 
+    # Post final processing event
+    try:
+        kopf.event(
+            body,
+            type="Normal",
+            reason="Processed",
+            message=f"Successfully processed EnergyAwareOrchestration '{name}'"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to post final event for {name}: {e}")
+
     logger.info(f"Finished processing {name}")
 
 
@@ -144,6 +168,7 @@ def deletion_handler(
         name: str,
         namespace: str,
         logger: kopf.Logger,
+        body: Dict[str, Any],
         **_: Any,
 ) -> None:
     """
@@ -153,5 +178,14 @@ def deletion_handler(
     if the operator is not running or can't process the delete event.
     """
     logger.info(f"DELETE handler triggered for {name} in namespace {namespace}")
+    
+    # Post Kubernetes event: Resource being deleted
+    kopf.event(
+        body,
+        type="Normal",
+        reason="Deleting",
+        message=f"EnergyAwareOrchestration '{name}' is being deleted"
+    )
+    
     # Add any cleanup logic here (e.g., delete associated deployments)
     logger.info(f"EnergyAwareOrchestration {name} cleanup completed.")
