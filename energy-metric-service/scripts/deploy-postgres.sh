@@ -125,7 +125,7 @@ done
 # Get script directory and project paths
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CHARTS_DIR="$PROJECT_ROOT/charts"
+POSTGRES_CHART="$PROJECT_ROOT/charts/postgres"
 
 # Uninstall
 if [ "$UNINSTALL" = true ]; then
@@ -179,13 +179,13 @@ fi
 print_info "Deploying PostgreSQL..."
 if helm list -n "$NAMESPACE" | grep -q "^$RELEASE_NAME"; then
     print_info "Upgrading existing release..."
-    helm upgrade "$RELEASE_NAME" "$CHARTS_DIR" \
+    helm upgrade "$RELEASE_NAME" "$POSTGRES_CHART" \
         --namespace "$NAMESPACE" \
         "${HELM_ARGS[@]}" \
         --wait
 else
     print_info "Installing new release..."
-    helm install "$RELEASE_NAME" "$CHARTS_DIR" \
+    helm install "$RELEASE_NAME" "$POSTGRES_CHART" \
         --namespace "$NAMESPACE" \
         "${HELM_ARGS[@]}" \
         --wait
@@ -240,4 +240,5 @@ echo ""
 echo "  # Get ConfigMap with DATABASE_URL:"
 echo "  kubectl get configmap orchestration-api-config -n $NAMESPACE -o jsonpath='{.data.databaseURL}'"
 echo ""
+
 

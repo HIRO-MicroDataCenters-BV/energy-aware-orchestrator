@@ -34,7 +34,7 @@ const sidebarMenuButtonVariants = cva(
 );
 
 @Directive({
-  selector: 'button[hlmSidebarMenuButton]',
+  selector: 'button[hlmSidebarMenuButton], a[hlmSidebarMenuButton]',
   standalone: true,
   providers: [
     provideBrnTooltipDefaultOptions({

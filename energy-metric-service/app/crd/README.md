@@ -2,14 +2,27 @@
 
 This module defines and generates the **EnergyAwareOrchestration** Custom Resource Definition (CRD) for Kubernetes.
 
+> 📖 **For detailed architecture documentation, see [SCHEDULER_ARCHITECTURE.md](../../docs/SCHEDULER_ARCHITECTURE.md)**
+
 ## Overview
 
 The EnergyAwareOrchestration CRD enables energy-aware scheduling of workloads in Kubernetes. It allows you to:
 
-- Define energy consumption estimates for workloads
+- Define energy consumption estimates for workloads (in Watts)
 - Set business priority levels (Critical, NonCritical, Optional)
 - Configure forecast windows for schedule optimization
 - Automatically compute optimal execution schedules based on energy availability
+- View scheduling decisions and energy metrics in CR status
+
+## Scheduling Logic
+
+| Priority | Behavior |
+|----------|----------|
+| **Critical** | Deploy immediately (24/7 operation) |
+| **NonCritical** | If energy insufficient → delay 6 hours |
+| **Optional** | Find best slot in next 24 hours |
+
+**Time Slots:** Day divided into 4 × 6-hour slots (00:00-06:00, 06:00-12:00, 12:00-18:00, 18:00-24:00)
 
 ## CRD Structure
 
@@ -19,21 +32,29 @@ kind: EnergyAwareOrchestration
 metadata:
   name: my-workload
 spec:
-  energyConsumption: 500        # Estimated energy in kWh
+  energyConsumption: 500        # Required energy in Watts
   forecastWindowDays: 7         # Days to forecast (1-30)
   priority: NonCritical         # Critical | NonCritical | Optional
   applicationRef:
     name: my-deployment         # Target deployment name
     namespace: default          # Target namespace
 status:
-  executionSchedule:
-    updated: "2025-12-05T10:00:00Z"
-    schedule:
-      - date: "2025-12-05"
-        times:
-          - start: "02:00:00"
-            stop: "06:00:00"
-            cost: 0.12
+  phase: Scheduled              # Pending | Scheduled | Running | Completed | Failed
+  decision:
+    action: Scheduled           # DeployImmediately | Scheduled | Delayed | Waiting
+    reason: "Human-readable explanation"
+    scheduledSlot:
+      slotNumber: 2             # 1-4
+      slotStart: "2025-12-09T06:00:00+00:00"
+      slotEnd: "2025-12-09T12:00:00+00:00"
+      availableEnergyWatts: 500.0
+    nextEvaluationTime: "2025-12-09T06:00:00+00:00"
+  energyMetrics:
+    currentSlotAvailableWatts: 300.0
+    currentSlotConsumedWatts: 150.0
+    requiredWatts: 200.0
+    sufficient: true
+  lastUpdated: "2025-12-09T07:16:26+00:00"
 ```
 
 ## File Structure
@@ -291,13 +312,35 @@ kubectl apply -f charts/templates/rbac.yaml
 
 ## API Reference
 
+### Spec Fields
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `spec.energyConsumption` | integer | Yes | Estimated energy consumption (kWh) |
+| `spec.energyConsumption` | integer | Yes | Required energy in Watts |
 | `spec.forecastWindowDays` | integer | Yes | Forecast window (1-30 days) |
 | `spec.priority` | enum | No | `Critical`, `NonCritical`, `Optional` (default: `NonCritical`) |
 | `spec.applicationRef.name` | string | Yes | Target application/deployment name |
 | `spec.applicationRef.namespace` | string | No | Target namespace |
-| `status.executionSchedule.updated` | datetime | - | Last schedule update timestamp |
-| `status.executionSchedule.schedule` | array | - | List of daily schedules |
+
+### Status Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status.phase` | enum | `Pending`, `Scheduled`, `Running`, `Completed`, `Failed` |
+| `status.decision.action` | enum | `DeployImmediately`, `Scheduled`, `Delayed`, `Waiting` |
+| `status.decision.reason` | string | Human-readable explanation |
+| `status.decision.scheduledSlot.slotNumber` | integer | Slot number (1-4) |
+| `status.decision.scheduledSlot.slotStart` | datetime | Slot start time (ISO 8601) |
+| `status.decision.scheduledSlot.slotEnd` | datetime | Slot end time (ISO 8601) |
+| `status.decision.scheduledSlot.availableEnergyWatts` | number | Available energy in slot |
+| `status.decision.nextEvaluationTime` | datetime | When to re-evaluate |
+| `status.energyMetrics.currentSlotAvailableWatts` | number | Energy available now |
+| `status.energyMetrics.requiredWatts` | number | Energy required by workload |
+| `status.energyMetrics.sufficient` | boolean | Is energy sufficient? |
+| `status.lastUpdated` | datetime | Last status update time |
+
+## Related Documentation
+
+- [Scheduler Architecture](../../docs/SCHEDULER_ARCHITECTURE.md) - Detailed architecture documentation
+- [Sample EAOs](../../sample_deployments/sample-eao.yaml) - Example custom resources
 

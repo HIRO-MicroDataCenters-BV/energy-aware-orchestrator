@@ -65,3 +65,4 @@ roleRef:
   name: {{ .Values.app.name }}-role
   apiGroup: rbac.authorization.k8s.io
 
+

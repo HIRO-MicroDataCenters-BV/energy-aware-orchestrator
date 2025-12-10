@@ -166,6 +166,9 @@ def build_crd() -> dict:
                     "name": "v1",
                     "served": True,
                     "storage": True,
+                    "subresources": {
+                        "status": {}  # Enable /status subresource for separate status updates
+                    },
                     "schema": {
                         "openAPIV3Schema": {
                             "type": "object",

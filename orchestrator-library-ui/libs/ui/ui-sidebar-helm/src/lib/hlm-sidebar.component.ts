@@ -20,7 +20,27 @@ import type { ClassValue } from 'clsx';
     BrnSheetContentDirective,
     HlmSheetContentComponent,
   ],
-
+  styles: [`
+    :host {
+      flex-shrink: 0;
+    }
+    :host(.desktop-mode) {
+      display: block;
+      width: var(--sidebar-width);
+      transition: width 200ms ease-linear;
+    }
+    :host(.desktop-mode.collapsed) {
+      width: var(--sidebar-width-icon);
+    }
+    :host(.mobile-mode) {
+      display: contents;
+    }
+  `],
+  host: {
+    '[class.desktop-mode]': '!sidebarService.isMobile()',
+    '[class.mobile-mode]': 'sidebarService.isMobile()',
+    '[class.collapsed]': 'sidebarService.state() === "collapsed"',
+  },
   template: `
     <ng-template #contentContainer>
       <ng-content></ng-content>
@@ -58,7 +78,7 @@ import type { ClassValue } from 'clsx';
       </hlm-sheet>
     } @else {
       <div
-        class="group peer text-sidebar-foreground hidden md:block"
+        class="group peer text-sidebar-foreground block"
         [attr.data-state]="sidebarService.state()"
         [attr.data-collapsible]="
           sidebarService.state() === 'collapsed' ? collapsible() : ''
@@ -67,32 +87,22 @@ import type { ClassValue } from 'clsx';
         [attr.data-side]="side()"
         data-slot="sidebar"
       >
-        <!-- Sidebar gap on desktop -->
+        <!-- Sidebar gap on desktop - this div creates space in the flex layout -->
         <div
-          [class]="
-            _cn(
-              'relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] duration-200 ease-linear',
-              'group-data-[collapsible=offcanvas]:w-0',
-              'group-data-[side=right]:rotate-180',
-              variant() === 'floating' || variant() === 'inset'
-                ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]'
-                : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]'
-            )
-          "
+          class="relative bg-transparent transition-all duration-200 ease-linear h-full"
+          [style.width]="sidebarService.state() === 'collapsed' ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)'"
         ></div>
         <div
           [class]="
             _cn(
-              'fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex',
-              side() === 'left'
-                ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
-                : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
-              variant() === 'floating' || variant() === 'inset'
-                ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]'
-                : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l',
+              'fixed z-10 flex transition-all duration-200 ease-linear',
+              side() === 'left' ? 'left-0 border-r' : 'right-0 border-l',
               userClass()
             )
           "
+          [style.top]="'0'"
+          [style.bottom]="'0'"
+          [style.width]="sidebarService.state() === 'collapsed' ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)'"
         >
           <div
             data-sidebar="sidebar"
