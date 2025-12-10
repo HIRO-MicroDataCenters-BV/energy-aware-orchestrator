@@ -5,8 +5,11 @@
 
 set -e
 
-echo "🚀 Energy Metrics Monitoring Setup"
-echo "=================================="
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Change to the parent directory (helm chart root)
+CHART_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$CHART_DIR"
 
 # Colors for output
 RED='\033[0;31m'
@@ -14,6 +17,55 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Default configuration
+RELEASE_NAME="${RELEASE_NAME:-energy-metrics}"
+NAMESPACE="${NAMESPACE:-default}"
+COMMAND="deploy"
+
+# Usage function
+usage() {
+    cat << EOF
+🚀 Energy Metrics Monitoring Setup
+
+Usage: $0 [COMMAND] [OPTIONS]
+
+Commands:
+    deploy   - Deploy the energy metrics stack (default)
+    cleanup  - Remove the deployment
+    test     - Test the deployment
+    status   - Show pod status
+
+Options:
+    -h, --help          Show this help
+    -n, --namespace NS  Kubernetes namespace (default: default)
+
+Environment Variables:
+    NAMESPACE          Set the namespace (default: default)
+    RELEASE_NAME       Set the release name (default: energy-metrics)
+
+Examples:
+    $0                          # Deploy to default namespace
+    $0 -n monitoring            # Deploy to monitoring namespace
+    $0 deploy -n energy-metrics # Deploy to energy-metrics namespace
+    $0 cleanup -n monitoring    # Cleanup from monitoring namespace
+
+EOF
+    exit 0
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help) usage ;;
+        -n|--namespace) NAMESPACE="$2"; shift 2 ;;
+        deploy|cleanup|test|status) COMMAND="$1"; shift ;;
+        *) print_error "Unknown option: $1"; usage ;;
+    esac
+done
+
+echo "🚀 Energy Metrics Monitoring Setup"
+echo "=================================="
 
 # Function to print colored output
 print_status() {
@@ -57,6 +109,14 @@ check_prerequisites() {
     print_success "Prerequisites check passed"
 }
 
+# Display configuration
+display_config() {
+    print_status "Configuration:"
+    echo "  Release: $RELEASE_NAME"
+    echo "  Namespace: $NAMESPACE"
+    echo ""
+}
+
 # Get cluster info
 get_cluster_info() {
     print_status "Getting cluster information..."
@@ -78,7 +138,11 @@ deploy_chart() {
     
     # Install the chart
     print_status "Installing Helm chart..."
-    helm install energy-metrics . --namespace energy-metrics --create-namespace
+    helm upgrade --install "$RELEASE_NAME" . \
+        --namespace "$NAMESPACE" \
+        --create-namespace \
+        --wait \
+        --timeout 10m
     
     print_success "Chart deployed successfully"
 }
@@ -87,11 +151,11 @@ deploy_chart() {
 wait_for_pods() {
     print_status "Waiting for all pods to be ready..."
     
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kepler -n energy-metrics --timeout=300s
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus -n energy-metrics --timeout=300s
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n energy-metrics --timeout=300s
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=kepler -n "$NAMESPACE" --timeout=300s || print_warning "Kepler pods not ready"
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus -n "$NAMESPACE" --timeout=300s || print_warning "Prometheus pods not ready"
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n "$NAMESPACE" --timeout=300s || print_warning "Grafana pods not ready"
     
-    print_success "All pods are ready"
+    print_success "Pods are ready"
 }
 
 # Setup port forwarding
@@ -102,9 +166,9 @@ setup_port_forwarding() {
     pkill -f "kubectl port-forward" || true
     
     # Start new port forwards
-    kubectl port-forward -n energy-metrics svc/energy-metrics-grafana 3000:80 &
-    kubectl port-forward -n energy-metrics svc/energy-metrics-prometheus-server 9090:80 &
-    kubectl port-forward -n energy-metrics svc/energy-metrics-kepler 9102:9102 &
+    kubectl port-forward -n "$NAMESPACE" svc/${RELEASE_NAME}-grafana 3000:80 &
+    kubectl port-forward -n "$NAMESPACE" svc/${RELEASE_NAME}-prometheus-server 9090:80 &
+    kubectl port-forward -n "$NAMESPACE" svc/${RELEASE_NAME}-kepler 9102:9102 &
     
     # Wait a moment for port forwarding to start
     sleep 3
@@ -153,10 +217,18 @@ display_access_info() {
     echo "  Username: admin"
     echo "  Password: admin"
     echo ""
+    echo "📋 Deployment Info:"
+    echo "  Release: $RELEASE_NAME"
+    echo "  Namespace: $NAMESPACE"
+    echo ""
     echo "📋 Next Steps:"
     echo "  1. Open Grafana: http://localhost:3000"
-    echo "  2. Add Prometheus data source: http://energy-metrics-prometheus-server:80"
+    echo "  2. Add Prometheus data source: http://${RELEASE_NAME}-prometheus-server:80"
     echo "  3. Import dashboards from the JSON files in this directory"
+    echo ""
+    echo "🔧 Useful Commands:"
+    echo "  kubectl get pods -n $NAMESPACE"
+    echo "  kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=kepler"
     echo ""
     echo "📚 For more information, see README.md"
     echo ""
@@ -164,25 +236,34 @@ display_access_info() {
 
 # Cleanup function
 cleanup() {
-    print_status "Cleaning up..."
+    print_status "Cleaning up from namespace: $NAMESPACE..."
     
     # Kill port forwarding
     pkill -f "kubectl port-forward" || true
     
     # Uninstall chart
-    helm uninstall energy-metrics -n energy-metrics || true
+    helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" || true
     
-    # Delete namespace
-    kubectl delete namespace energy-metrics || true
+    # Delete resources
+    kubectl delete all --all -n "$NAMESPACE" 2>/dev/null || true
+    
+    # Only delete namespace if it's not default
+    if [ "$NAMESPACE" != "default" ]; then
+        print_status "Deleting namespace: $NAMESPACE"
+        kubectl delete namespace "$NAMESPACE" || true
+    else
+        print_warning "Skipping namespace deletion (using default namespace)"
+    fi
     
     print_success "Cleanup complete"
 }
 
 # Main execution
 main() {
-    case "${1:-deploy}" in
+    case "$COMMAND" in
         "deploy")
             check_prerequisites
+            display_config
             get_cluster_info
             deploy_chart
             wait_for_pods
@@ -191,26 +272,21 @@ main() {
             display_access_info
             ;;
         "cleanup")
+            display_config
             cleanup
             ;;
         "test")
             test_deployment
             ;;
         "status")
-            kubectl get pods -n energy-metrics
+            kubectl get pods -n "$NAMESPACE"
             ;;
         *)
-            echo "Usage: $0 {deploy|cleanup|test|status}"
-            echo ""
-            echo "Commands:"
-            echo "  deploy   - Deploy the energy metrics stack (default)"
-            echo "  cleanup  - Remove the deployment"
-            echo "  test     - Test the deployment"
-            echo "  status   - Show pod status"
-            exit 1
+            print_error "Unknown command: $COMMAND"
+            usage
             ;;
     esac
 }
 
 # Run main function
-main "$@" 
+main 
