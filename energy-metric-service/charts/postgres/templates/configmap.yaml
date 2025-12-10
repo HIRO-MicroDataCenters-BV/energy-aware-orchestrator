@@ -14,3 +14,4 @@ data:
   init.sql: |
 {{ .Files.Get "db-init.sql" | indent 4 }}
 
+

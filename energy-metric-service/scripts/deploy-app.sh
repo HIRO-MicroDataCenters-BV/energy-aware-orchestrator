@@ -122,3 +122,4 @@ echo "  kubectl apply -f sample_deployments/sample-eao.yaml"
 echo "  kubectl get eao"
 echo ""
 
+
