@@ -42,6 +42,8 @@ def run_kopf_operator(stop_flag: threading.Event):
     
     This function imports and runs the operator module which registers
     handlers for EnergyAwareOrchestration CRD events.
+    
+    Note: Kopf manages its own event loop internally, so we don't create one here.
     """
     import kopf
     
@@ -50,12 +52,8 @@ def run_kopf_operator(stop_flag: threading.Event):
     
     logging.info("Starting Kopf operator for EnergyAwareOrchestration CRD...")
     
-    # Create a new event loop for this thread
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
     try:
-        # Run kopf operator
+        # Run kopf operator - it manages its own event loop
         kopf.run(
             clusterwide=True,
             standalone=True,
@@ -64,7 +62,6 @@ def run_kopf_operator(stop_flag: threading.Event):
     except Exception as e:
         logging.error(f"Kopf operator error: {e}")
     finally:
-        loop.close()
         logging.info("Kopf operator stopped")
 
 

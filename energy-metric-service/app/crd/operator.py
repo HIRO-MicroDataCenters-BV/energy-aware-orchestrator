@@ -1,9 +1,25 @@
-import datetime as dt
+"""
+EnergyAwareOrchestration Kubernetes Operator
+
+This operator watches EnergyAwareOrchestration custom resources and:
+1. Calculates execution schedules based on priority and energy availability
+2. Updates CR status with scheduling decisions
+3. Posts Kubernetes events for observability
+
+Scheduling Logic:
+- Critical: Deploy immediately (24/7 operation)
+- NonCritical: If energy insufficient, delay by 6 hours
+- Optional: Find best slot in next 24 hours based on energy availability
+"""
+
 import logging
-from typing import Any, Dict, List
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 import kopf
 from kubernetes import config
+
+from app.servicesv2.eao_scheduler_service import EAOSchedulerService, ScheduleResult
 
 API_GROUP = "eas.hiro.io"
 API_VERSION = "v1"
@@ -27,6 +43,59 @@ def _load_kube_config() -> None:
         logger.info("Loaded local kubeconfig.")
 
 
+async def _calculate_schedule_async(
+    priority: str,
+    energy_consumption: int,
+) -> Optional[ScheduleResult]:
+    """
+    Calculate schedule using the scheduler service.
+    
+    Note: This function is async and should be called from Kopf's async handlers.
+    Since Kopf manages its own event loop, we don't create database sessions here
+    to avoid event loop conflicts. The scheduler will work without energy data.
+    
+    Args:
+        priority: Workload priority (Critical, NonCritical, Optional)
+        energy_consumption: Required energy in Watts
+        
+    Returns:
+        ScheduleResult or None if scheduling failed
+    """
+    try:
+        # Use scheduler without database to avoid event loop conflicts
+        # The scheduling logic still works based on priority
+        scheduler = EAOSchedulerService()
+        result = await scheduler.calculate_schedule(
+            priority=priority,
+            required_energy_watts=float(energy_consumption),
+        )
+        return result
+            
+    except Exception as e:
+        logger.error(f"Error calculating schedule: {e}")
+        return None
+
+
+def _extract_spec_field(spec: Dict[str, Any], field: str, default: Any = None) -> Any:
+    """Extract a field from spec with a default value."""
+    if spec is None:
+        return default
+    return spec.get(field, default)
+
+
+def _build_status_patch(schedule_result: ScheduleResult) -> Dict[str, Any]:
+    """
+    Build a status patch from the schedule result.
+    
+    Args:
+        schedule_result: Result from the scheduler
+        
+    Returns:
+        Dictionary to patch into CR status
+    """
+    return schedule_result.to_dict()
+
+
 @kopf.on.startup()
 def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     """
@@ -40,136 +109,151 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
         prefix="eas.hiro.io"
     )
-
-
-def _generate_schedule(
-        energy_consumption: int,
-        forecast_window_days: int,
-) -> Dict[str, Any]:
-    """
-    Naive placeholder implementation that generates a simple execution schedule.
-
-    In a real implementation this would call an external forecaster or cost API.
-    """
-    today = dt.date.today()
-    now = dt.datetime.utcnow().replace(tzinfo=dt.timezone.utc)
-
-    schedule: List[Dict[str, Any]] = []
-
-    for offset in range(forecast_window_days):
-        day = today + dt.timedelta(days=offset)
-        # Example heuristic: full-day window with a fixed "cost" derived from energy consumption.
-        base_cost = round(energy_consumption / 100.0, 2)
-
-        schedule.append(
-            {
-                "date": day.isoformat(),
-                "times": [
-                    {
-                        "start": "00:00:00",
-                        "stop": "24:00:00",
-                        "cost": base_cost,
-                    }
-                ],
-            }
-        )
-
-    return {
-        "updated": now.isoformat(),
-        "schedule": schedule,
-    }
-
-
-def _extract_spec_field(spec: Dict[str, Any], field: str, default: Any = None) -> Any:
-    if spec is None:
-        return default
-    return spec.get(field, default)
-
-
+    
+    logger.info("EAO Operator configured with energy-aware scheduling")
 
 
 @kopf.on.create(API_GROUP, API_VERSION, PLURAL)
-def create_fn(spec: Dict[str, Any], status: Dict[str, Any], name: str, namespace: str, logger: kopf.Logger,
-              body: Dict[str, Any], **_: Any) -> None:
+@kopf.on.update(API_GROUP, API_VERSION, PLURAL)
+async def reconcile_handler(
+    spec: Dict[str, Any],
+    status: Dict[str, Any],
+    name: str,
+    namespace: str,
+    body: Dict[str, Any],
+    logger: kopf.Logger,
+    patch: kopf.Patch,
+    **_: Any,
+) -> Dict[str, Any]:
     """
     Main reconciliation handler for EnergyAwareOrchestration resources.
 
-    - Reads desired state from `.spec`.
-    - Logs the execution schedule from `.status.executionSchedule`.
-    - Logs application reference information.
+    This handler:
+    1. Extracts spec fields (priority, energy consumption, etc.)
+    2. Calls the scheduler service to calculate the execution schedule
+    3. Updates CR status with the scheduling decision
+    4. Posts Kubernetes events for observability
     """
-    logger.info(f"CREATE handler triggered for {name} in namespace {namespace}")
+    logger.info(f"Reconciling EnergyAwareOrchestration '{name}' in namespace '{namespace}'")
 
+    # Extract spec fields
     energy_consumption = int(_extract_spec_field(spec, "energyConsumption", 0))
     forecast_window_days = int(_extract_spec_field(spec, "forecastWindowDays", 7))
     priority = _extract_spec_field(spec, "priority", "NonCritical")
     application_ref = _extract_spec_field(spec, "applicationRef", {})
 
-    # Extract application details from applicationRef
+    # Extract application details
     app_name = application_ref.get("name")
     app_namespace = application_ref.get("namespace", namespace)
 
     # Validate required fields
     if not app_name:
-        kopf.event(body, type="Warning", reason="ValidationFailed", message="applicationRef.name is required")
-        raise ValueError("applicationRef.name is required")
+        kopf.event(
+            body,
+            type="Warning",
+            reason="ValidationFailed",
+            message="applicationRef.name is required"
+        )
+        patch.status["phase"] = "Failed"
+        patch.status["decision"] = {
+            "action": "Waiting",
+            "reason": "Validation failed: applicationRef.name is required"
+        }
+        patch.status["lastUpdated"] = datetime.now(timezone.utc).isoformat()
+        raise kopf.PermanentError("applicationRef.name is required")
 
-    # Post Kubernetes event: Resource created
+    logger.info(f"Processing: priority={priority}, energy={energy_consumption}W, app={app_name}")
+
+    # Post event: Processing started
     try:
         kopf.event(
             body,
             type="Normal",
-            reason="Created",
-            message=f"EnergyAwareOrchestration '{name}' created. App: {app_name}, Priority: {priority}, Energy: {energy_consumption}W"
+            reason="Scheduling",
+            message=f"Calculating schedule for '{name}' (Priority: {priority}, Energy: {energy_consumption}W)"
         )
-        logger.info(f"Event posted for {name}")
     except Exception as e:
-        logger.warning(f"Failed to post event for {name}: {e}")
+        logger.warning(f"Failed to post scheduling event: {e}")
 
-    logger.info(f"Spec values - energyConsumption: {energy_consumption}, forecastWindowDays: {forecast_window_days}, priority: {priority}")
-    logger.info(f"Application - name: {app_name}, namespace: {app_namespace}")
-
-    # Get execution schedule from status
-    execution_schedule = status.get("executionSchedule", {}) if status else {}
-
-    if execution_schedule:
-        logger.info(f"Execution Schedule:")
-        logger.info(f"  Updated: {execution_schedule.get('updated', 'N/A')}")
-        schedule_list = execution_schedule.get("schedule", [])
-        logger.info(f"  Number of days scheduled: {len(schedule_list)}")
-        for day_schedule in schedule_list:
-            date = day_schedule.get("date", "N/A")
-            times = day_schedule.get("times", [])
-            logger.info(f"  Date: {date}, Time slots: {len(times)}")
-            for time_slot in times:
-                start = time_slot.get("start", "N/A")
-                stop = time_slot.get("stop", "N/A")
-                cost = time_slot.get("cost", "N/A")
-                logger.info(f"    {start} - {stop}, cost: {cost}")
-    else:
-        logger.info("No execution schedule found in status")
-
-    # Post final processing event
+    # Calculate schedule using async scheduler (Kopf handles the event loop)
     try:
+        schedule_result = await _calculate_schedule_async(priority, energy_consumption)
+        
+        if schedule_result:
+            # Build status patch
+            status_update = _build_status_patch(schedule_result)
+            
+            # Apply to patch
+            for key, value in status_update.items():
+                patch.status[key] = value
+            
+            # Log decision
+            decision = schedule_result.decision
+            logger.info(f"Schedule decision for '{name}': {decision.action.value} - {decision.reason}")
+            
+            if decision.scheduled_slot:
+                slot = decision.scheduled_slot
+                logger.info(f"  Scheduled slot: {slot.slot_number} ({slot.start_time} - {slot.end_time})")
+                if slot.available_energy_watts is not None:
+                    logger.info(f"  Available energy: {slot.available_energy_watts}W")
+            
+            # Post event: Schedule calculated
+            try:
+                kopf.event(
+                    body,
+                    type="Normal",
+                    reason="Scheduled",
+                    message=f"{decision.action.value}: {decision.reason}"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to post scheduled event: {e}")
+            
+            return {"scheduled": True, "action": decision.action.value}
+        else:
+            # Scheduling failed
+            patch.status["phase"] = "Failed"
+            patch.status["decision"] = {
+                "action": "Waiting",
+                "reason": "Failed to calculate schedule"
+            }
+            patch.status["lastUpdated"] = datetime.now(timezone.utc).isoformat()
+            
+            kopf.event(
+                body,
+                type="Warning",
+                reason="SchedulingFailed",
+                message="Failed to calculate execution schedule"
+            )
+            
+            return {"scheduled": False, "error": "Scheduling failed"}
+            
+    except Exception as e:
+        logger.error(f"Error during scheduling for '{name}': {e}")
+        
+        patch.status["phase"] = "Failed"
+        patch.status["decision"] = {
+            "action": "Waiting",
+            "reason": f"Scheduling error: {str(e)}"
+        }
+        patch.status["lastUpdated"] = datetime.now(timezone.utc).isoformat()
+        
         kopf.event(
             body,
-            type="Normal",
-            reason="Processed",
-            message=f"Successfully processed EnergyAwareOrchestration '{name}'"
+            type="Warning",
+            reason="Error",
+            message=f"Scheduling error: {str(e)}"
         )
-    except Exception as e:
-        logger.warning(f"Failed to post final event for {name}: {e}")
-
-    logger.info(f"Finished processing {name}")
+        
+        raise kopf.TemporaryError(f"Scheduling failed: {e}", delay=60)
 
 
 @kopf.on.delete(API_GROUP, API_VERSION, PLURAL, optional=True)
 def deletion_handler(
-        name: str,
-        namespace: str,
-        logger: kopf.Logger,
-        body: Dict[str, Any],
-        **_: Any,
+    name: str,
+    namespace: str,
+    body: Dict[str, Any],
+    logger: kopf.Logger,
+    **_: Any,
 ) -> None:
     """
     Cleanup hook for CR deletion.
@@ -177,15 +261,68 @@ def deletion_handler(
     Note: optional=True prevents the finalizer from blocking deletion
     if the operator is not running or can't process the delete event.
     """
-    logger.info(f"DELETE handler triggered for {name} in namespace {namespace}")
+    logger.info(f"DELETE handler triggered for '{name}' in namespace '{namespace}'")
     
     # Post Kubernetes event: Resource being deleted
-    kopf.event(
-        body,
-        type="Normal",
-        reason="Deleting",
-        message=f"EnergyAwareOrchestration '{name}' is being deleted"
-    )
+    try:
+        kopf.event(
+            body,
+            type="Normal",
+            reason="Deleting",
+            message=f"EnergyAwareOrchestration '{name}' is being deleted"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to post delete event: {e}")
     
     # Add any cleanup logic here (e.g., delete associated deployments)
-    logger.info(f"EnergyAwareOrchestration {name} cleanup completed.")
+    logger.info(f"EnergyAwareOrchestration '{name}' cleanup completed.")
+
+
+@kopf.timer(API_GROUP, API_VERSION, PLURAL, interval=3600.0)  # Re-evaluate every hour
+async def periodic_reconcile(
+    spec: Dict[str, Any],
+    status: Dict[str, Any],
+    name: str,
+    namespace: str,
+    body: Dict[str, Any],
+    logger: kopf.Logger,
+    patch: kopf.Patch,
+    **_: Any,
+) -> Dict[str, Any]:
+    """
+    Periodic timer to re-evaluate schedules.
+    
+    This runs every hour to:
+    - Re-calculate schedules based on updated energy availability
+    - Update CR status if scheduling decision changes
+    """
+    # Get current phase
+    current_phase = status.get("phase", "Pending")
+    
+    # Only re-evaluate if not already completed or failed permanently
+    if current_phase in ["Completed"]:
+        logger.debug(f"Skipping re-evaluation for '{name}': phase is {current_phase}")
+        return {"skipped": True, "reason": f"Phase is {current_phase}"}
+    
+    logger.info(f"Periodic re-evaluation for '{name}'")
+    
+    # Trigger reconciliation
+    energy_consumption = int(_extract_spec_field(spec, "energyConsumption", 0))
+    priority = _extract_spec_field(spec, "priority", "NonCritical")
+    
+    try:
+        schedule_result = await _calculate_schedule_async(priority, energy_consumption)
+        
+        if schedule_result:
+            status_update = _build_status_patch(schedule_result)
+            for key, value in status_update.items():
+                patch.status[key] = value
+            
+            logger.info(f"Re-evaluated '{name}': {schedule_result.decision.action.value}")
+            
+            return {"re_evaluated": True, "action": schedule_result.decision.action.value}
+        
+    except Exception as e:
+        logger.warning(f"Error during periodic re-evaluation for '{name}': {e}")
+    
+    return {"re_evaluated": False}
