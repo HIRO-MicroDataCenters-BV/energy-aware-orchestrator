@@ -4,7 +4,7 @@
 .gitattributes
 
 # Build artifacts
-dist
+# Note: dist is NOT ignored - needed for Dockerfile.prebuilt (fast builds)
 tmp
 out-tsc
 bazel-out
