@@ -3,18 +3,23 @@ FROM node:20-alpine3.20 AS builder
 
 WORKDIR /app
 
+# Increase Node.js memory limit for Angular builds
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Install pnpm
 RUN npm install -g pnpm
 
 # Copy package files and install dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the source code
 COPY . .
 
-# Build the Angular app
-RUN pnpm run build:prod
+# Build the Angular app with verbose output to track progress
+RUN echo "Starting Angular build..." && \
+    pnpm run build:prod && \
+    echo "Build completed successfully"
 
 # Stage 2: Production image with nginx only
 FROM nginx:alpine
