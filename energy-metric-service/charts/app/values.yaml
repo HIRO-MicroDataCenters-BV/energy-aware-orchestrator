@@ -33,6 +33,7 @@ app:
     ENABLE_OPERATOR: "true"
     LOG_LEVEL: "INFO"
     KUBERNETES_NAMESPACE: ""  # Leave empty to use release namespace
+    USE_KUBECTL_PROXY: "false"  # Use in-cluster authentication (ServiceAccount)
 
   # Resource limits
   resources:
