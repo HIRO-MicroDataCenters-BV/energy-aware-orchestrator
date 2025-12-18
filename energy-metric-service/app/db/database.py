@@ -4,7 +4,6 @@ Database connection and session management.
 
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # Import greenlet explicitly to ensure it's available

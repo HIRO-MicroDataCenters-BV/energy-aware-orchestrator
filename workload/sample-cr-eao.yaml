@@ -1,5 +1,5 @@
 # Sample EnergyAwareOrchestration Custom Resource
-# Apply with: kubectl apply -f sample_deployments/sample-eao.yaml
+# Apply with: kubectl apply -f sample_deployments/sample-cr-eao.yaml
 ---
 apiVersion: eas.hiro.io/v1
 kind: EnergyAwareOrchestration
