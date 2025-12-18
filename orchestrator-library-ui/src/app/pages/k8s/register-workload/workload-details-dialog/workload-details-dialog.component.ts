@@ -44,6 +44,12 @@ import { WorkloadDefinitionResponse } from '../../../../shared/interfaces/worklo
                 </span>
               </div>
               <div>
+                <span class="font-medium text-gray-700">Deployment Type:</span>
+                <span class="ml-2 px-2 py-1 rounded text-xs font-medium capitalize" [class]="getDeploymentTypeClass(workloadDetails.deployment_type)">
+                  {{ workloadDetails.deployment_type || 'kubernetes' }}
+                </span>
+              </div>
+              <div>
                 <span class="font-medium text-gray-700">Energy Required:</span>
                 <span class="ml-2 text-gray-900">{{ workloadDetails.estimated_energy_required || 'N/A' }} W</span>
               </div>
@@ -132,6 +138,15 @@ export class WorkloadDetailsDialogComponent {
       'Optional': 'text-blue-600 bg-blue-50'
     };
     return typeColors[type || ''] || 'text-gray-600 bg-gray-50';
+  }
+
+  getDeploymentTypeClass(type?: string): string {
+    const deploymentColors: { [key: string]: string } = {
+      'kubernetes': 'text-blue-700 bg-blue-100',
+      'helm': 'text-purple-700 bg-purple-100',
+      'custom': 'text-green-700 bg-green-100'
+    };
+    return deploymentColors[type || 'kubernetes'] || 'text-gray-700 bg-gray-100';
   }
 
   formatDate(dateString: string): string {

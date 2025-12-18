@@ -22,9 +22,10 @@ import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
           <p class="text-sm text-red-800">{{ errorMessage }}</p>
         </div>
 
-        <hlm-alert-dialog-footer class="flex gap-2 justify-end">
+        <hlm-alert-dialog-footer class="flex gap-2 justify-end mt-4">
           <button hlmBtn variant="outline" (click)="cancel()" class="cursor-pointer">Cancel</button>
-          <button hlmBtn variant="destructive" (click)="confirm()" [disabled]="deleting" class="cursor-pointer">
+          <button hlmBtn variant="destructive" (click)="confirm()" [disabled]="deleting"
+                  class="cursor-pointer bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded disabled:opacity-50">
             {{ deleting ? 'Deleting...' : 'Delete' }}
           </button>
         </hlm-alert-dialog-footer>

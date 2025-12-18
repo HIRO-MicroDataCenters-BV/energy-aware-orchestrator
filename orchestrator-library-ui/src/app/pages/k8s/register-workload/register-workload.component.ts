@@ -40,6 +40,7 @@ export class RegisterWorkloadComponent implements OnInit {
       next: (items) => {
         this.workloads = items || [];
         console.log('📋 Workloads array:', this.workloads);
+        console.log('📋 First workload deployment_type:', this.workloads[0]?.deployment_type);
       },
       error: (err) => {
         console.error('❌ Error loading workload definitions:', err);
@@ -57,6 +58,21 @@ export class RegisterWorkloadComponent implements OnInit {
     return typeColors[type || ''] || 'text-gray-600 bg-gray-50';
   }
 
+  getDeploymentTypeClass(type?: string | null): string {
+    try {
+      const deploymentColors: { [key: string]: string } = {
+        'kubernetes': 'text-blue-700 bg-blue-100',
+        'helm': 'text-purple-700 bg-purple-100',
+        'custom': 'text-green-700 bg-green-100'
+      };
+      const normalizedType = (type || 'kubernetes').toLowerCase();
+      return deploymentColors[normalizedType] || 'text-gray-700 bg-gray-100';
+    } catch (error) {
+      console.error('Error in getDeploymentTypeClass:', error);
+      return 'text-gray-700 bg-gray-100';
+    }
+  }
+
   openRegisterDialog(): void {
     this.registerDialog.open();
   }
@@ -72,6 +88,7 @@ export class RegisterWorkloadComponent implements OnInit {
         name: data.name,
         namespace: data.namespace || 'default',
         workload_type: data.workload_type,
+        deployment_type: data.deployment_type,
         description: data.description || '',
         estimated_energy_required: data.estimated_energy_watts,
       })
