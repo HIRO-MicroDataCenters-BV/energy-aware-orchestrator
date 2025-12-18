@@ -10,12 +10,11 @@ from app.servicesv2.workload_definition_service import ApplicationDefinitionServ
 from app.models.ApplicationDeployment import WorkloadType
 from app.models.app_definition_models import (
     AppDefinitionCreate,
-    AppDefinitionUpdate,
     AppDefinitionResponse
 )
 
 
-router = APIRouter(prefix="/app/definitions", tags=["Workload Application Definitions"])
+router = APIRouter(prefix="/app/definitions", tags=["Workload Definitions"])
 
 
 

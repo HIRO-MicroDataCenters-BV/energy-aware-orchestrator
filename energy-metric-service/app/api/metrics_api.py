@@ -15,7 +15,7 @@ from app.services.energy_forecasting_service import EnergyForecastingService
 from app.utils.constants import PROMETHEUS_METRICS_URL
 import logging
 
-router = APIRouter(prefix="/api/metrics", tags=["metrics"])
+router = APIRouter(prefix="/api/metrics", tags=["Prometheus Metrics"])
 
 
 # Helper function for energy forecasting

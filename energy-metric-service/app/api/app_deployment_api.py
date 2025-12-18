@@ -24,7 +24,7 @@ from app.db.database import get_async_db
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/app/deployment-request", tags=["Application Deployment Request"])
+router = APIRouter(prefix="/app/deployment-request", tags=["Workload Deployment Request"])
 
 @router.post("/deploy", response_model=ApplicationDeploymentResponse)
 async def request_deployment(

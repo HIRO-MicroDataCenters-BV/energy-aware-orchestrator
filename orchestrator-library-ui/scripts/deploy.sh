@@ -2,6 +2,21 @@
 
 # Orchestrator Library UI Deployment Script
 # This script deploys the Angular UI application and k8s-proxy
+#
+# Docker Build Strategies:
+# ------------------------
+# FAST BUILD: Uses Dockerfile.prebuilt (~30 seconds)
+#   - Requires: Pre-built dist/ folder (run 'pnpm run build:prod' first)
+#   - Best for: Development, quick iterations
+#   - Command: pnpm run build:prod && ./scripts/deploy.sh
+#
+# FULL BUILD: Uses Dockerfile (~5-10 minutes)
+#   - Requires: Source code only
+#   - Best for: CI/CD, clean deployments, first-time builds
+#   - Command: ./scripts/deploy.sh
+#
+# The script automatically detects which build strategy to use based on
+# whether the dist/ folder exists.
 
 set -e
 
@@ -54,6 +69,14 @@ Examples:
     $0 deploy -n production     # Deploy to production namespace
     $0 cleanup -n ui            # Cleanup from ui namespace
     $0 logs -n default          # Show logs from default namespace
+
+Docker Build Strategies:
+    Fast Build (~30 sec):  pnpm run build:prod && $0
+    Full Build (~5-10 min): $0
+
+    The script auto-detects which Dockerfile to use:
+    - Dockerfile.prebuilt: If dist/ folder exists (fast)
+    - Dockerfile: If no dist/ folder (full build from source)
 
 EOF
     exit 0
@@ -146,57 +169,85 @@ get_cluster_info() {
 }
 
 # Build Docker image
+#
+# Docker Build Strategy:
+# ----------------------
+# This function supports two build modes:
+#
+# 1. FAST BUILD (Dockerfile.prebuilt):
+#    - Used when: dist/ folder exists
+#    - Build time: ~30 seconds
+#    - Process: Packages pre-built Angular app into nginx container
+#    - To prepare: Run 'pnpm run build:prod' before deploying
+#
+# 2. FULL BUILD (Dockerfile):
+#    - Used when: No dist/ folder found
+#    - Build time: ~5-10 minutes
+#    - Process: Multi-stage build (install deps → build Angular → package in nginx)
+#    - Self-contained: Builds everything from source
+#
+# Recommendation: Use fast build for development, full build for CI/CD
+#
 build_image() {
     if [ "$BUILD_IMAGE" = false ]; then
         print_status "Skipping Docker image build"
         return
     fi
-    
+
     print_status "Building Docker image..."
     cd "$PROJECT_ROOT"
-    
+
     USING_MINIKUBE=false
-    
+
     # Check if using minikube
     if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
         USING_MINIKUBE=true
         print_status "Detected minikube cluster"
     fi
-    
+
     # Check if dist folder exists (pre-built)
     if [ -d "dist/orchestration_library-front/browser" ]; then
-        print_status "Found pre-built dist folder, using fast build..."
-        
+        echo ""
+        print_status "Build Strategy: FAST BUILD"
+        print_status "Using: Dockerfile.prebuilt (pre-built dist folder detected)"
+        print_status "Estimated time: ~30 seconds"
+        echo ""
+
         # Build with local Docker first
         docker build -f Dockerfile.prebuilt -t orchestrator-library-ui:latest .
-        
+
         if [ $? -ne 0 ]; then
             print_error "Docker image build failed"
             exit 1
         fi
-        
+
         # Load into minikube if using minikube
         if [ "$USING_MINIKUBE" = true ]; then
             print_status "Loading image into minikube..."
             minikube image load orchestrator-library-ui:latest
         fi
     else
-        print_status "No pre-built dist found, building Angular app in Docker (this may take a while)..."
+        echo ""
+        print_status "Build Strategy: FULL BUILD"
+        print_status "Using: Dockerfile (multi-stage build from source)"
+        print_status "Estimated time: ~5-10 minutes"
         print_warning "TIP: For faster builds, run 'pnpm run build:prod' first, then deploy"
-        
+        echo ""
+
         if [ "$USING_MINIKUBE" = true ]; then
             # Build directly in minikube's Docker for full builds
+            print_status "Building in minikube's Docker environment..."
             eval $(minikube docker-env)
         fi
-        
+
         docker build -t orchestrator-library-ui:latest .
-        
+
         if [ $? -ne 0 ]; then
             print_error "Docker image build failed"
             exit 1
         fi
     fi
-    
+
     print_success "Docker image built successfully"
 }
 
