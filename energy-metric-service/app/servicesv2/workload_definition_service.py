@@ -19,6 +19,7 @@ class ApplicationDefinitionService:
         description: Optional[str],
         manifest: str,
         workload_type: str,
+        deployment_type: str = "kubernetes",
         estimated_energy_required: Optional[float] = None,
     ) -> ApplicationDefinition:
         wd = ApplicationDefinition(
@@ -27,6 +28,7 @@ class ApplicationDefinitionService:
             description=description,
             manifest=manifest,
             workload_type=workload_type,
+            deployment_type=deployment_type,
             estimated_energy_required=estimated_energy_required,
         )
         created = await self.repo.create(wd)
@@ -56,6 +58,7 @@ class ApplicationDefinitionService:
         description: Optional[str] = None,
         manifest: Optional[str] = None,
         workload_type: Optional[str] = None,
+        deployment_type: Optional[str] = None,
         estimated_energy_required: Optional[float] = None,
     ) -> bool:
         updated = await self.repo.update(
@@ -65,6 +68,7 @@ class ApplicationDefinitionService:
             description=description,
             manifest=manifest,
             workload_type=workload_type,
+            deployment_type=deployment_type,
             estimated_energy_required=estimated_energy_required,
         )
         return updated

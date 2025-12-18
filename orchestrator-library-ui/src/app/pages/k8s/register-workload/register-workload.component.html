@@ -20,6 +20,7 @@
             <th class="px-2 py-1 text-left font-medium">Name</th>
             <th class="px-2 py-1 text-left font-medium">Namespace</th>
             <th class="px-2 py-1 text-left font-medium">Type</th>
+            <th class="px-2 py-1 text-left font-medium">Deployment Type</th>
             <th class="px-2 py-1 text-left font-medium">Est. Energy (W)</th>
             <th class="px-2 py-1 text-left font-medium">Actions</th>
           </tr>
@@ -34,6 +35,12 @@
             <td class="px-2 py-3">
               <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(w.workload_type)">{{ w.workload_type }}</span>
             </td>
+            <td class="px-2 py-3">
+              <span class="px-1 py-0.5 rounded text-xs font-medium capitalize"
+                    [ngClass]="getDeploymentTypeClass(w?.deployment_type || 'kubernetes')">
+                {{ w?.deployment_type || 'kubernetes' }}
+              </span>
+            </td>
             <td class="px-2 py-3">{{ w.estimated_energy_required || '-' }}</td>
             <td class="px-2 py-3">
               <button
@@ -45,7 +52,7 @@
             </td>
           </tr>
           <tr *ngIf="!workloads || workloads.length === 0">
-            <td class="px-2 py-2 text-center text-gray-500" colspan="5">No workloads found</td>
+            <td class="px-2 py-2 text-center text-gray-500" colspan="6">No workloads found</td>
           </tr>
         </tbody>
       </table>

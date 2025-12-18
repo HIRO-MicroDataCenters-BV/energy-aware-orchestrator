@@ -19,7 +19,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/kubernetes", tags=["Kubernetes"])
+router = APIRouter(prefix="/api/kubernetes", tags=["Kubernetes APIs"])
 
 
 def get_kubernetes_service():
@@ -192,125 +192,6 @@ async def get_all_pods(
     except Exception as e:
         logger.error(f"Error fetching all pods: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch all pods: {str(e)}")
-
-
-@router.get("/pods/summary")
-async def get_pods_summary(
-    include_system: bool = Query(False, description="Include system namespaces")
-):
-    """
-    Get a summary of pods across all namespaces.
-
-    Returns aggregated statistics about pods in the cluster.
-    """
-    try:
-        k8s_service = get_kubernetes_service()
-        pods_by_namespace = await k8s_service.get_pods_all_namespaces()
-
-        # Filter out system namespaces if not requested
-        if not include_system:
-            system_namespaces = {
-                "kube-system", "kube-public", "kube-node-lease",
-                "local-path-storage", "ingress-nginx", "metallb-system"
-            }
-            pods_by_namespace = {
-                ns: pods for ns, pods in pods_by_namespace.items()
-                if ns not in system_namespaces
-            }
-
-        # Calculate summary statistics
-        total_pods = 0
-        phase_counts = {}
-        node_counts = {}
-        namespace_stats = {}
-
-        for namespace, pods in pods_by_namespace.items():
-            namespace_pod_count = len(pods)
-            total_pods += namespace_pod_count
-
-            namespace_phases = {}
-            for pod in pods:
-                phase = pod.get("phase", "Unknown")
-                phase_counts[phase] = phase_counts.get(phase, 0) + 1
-                namespace_phases[phase] = namespace_phases.get(phase, 0) + 1
-
-                node_name = pod.get("node_name", "unassigned")
-                if node_name:
-                    node_counts[node_name] = node_counts.get(node_name, 0) + 1
-
-            namespace_stats[namespace] = {
-                "total_pods": namespace_pod_count,
-                "phases": namespace_phases
-            }
-
-        return {
-            "status": "success",
-            "summary": {
-                "total_pods": total_pods,
-                "namespace_count": len(pods_by_namespace),
-                "phase_distribution": phase_counts,
-                "node_distribution": node_counts,
-                "namespace_details": namespace_stats
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-    except Exception as e:
-        logger.error(f"Error generating pods summary: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate pods summary: {str(e)}")
-
-
-@router.get("/pods/by-node/{node_name}")
-async def get_pods_by_node(
-    node_name: str,
-    include_system: bool = Query(False, description="Include system namespaces")
-):
-    """
-    Get all pods running on a specific node.
-
-    - **node_name**: The name of the node to query
-    - **include_system**: Whether to include system namespaces
-
-    Returns all pods scheduled on the specified node.
-    """
-    try:
-        k8s_service = get_kubernetes_service()
-        pods_by_namespace = await k8s_service.get_pods_all_namespaces()
-
-        # Filter by node and optionally exclude system namespaces
-        node_pods = {}
-        system_namespaces = {
-            "kube-system", "kube-public", "kube-node-lease",
-            "local-path-storage", "ingress-nginx", "metallb-system"
-        }
-
-        for namespace, pods in pods_by_namespace.items():
-            if not include_system and namespace in system_namespaces:
-                continue
-
-            namespace_node_pods = [
-                pod for pod in pods
-                if pod.get("node_name") == node_name
-            ]
-
-            if namespace_node_pods:
-                node_pods[namespace] = namespace_node_pods
-
-        total_pods = sum(len(pods) for pods in node_pods.values())
-
-        return {
-            "status": "success",
-            "node_name": node_name,
-            "pods_by_namespace": node_pods,
-            "total_pods": total_pods,
-            "namespace_count": len(node_pods),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-    except Exception as e:
-        logger.error(f"Error fetching pods for node '{node_name}': {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch pods for node: {str(e)}")
-
 
 @router.get("/pods/by-app", response_model=AppPodsResponse)
 async def get_pods_by_app_labels(

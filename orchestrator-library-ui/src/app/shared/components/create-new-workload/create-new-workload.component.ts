@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 export interface NewWorkloadData {
   name: string;
   workload_type: string;
+  deployment_type: string;
   estimated_energy_watts?: number;
   namespace?: string;
   description?: string;
@@ -30,6 +31,7 @@ export class CreateNewWorkloadComponent {
   form: any = {
     name: '',
     workload_type: 'Preferred',
+    deployment_type: 'kubernetes',
     estimated_energy_watts: undefined,
     namespace: 'default',
     description: '',
@@ -97,6 +99,7 @@ export class CreateNewWorkloadComponent {
     const data: NewWorkloadData = {
       name: this.form.name,
       workload_type: this.form.workload_type,
+      deployment_type: this.form.deployment_type,
       estimated_energy_watts: this.form.estimated_energy_watts,
       description: this.form.description,
     };
@@ -120,6 +123,7 @@ export class CreateNewWorkloadComponent {
     this.form = {
       name: '',
       workload_type: 'Preferred',
+      deployment_type: 'kubernetes',
       estimated_energy_watts: undefined,
       namespace: 'default',
       description: '',

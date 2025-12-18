@@ -98,6 +98,7 @@ export class WorkloadService {
     name: string;
     namespace?: string;
     workload_type?: string;
+    deployment_type?: string;
     description?: string;
     estimated_energy_required?: number;
   }): Observable<WorkloadDefinitionResponse> {
@@ -110,6 +111,7 @@ export class WorkloadService {
     form.append('name', payload.name);
     form.append('namespace', payload.namespace || 'default');
     form.append('workload_type', payload.workload_type || 'Optional');
+    form.append('deployment_type', payload.deployment_type || 'kubernetes');
     form.append('description', payload.description || '');
 
     // Always append estimated_energy_required as string

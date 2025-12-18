@@ -15,6 +15,7 @@ class ApplicationDefinition(Base):
     description = Column(Text, nullable=True)
     manifest = Column(Text, nullable=False)
     workload_type = Column(String(20), nullable=False, default="Optional")
+    deployment_type = Column(String(20), nullable=False, default="kubernetes")
     estimated_energy_required = Column(Float, nullable=True)
 
     # Relationship to ApplicationDeployment

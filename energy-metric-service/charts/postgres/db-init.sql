@@ -649,17 +649,23 @@ VALUES (DEFAULT, 'EuroSolar Netherlands', 'Flevoland Province, Netherlands', 'So
 -- ============================================================================
 -- APP DEFINITIONS TABLE
 -- Stores reusable Kubernetes application definitions (catalog)
+-- deployment_type options:
+--   - 'kubernetes': Native K8s YAML manifests (Deployment, Service, ConfigMap, etc.)
+--   - 'helm': Helm chart definitions (chart.yaml, values.yaml)
+--   - 'custom': Custom Resources (CRDs, EnergyAwareOrchestration, etc.)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS app_definitions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL UNIQUE,
     namespace VARCHAR(255) NOT NULL DEFAULT 'default',
+    workload_type VARCHAR(20) NOT NULL DEFAULT 'Optional',
+    deployment_type VARCHAR(20) NOT NULL DEFAULT 'kubernetes',
+    estimated_energy_required DOUBLE PRECISION,
     description TEXT,
     manifest TEXT NOT NULL,
-    workload_type VARCHAR(20) NOT NULL DEFAULT 'Optional',
-    estimated_energy_required DOUBLE PRECISION,
-    CONSTRAINT chk_app_workload_type CHECK (workload_type IN ('Critical', 'Preferred', 'Optional'))
+    CONSTRAINT chk_app_workload_type CHECK (workload_type IN ('Critical', 'Preferred', 'Optional')),
+    CONSTRAINT chk_deployment_type CHECK (deployment_type IN ('kubernetes', 'helm', 'custom'))
 );
 
 -- ============================================================================

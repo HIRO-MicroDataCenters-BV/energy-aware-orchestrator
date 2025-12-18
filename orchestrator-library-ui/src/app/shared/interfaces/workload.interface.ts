@@ -107,5 +107,6 @@ export interface WorkloadDefinitionResponse {
   description?: string | null;
   manifest: string;
   workload_type: string;
+  deployment_type?: string;
   estimated_energy_required?: number | null;
 }
