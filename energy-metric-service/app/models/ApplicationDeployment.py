@@ -18,6 +18,11 @@ class WorkloadType(str, enum.Enum):
     PREFERRED = "Preferred"
     OPTIONAL = "Optional"
 
+class DeploymentType(str, enum.Enum):
+    KUBERNETES = "kubernetes"  # Native K8s YAML manifests (Deployment, Service, ConfigMap, etc.)
+    HELM = "helm"              # Helm chart definitions
+    CUSTOM = "custom"          # Custom Resources (CRDs)
+
 class ApplicationDeployment(Base):
     __tablename__ = "app_deployments_request"
 

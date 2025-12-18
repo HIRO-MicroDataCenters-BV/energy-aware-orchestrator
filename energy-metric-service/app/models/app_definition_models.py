@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import uuid
 
-from app.models.ApplicationDeployment import WorkloadType
+from app.models.ApplicationDeployment import WorkloadType, DeploymentType
 
 
 class AppDefinitionCreate(BaseModel):
@@ -15,6 +15,7 @@ class AppDefinitionCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
     manifest: str = Field(..., min_length=1)
     workload_type: WorkloadType = Field(WorkloadType.OPTIONAL)
+    deployment_type: DeploymentType = Field(DeploymentType.KUBERNETES)
     estimated_energy_required: Optional[float] = Field(None, ge=0)
 
 
@@ -24,6 +25,7 @@ class AppDefinitionUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
     manifest: Optional[str] = Field(None, min_length=1)
     workload_type: Optional[WorkloadType] = None
+    deployment_type: Optional[DeploymentType] = None
     estimated_energy_required: Optional[float] = Field(None, ge=0)
 
 
@@ -34,4 +36,5 @@ class AppDefinitionResponse(BaseModel):
     description: Optional[str]
     manifest: str
     workload_type: str
+    deployment_type: str
     estimated_energy_required: Optional[float]
