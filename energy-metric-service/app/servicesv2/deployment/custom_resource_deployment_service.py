@@ -7,8 +7,8 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 import yaml
-import json
 import aiohttp
+import re
 
 from app.servicesv2.kubernetes_service import KubernetesService
 
@@ -177,7 +177,7 @@ class CustomResourceDeploymentService:
         Construct the Kubernetes API URL for a custom resource.
 
         Args:
-            api_version: API version (e.g., 'orchestrator.hiro.com/v1')
+            api_version: API version (e.g., 'orchestrator.hiro.com/v1' or 'eas.hiro.io/v1')
             kind: Resource kind (e.g., 'EnergyAwareOrchestration')
             namespace: Target namespace
 
@@ -185,26 +185,60 @@ class CustomResourceDeploymentService:
             API URL path or None if cannot be constructed
         """
         try:
-            # Convert kind to lowercase plural form (simple pluralization)
-            # This is a basic implementation - may need to be enhanced for irregular plurals
-            resource_plural = kind.lower()
-            if not resource_plural.endswith('s'):
-                resource_plural += 's'
+            # Convert kind to lowercase plural form
+            # Handle common pluralization patterns
+            resource_plural = self._pluralize_resource_name(kind)
 
             # Parse the API version
             if '/' in api_version:
-                # Custom API group (e.g., 'orchestrator.hiro.com/v1')
+                # Custom API group (e.g., 'orchestrator.hiro.com/v1' or 'eas.hiro.io/v1')
                 api_url = f"/apis/{api_version}/namespaces/{namespace}/{resource_plural}"
             else:
                 # Core API (e.g., 'v1')
                 api_url = f"/api/{api_version}/namespaces/{namespace}/{resource_plural}"
 
             logger.debug(f"Constructed API URL: {api_url} for {kind} ({api_version})")
+            logger.info(f"Custom resource URL: {api_url}")
             return api_url
 
         except Exception as e:
             logger.error(f"Error constructing custom resource URL: {e}")
             return None
+
+    def _pluralize_resource_name(self, kind: str) -> str:
+        """
+        Pluralize a Kubernetes resource kind name.
+
+        Handles common patterns:
+        - Words ending in 'y' (e.g., Policy -> policies)
+        - Words ending in 's', 'x', 'ch', 'sh' (e.g., Status -> statuses)
+        - Default: add 's'
+
+        Args:
+            kind: Resource kind name
+
+        Returns:
+            Pluralized lowercase resource name
+        """
+        kind_lower = kind.lower()
+
+        # Already plural
+        if kind_lower.endswith('s') or kind_lower.endswith('data') or kind_lower.endswith('metadata'):
+            return kind_lower
+
+        # Words ending in 'y' (preceded by consonant) -> 'ies'
+        if kind_lower.endswith('y') and len(kind_lower) > 1:
+            if kind_lower[-2] not in 'aeiou':
+                return kind_lower[:-1] + 'ies'
+
+        # Words ending in 's', 'x', 'z', 'ch', 'sh' -> add 'es'
+        if (kind_lower.endswith(('s', 'x', 'z')) or
+            kind_lower.endswith('ch') or
+            kind_lower.endswith('sh')):
+            return kind_lower + 'es'
+
+        # Default: add 's'
+        return kind_lower + 's'
 
     def _inject_custom_labels(self, resource_doc: Dict[str, Any], custom_labels: Dict[str, str]) -> None:
         """
@@ -223,13 +257,62 @@ class CustomResourceDeploymentService:
             if 'labels' not in resource_doc['metadata']:
                 resource_doc['metadata']['labels'] = {}
 
-            # Add custom labels to metadata
-            resource_doc['metadata']['labels'].update(custom_labels)
+            # Sanitize and add custom labels to metadata
+            sanitized_labels = self._sanitize_labels(custom_labels)
+            resource_doc['metadata']['labels'].update(sanitized_labels)
 
             logger.debug(f"Injected custom labels into {resource_doc.get('kind', 'Unknown')}/{resource_doc.get('metadata', {}).get('name', 'unnamed')}")
 
         except Exception as e:
             logger.warning(f"Failed to inject custom labels into custom resource: {e}")
+
+    def _sanitize_labels(self, labels: Dict[str, str]) -> Dict[str, str]:
+        """
+        Sanitize label values to comply with Kubernetes naming rules.
+
+        Kubernetes label values must:
+        - Be empty or consist of alphanumeric characters, '-', '_', or '.'
+        - Start and end with an alphanumeric character
+        - Be at most 63 characters long
+
+        Args:
+            labels: Dictionary of labels to sanitize
+
+        Returns:
+            Dictionary of sanitized labels
+        """
+        sanitized = {}
+
+        for key, value in labels.items():
+            if not value:
+                sanitized[key] = value
+                continue
+
+            # Replace spaces and other invalid characters with hyphens
+            sanitized_value = re.sub(r'[^a-zA-Z0-9\-_.]', '-', str(value))
+
+            # Remove leading and trailing non-alphanumeric characters
+            sanitized_value = re.sub(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$', '', sanitized_value)
+
+            # Ensure it doesn't start or end with hyphen, underscore, or dot
+            sanitized_value = re.sub(r'^[-_.]+|[-_.]+$', '', sanitized_value)
+
+            # If empty after sanitization, use a default value
+            if not sanitized_value:
+                sanitized_value = 'sanitized-value'
+
+            # Truncate to 63 characters if necessary
+            if len(sanitized_value) > 63:
+                sanitized_value = sanitized_value[:63]
+                # Ensure it doesn't end with a special character after truncation
+                sanitized_value = re.sub(r'[-_.]+$', '', sanitized_value)
+
+            sanitized[key] = sanitized_value
+
+            if sanitized_value != value:
+                logger.debug(f"Sanitized label value: '{value}' -> '{sanitized_value}'")
+
+        return sanitized
 
     async def validate_custom_resource(self, manifest: str) -> Dict[str, Any]:
         """
