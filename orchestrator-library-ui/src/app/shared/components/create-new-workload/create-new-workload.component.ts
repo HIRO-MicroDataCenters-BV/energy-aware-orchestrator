@@ -10,6 +10,11 @@ export interface NewWorkloadData {
   namespace?: string;
   description?: string;
   file?: File;
+  // Helm-specific fields
+  helm_repo_url?: string;
+  helm_chart_name?: string;
+  helm_chart_version?: string;
+  helm_values_file?: File;
 }
 
 @Component({
@@ -35,10 +40,15 @@ export class CreateNewWorkloadComponent {
     estimated_energy_watts: undefined,
     namespace: 'default',
     description: '',
+    helm_repo_url: '',
+    helm_chart_name: '',
+    helm_chart_version: '',
   };
 
   selectedFile: File | null = null;
+  selectedHelmValuesFile: File | null = null;
   isDragOver = false;
+  isHelmValuesDragOver = false;
 
   getWorkloadTypeClass(type?: string): string {
     const typeColors: { [key: string]: string } = {
@@ -82,11 +92,58 @@ export class CreateNewWorkloadComponent {
     this.selectedFile = null;
   }
 
+  onHelmValuesFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input?.files && input.files.length > 0) {
+      this.selectedHelmValuesFile = input.files[0];
+    }
+  }
+
+  onHelmValuesDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.isHelmValuesDragOver = true;
+  }
+
+  onHelmValuesDragLeave(): void {
+    this.isHelmValuesDragOver = false;
+  }
+
+  onHelmValuesDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isHelmValuesDragOver = false;
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const name = (file?.name || '').toLowerCase();
+      if (name.endsWith('.yml') || name.endsWith('.yaml')) {
+        this.selectedHelmValuesFile = file;
+      }
+    }
+  }
+
+  clearHelmValuesFile(): void {
+    this.selectedHelmValuesFile = null;
+  }
+
   isFormValid(): boolean {
     const nameValid = typeof this.form?.name === 'string' && this.form.name.trim().length > 0;
     const namespaceValid = !this.showNamespaceField || (typeof this.form?.namespace === 'string' && this.form.namespace.trim().length > 0);
     const typeValid = ['Critical', 'Preferred', 'Optional'].includes(this.form?.workload_type);
-    const fileValid = !this.showFileUpload || (!!this.selectedFile && /\.(ya?ml)$/i.test(this.selectedFile.name || ''));
+
+    // File validation based on deployment type
+    let fileValid = true;
+    if (this.showFileUpload) {
+      if (this.form?.deployment_type === 'helm') {
+        // For Helm: repo URL and chart name are required, manifest file is optional
+        const helmRepoValid = typeof this.form?.helm_repo_url === 'string' && this.form.helm_repo_url.trim().length > 0;
+        const helmChartValid = typeof this.form?.helm_chart_name === 'string' && this.form.helm_chart_name.trim().length > 0;
+        fileValid = helmRepoValid && helmChartValid;
+      } else {
+        // For Kubernetes/Custom: YAML manifest is required
+        fileValid = !!this.selectedFile && /\.(ya?ml)$/i.test(this.selectedFile.name || '');
+      }
+    }
+
     const energy = this.form?.estimated_energy_watts;
     const energyValid = energy === undefined || energy === null || (typeof energy === 'number' && energy > 0);
 
@@ -112,6 +169,16 @@ export class CreateNewWorkloadComponent {
       data.file = this.selectedFile;
     }
 
+    // Add Helm-specific fields if deployment type is Helm
+    if (this.form.deployment_type === 'helm') {
+      data.helm_repo_url = this.form.helm_repo_url;
+      data.helm_chart_name = this.form.helm_chart_name;
+      data.helm_chart_version = this.form.helm_chart_version;
+      if (this.selectedHelmValuesFile) {
+        data.helm_values_file = this.selectedHelmValuesFile;
+      }
+    }
+
     this.formSubmit.emit(data);
   }
 
@@ -127,8 +194,12 @@ export class CreateNewWorkloadComponent {
       estimated_energy_watts: undefined,
       namespace: 'default',
       description: '',
+      helm_repo_url: '',
+      helm_chart_name: '',
+      helm_chart_version: '',
     };
     this.selectedFile = null;
+    this.selectedHelmValuesFile = null;
   }
 
   getDeploymentIcon(): string {
