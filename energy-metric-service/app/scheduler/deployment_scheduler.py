@@ -6,7 +6,7 @@ Runs every 1 minute to process pending deployment requests based on energy avail
 import asyncio
 import logging
 
-from app.servicesv2.deployment_scheduler_service import DeploymentSchedulerService
+from app.servicesv2.deployment.deployment_scheduler_service import DeploymentSchedulerService
 
 
 logger = logging.getLogger(__name__)
