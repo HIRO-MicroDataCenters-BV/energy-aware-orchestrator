@@ -1,0 +1,13 @@
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: critical-api-service
+  namespace: default
+spec:
+  energyConsumption: 100
+  forecastWindowDays: 14
+  priority: Critical
+  applicationRef:
+    name: api-gateway
+    namespace: production

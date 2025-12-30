@@ -21,7 +21,7 @@ It follows the **Kubernetes Operator Pattern** with a separate **Scheduler Servi
 │   │                     Kubernetes Cluster                              │   │
 │   │  ┌──────────────────────────────────────────────────────────────┐   │   │
 │   │  │              EnergyAwareOrchestration CRD                    │   │   │
-│   │  │  - spec.priority (Critical/NonCritical/Optional)             │   │   │
+│   │  │  - spec.priority (Critical/Preferred/Optional)               │   │   │
 │   │  │  - spec.energyConsumption (Watts)                            │   │   │
 │   │  │  - spec.applicationRef                                       │   │   │
 │   │  │  - status.phase                                              │   │   │
@@ -50,7 +50,7 @@ It follows the **Kubernetes Operator Pattern** with a separate **Scheduler Servi
 │   │  │  Priority-Based Scheduling:                                  │   │   │
 │   │  │  ┌─────────────┬────────────────────────────────────────┐    │   │   │
 │   │  │  │ Critical    │ DeployImmediately (24/7 operation)     │    │   │   │
-│   │  │  │ NonCritical │ Delay 6h if energy insufficient        │    │   │   │
+│   │  │  │ Preferred   │ Delay 6h if energy insufficient        │    │   │   │
 │   │  │  │ Optional    │ Best slot in next 24h                  │    │   │   │
 │   │  │  └─────────────┴────────────────────────────────────────┘    │   │   │
 │   │  └──────────────────────────────────────────────────────────────┘   │   │
@@ -127,11 +127,11 @@ The day is divided into **4 time slots** of **6 hours each**:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### NonCritical Priority
+### Preferred Priority
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                   NON-CRITICAL WORKLOADS                            │
+│                   PREFERRED WORKLOADS                               │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  Decision: Scheduled (now) OR Delayed (6 hours)                     │
@@ -225,7 +225,7 @@ spec:
     namespace: default
   energyConsumption: 200      # Watts required
   forecastWindowDays: 7       # Days to forecast
-  priority: Optional          # Critical | NonCritical | Optional
+  priority: Optional          # Critical | Preferred | Optional
 status:
   phase: Scheduled            # Pending | Scheduled | Running | Completed | Failed
   decision:
@@ -281,7 +281,7 @@ status:
    │  ┌─────────────────────────────────────────────┐
    │  │  if Critical:                               │
    │  │      return DeployImmediately               │
-   │  │  if NonCritical:                            │
+   │  │  if Preferred:                              │
    │  │      if energy_sufficient:                  │
    │  │          return Scheduled (current slot)    │
    │  │      else:                                  │

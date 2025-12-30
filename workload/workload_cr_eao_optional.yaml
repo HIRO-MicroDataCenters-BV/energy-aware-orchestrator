@@ -1,0 +1,13 @@
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: batch-processing-job
+  namespace: default
+spec:
+  energyConsumption: 200
+  forecastWindowDays: 3
+  priority: Optional
+  applicationRef:
+    name: batch-processor
+    namespace: default

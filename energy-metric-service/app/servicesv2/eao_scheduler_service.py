@@ -2,7 +2,7 @@
 EnergyAwareOrchestration Scheduler Service
 
 This service implements the scheduling logic for EAO resources based on:
-- Workload priority (Critical, NonCritical, Optional)
+- Workload priority (Critical, Preferred, Optional)
 - Energy availability in time slots
 - 6-hour time windows
 
@@ -14,7 +14,7 @@ Time Slot Windows (daily):
 
 Scheduling Logic by Priority:
 - Critical: Deploy immediately (always on, 24/7)
-- NonCritical: If energy insufficient, delay by 6 hours (next slot)
+- Preferred: If energy insufficient, delay by 6 hours (next slot)
 - Optional: Find best available slot in next 24 hours based on energy availability
 """
 
@@ -46,7 +46,7 @@ SLOT_DURATION_HOURS = 6
 class Priority(str, Enum):
     """Priority levels for workload scheduling."""
     CRITICAL = "Critical"
-    NON_CRITICAL = "NonCritical"
+    PREFERRED = "Preferred"
     OPTIONAL = "Optional"
 
 
@@ -336,14 +336,14 @@ class EAOSchedulerService:
     ) -> ScheduleResult:
         """
         Calculate the execution schedule for a workload.
-        
+
         This is the main scheduling method that implements the logic:
         - Critical: Deploy immediately
-        - NonCritical: Check current energy, delay 6h if insufficient
+        - Preferred: Check current energy, delay 6h if insufficient
         - Optional: Find best slot in next 24 hours
-        
+
         Args:
-            priority: Workload priority (Critical, NonCritical, Optional)
+            priority: Workload priority (Critical, Preferred, Optional)
             required_energy_watts: Energy required by the workload in Watts
             db_session: Database session for energy queries
             
@@ -370,17 +370,17 @@ class EAOSchedulerService:
         # Priority-based scheduling
         if priority == Priority.CRITICAL.value:
             return self._schedule_critical(now, energy_metrics)
-        
-        elif priority == Priority.NON_CRITICAL.value:
-            return await self._schedule_non_critical(now, energy_metrics, session)
-        
+
+        elif priority == Priority.PREFERRED.value:
+            return await self._schedule_preferred(now, energy_metrics, session)
+
         elif priority == Priority.OPTIONAL.value:
             return await self._schedule_optional(now, energy_metrics, required_energy_watts, session)
-        
+
         else:
-            # Unknown priority - treat as NonCritical
-            logger.warning(f"Unknown priority '{priority}', treating as NonCritical")
-            return await self._schedule_non_critical(now, energy_metrics, session)
+            # Unknown priority - treat as Preferred
+            logger.warning(f"Unknown priority '{priority}', treating as Preferred")
+            return await self._schedule_preferred(now, energy_metrics, session)
     
     async def _get_current_energy(self, db_session: Optional[AsyncSession]) -> Dict[str, Any]:
         """Get current energy availability."""
@@ -438,20 +438,20 @@ class EAOSchedulerService:
             timestamp=now
         )
     
-    async def _schedule_non_critical(
+    async def _schedule_preferred(
         self,
         now: datetime,
         energy_metrics: EnergyMetrics,
         db_session: Optional[AsyncSession]
     ) -> ScheduleResult:
         """
-        Schedule a NonCritical priority workload.
-        
+        Schedule a Preferred priority workload.
+
         If energy is sufficient: deploy now
         If energy is insufficient: delay by 6 hours (next slot)
         """
         if energy_metrics.sufficient:
-            logger.info("Scheduling NonCritical workload: energy sufficient, deploy now")
+            logger.info("Scheduling Preferred workload: energy sufficient, deploy now")
             
             current_slot_num = self.get_current_slot_number(now)
             start_time, end_time = self.get_slot_times(
@@ -468,7 +468,7 @@ class EAOSchedulerService:
             
             decision = ScheduleDecision(
                 action=Action.SCHEDULED,
-                reason=f"NonCritical workload - energy sufficient ({energy_metrics.current_slot_available_watts:.0f}W available, {energy_metrics.required_watts:.0f}W required)",
+                reason=f"Preferred workload - energy sufficient ({energy_metrics.current_slot_available_watts:.0f}W available, {energy_metrics.required_watts:.0f}W required)",
                 scheduled_slot=current_slot,
             )
             
@@ -480,15 +480,15 @@ class EAOSchedulerService:
             )
         else:
             # Delay by 6 hours
-            logger.info("Scheduling NonCritical workload: energy insufficient, delaying 6 hours")
-            
+            logger.info("Scheduling Preferred workload: energy insufficient, delaying 6 hours")
+
             next_slot = self.get_next_slot(now)
             next_slot = await self.get_energy_for_slot(next_slot, db_session)
             next_slot.requiredEnergyWatts = energy_metrics.required_watts
-            
+
             decision = ScheduleDecision(
                 action=Action.DELAYED,
-                reason=f"NonCritical workload - insufficient energy ({energy_metrics.current_slot_available_watts or 0:.0f}W available, {energy_metrics.required_watts:.0f}W required). Delayed to next slot.",
+                reason=f"Preferred workload - insufficient energy ({energy_metrics.current_slot_available_watts or 0:.0f}W available, {energy_metrics.required_watts:.0f}W required). Delayed to next slot.",
                 scheduled_slot=next_slot,
                 next_evaluation_time=next_slot.start_time,
             )
