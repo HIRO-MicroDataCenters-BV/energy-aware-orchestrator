@@ -10,23 +10,23 @@ services:
       POSTGRES_DB: orchestration_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db-init:/docker-entrypoint-initdb.d
+      - ./charts/postgres/db-init.sql:/docker-entrypoint-initdb.d/db-init.sql
     ports:
       - "5432:5432"
 
-  api:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - db
-    environment:
-      # DATABASE_URL: postgresql://postgres:postgres@db:5432/orchestration_db
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/orchestration_db
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./app:/code/app
+#  api:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    depends_on:
+#      - db
+#    environment:
+#      # DATABASE_URL: postgresql://postgres:postgres@db:5432/orchestration_db
+#      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/orchestration_db
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - ./app:/code/app
 
 volumes:
   postgres_data:

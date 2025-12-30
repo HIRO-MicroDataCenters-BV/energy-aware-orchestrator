@@ -5,7 +5,7 @@ Kubernetes API endpoints for pod and namespace management.
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
-from app.servicesv2.kubernetes_pods_service import KubernetesPodService
+from app.servicesv2.kubernetes_service import KubernetesService
 from app.models.kubernetes_models import (
     PodInfo,
     PodsResponse,
@@ -23,8 +23,8 @@ router = APIRouter(prefix="/api/kubernetes", tags=["Kubernetes APIs"])
 
 
 def get_kubernetes_service():
-    """Get KubernetesPodService instance."""
-    return KubernetesPodService()
+    """Get KubernetesService instance."""
+    return KubernetesService()
 
 
 @router.get("/status", response_model=ConnectionTestResponse)

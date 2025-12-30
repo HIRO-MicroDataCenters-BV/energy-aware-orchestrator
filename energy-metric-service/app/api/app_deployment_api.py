@@ -17,7 +17,7 @@ from app.models.app_deployment_models import (
     ApplicationDeploymentResponse,
     build_deployment_response
 )
-from app.servicesv2.deployment_service import KubernetesDeploymentService
+from app.servicesv2.deployment.deployment_service import DeploymentHelperService
 from app.repositories.application_deployment_repository import ApplicationDeploymentRepository
 from app.repositories.application_definition_repository import ApplicationDefinitionRepository
 from app.db.database import get_async_db
@@ -91,12 +91,12 @@ async def request_deployment(
                     }
                 )
 
-        # Initialize deployment service for validation only
-        deployment_service = KubernetesDeploymentService()
-        logger.info("Deployment service initialized")
+        # Initialize deployment helper service for validation and energy estimation
+        deployment_helper = DeploymentHelperService()
+        logger.info("Deployment helper service initialized")
 
         # Validate manifest from application definition
-        validation = await deployment_service.validate_manifest(app_definition.manifest)
+        validation = await deployment_helper.validate_manifest(app_definition.manifest)
         if not validation["valid"]:
             raise HTTPException(
                 status_code=400,
@@ -108,7 +108,7 @@ async def request_deployment(
         if not estimated_energy:
             estimated_energy = app_definition.estimated_energy_required
         if not estimated_energy:
-            estimated_energy = await deployment_service.estimate_deployment_energy(app_definition.manifest)
+            estimated_energy = await deployment_helper.estimate_deployment_energy(app_definition.manifest)
 
         # Create application deployment record with status CREATED
         # The deployment scheduler will pick this up and deploy it

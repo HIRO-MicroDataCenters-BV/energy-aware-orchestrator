@@ -8,8 +8,8 @@ import logging
 import os
 
 
-class KubernetesPodService:
-    """Service to interact with Kubernetes API to fetch pod information."""
+class KubernetesService:
+    """Service to interact with Kubernetes API for various operations including pods, deployments, and resources."""
 
     def __init__(self):
         # Check if using kubectl proxy (common for local development)
