@@ -12,9 +12,9 @@ spec:
   
   # Forecast schedule for the next 7 days
   forecastWindowDays: 7
-  
-  # Business priority (Critical, NonCritical, Optional)
-  priority: NonCritical
+
+  # Business priority (Critical, Preferred, Optional)
+  priority: Preferred
   
   # Reference to the application/workload
   applicationRef:

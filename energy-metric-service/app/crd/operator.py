@@ -8,7 +8,7 @@ This operator watches EnergyAwareOrchestration custom resources and:
 
 Scheduling Logic:
 - Critical: Deploy immediately (24/7 operation)
-- NonCritical: If energy insufficient, delay by 6 hours
+- Preferred: If energy insufficient, delay by 6 hours
 - Optional: Find best slot in next 24 hours based on energy availability
 """
 
@@ -53,9 +53,9 @@ async def _calculate_schedule_async(
     Note: This function is async and should be called from Kopf's async handlers.
     Since Kopf manages its own event loop, we don't create database sessions here
     to avoid event loop conflicts. The scheduler will work without energy data.
-    
+
     Args:
-        priority: Workload priority (Critical, NonCritical, Optional)
+        priority: Workload priority (Critical, Preferred, Optional)
         energy_consumption: Required energy in Watts
         
     Returns:
@@ -139,7 +139,7 @@ async def reconcile_handler(
     # Extract spec fields
     energy_consumption = int(_extract_spec_field(spec, "energyConsumption", 0))
     forecast_window_days = int(_extract_spec_field(spec, "forecastWindowDays", 7))
-    priority = _extract_spec_field(spec, "priority", "NonCritical")
+    priority = _extract_spec_field(spec, "priority", "Preferred")
     application_ref = _extract_spec_field(spec, "applicationRef", {})
 
     # Extract application details
@@ -305,10 +305,10 @@ async def periodic_reconcile(
         return {"skipped": True, "reason": f"Phase is {current_phase}"}
     
     logger.info(f"Periodic re-evaluation for '{name}'")
-    
+
     # Trigger reconciliation
     energy_consumption = int(_extract_spec_field(spec, "energyConsumption", 0))
-    priority = _extract_spec_field(spec, "priority", "NonCritical")
+    priority = _extract_spec_field(spec, "priority", "Preferred")
     
     try:
         schedule_result = await _calculate_schedule_async(priority, energy_consumption)

@@ -60,12 +60,12 @@ spec:
 
                   - CRITICAL: Run immediately, always on (24/7)
 
-                  - NON_CRITICAL: If energy insufficient, delay by 6 hours
+                  - PREFERRED: If energy insufficient, delay by 6 hours
 
                   - OPTIONAL: Find best available slot in next 24 hours'
                 enum:
                 - Critical
-                - NonCritical
+                - Preferred
                 - Optional
               applicationRef:
                 type: object

@@ -19,13 +19,13 @@ from pydantic import BaseModel, Field
 class Priority(str, Enum):
     """
     Priority levels for workload scheduling.
-    
+
     - CRITICAL: Run immediately, always on (24/7)
-    - NON_CRITICAL: If energy insufficient, delay by 6 hours
+    - PREFERRED: If energy insufficient, delay by 6 hours
     - OPTIONAL: Find best available slot in next 24 hours
     """
     CRITICAL = "Critical"
-    NON_CRITICAL = "NonCritical"
+    PREFERRED = "Preferred"
     OPTIONAL = "Optional"
 
 
@@ -66,7 +66,7 @@ class EnergyAwareOrchestrationSpec(BaseModel):
         description="Number of days to forecast the execution schedule for."
     )
     priority: Priority = Field(
-        default=Priority.NON_CRITICAL,
+        default=Priority.PREFERRED,
         description="Business priority of the workload. Used for scheduling and cost/energy optimisation."
     )
     applicationRef: ApplicationRef = Field(
