@@ -1,0 +1,20 @@
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: ml-training-job
+  namespace: default
+spec:
+  # Estimated energy consumption in kWh
+  energyConsumption: 500
+
+  # Forecast schedule for the next 7 days
+  forecastWindowDays: 7
+
+  # Business priority (Critical, Preferred, Optional)
+  priority: Preferred
+
+  # Reference to the application/workload
+  applicationRef:
+    name: ml-training-deployment
+    namespace: default
