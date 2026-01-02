@@ -19,15 +19,30 @@ class EventHandler:
     Handler for posting Kubernetes events.
 
     This handler provides convenience methods for posting events at different
-    stages of the reconciliation process, with proper error handling.
+    stages of the reconciliation process, with proper error handling and
+    automatic event numbering.
     """
 
-    @staticmethod
+    def __init__(self):
+        """Initialize the event handler."""
+        self._event_counter = 0
+
+    def reset_counter(self) -> None:
+        """Reset the event counter (typically at start of reconciliation)."""
+        self._event_counter = 0
+
+    def _get_next_event_number(self) -> int:
+        """Get the next event number and increment counter."""
+        self._event_counter += 1
+        return self._event_counter
+
     def post_event_safe(
+        self,
         body: Dict[str, Any],
         event_type: str,
         reason: str,
-        message: str
+        message: str,
+        include_number: bool = True
     ) -> bool:
         """
         Post a Kubernetes event with error handling.
@@ -37,18 +52,26 @@ class EventHandler:
             event_type: Event type ("Normal" or "Warning")
             reason: Event reason (e.g., "Scheduling", "Scheduled")
             message: Event message
+            include_number: Whether to include event number in message (default: True)
 
         Returns:
             True if event was posted successfully, False otherwise
         """
         try:
+            # Add event number to message if requested
+            if include_number:
+                event_num = self._get_next_event_number()
+                formatted_message = f"[Event {event_num}] {message}"
+            else:
+                formatted_message = message
+
             kopf.event(
                 body,
                 type=event_type,
                 reason=reason,
-                message=message
+                message=formatted_message
             )
-            logger.debug(f"Posted {event_type} event: {reason} - {message}")
+            logger.debug(f"Posted {event_type} event: {reason} - {formatted_message}")
             return True
 
         except Exception as e:
@@ -74,6 +97,9 @@ class EventHandler:
         Returns:
             True if successful
         """
+        # Reset counter at start of reconciliation
+        self.reset_counter()
+
         return self.post_event_safe(
             body,
             event_type="Normal",
