@@ -109,13 +109,24 @@ async def reconcile_handler(
     3. Updates CR status with the scheduling decision
     4. Posts Kubernetes events for observability
     """
-    logger.info(f"Reconciling EnergyAwareOrchestration '{name}' in namespace '{namespace}'")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info(f"RECONCILIATION STARTED: '{name}' (namespace: {namespace})")
+    logger.info("=" * 80)
 
     # Validate and extract spec fields
+    logger.info("")
+    logger.info("STEP 1: Validating CR Specification")
+    logger.info("-" * 80)
     try:
         validated_spec = validation_handler.validate_and_extract_spec(spec, namespace)
+        logger.info("Validation successful")
     except ValidationError as e:
-        logger.error(f"Validation failed for '{name}': {e.message}")
+        logger.error("")
+        logger.error("VALIDATION FAILED")
+        logger.error(f"   Field: {e.field}")
+        logger.error(f"   Error: {e.message}")
+        logger.error("-" * 80)
 
         # Post validation failure event
         event_handler.post_validation_failed(body, e.message)
@@ -135,56 +146,100 @@ async def reconcile_handler(
     app_name = validated_spec["app_name"]
     app_namespace = validated_spec["app_namespace"]
 
-    logger.info(
-        f"Processing: priority={priority}, energy={energy_consumption}W, "
-        f"app={app_name}, namespace={app_namespace}"
-    )
+    logger.info(f"   Priority: {priority}")
+    logger.info(f"   Energy Required: {energy_consumption}W")
+    logger.info(f"   Application: {app_name} (namespace: {app_namespace})")
+    logger.info("-" * 80)
 
     # Post event: Processing started
+    logger.info("")
+    logger.info("STEP 2: Posting Kubernetes Event")
+    logger.info("-" * 80)
     event_handler.post_scheduling_started(body, name, priority, energy_consumption)
+    logger.info("Event posted: Scheduling started")
+    logger.info("-" * 80)
 
     # Calculate schedule using async scheduler (Kopf handles the event loop)
+    logger.info("")
+    logger.info("STEP 3: Calculating Schedule")
+    logger.info("-" * 80)
     try:
         schedule_result = await scheduler_handler.calculate_schedule(
             priority, energy_consumption
         )
 
         if schedule_result:
+            logger.info("Schedule calculation successful")
+            logger.info("-" * 80)
             # Build status patch
+            logger.info("")
+            logger.info("STEP 4: Updating CR Status")
+            logger.info("-" * 80)
             status_update = status_handler.build_status_from_schedule(schedule_result)
-
-            # Apply to patch
             status_handler.apply_status_patch(patch, status_update)
+            logger.info("Status patch applied")
+            logger.info("-" * 80)
 
             # Log decision
+            logger.info("")
+            logger.info("STEP 5: Schedule Decision")
+            logger.info("-" * 80)
             status_handler.log_schedule_decision(name, schedule_result)
+            logger.info("-" * 80)
 
             # Post event: Schedule calculated
+            logger.info("")
+            logger.info("STEP 6: Posting Completion Event")
+            logger.info("-" * 80)
             event_handler.post_scheduling_completed(body, schedule_result)
+            logger.info("Event posted: Scheduled")
+            logger.info("-" * 80)
+
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info(f"RECONCILIATION COMPLETED: '{name}'")
+            logger.info(f"   Action: {schedule_result.decision.action.value}")
+            logger.info("=" * 80)
+            logger.info("")
 
             return {"scheduled": True, "action": schedule_result.decision.action.value}
         else:
             # Scheduling failed
+            logger.error("")
+            logger.error("SCHEDULING FAILED")
+            logger.error("-" * 80)
+            logger.error("   Reason: Failed to calculate schedule")
+
             failure_status = status_handler.build_failure_status(
                 reason="Failed to calculate schedule"
             )
             status_handler.apply_status_patch(patch, failure_status)
-
             event_handler.post_scheduling_failed(body)
+
+            logger.error("-" * 80)
+            logger.error("=" * 80)
+            logger.error("")
 
             return {"scheduled": False, "error": "Scheduling failed"}
 
     except Exception as e:
-        logger.error(f"Error during scheduling for '{name}': {e}", exc_info=True)
+        logger.error("")
+        logger.error("=" * 80)
+        logger.error(f"EXCEPTION DURING RECONCILIATION: '{name}'")
+        logger.error("=" * 80)
+        logger.error(f"   Error Type: {type(e).__name__}")
+        logger.error(f"   Error Message: {str(e)}")
+        logger.error("-" * 80)
 
         failure_status = status_handler.build_failure_status(
             reason=f"Scheduling error: {str(e)}",
             error=str(e)
         )
         status_handler.apply_status_patch(patch, failure_status)
-
         event_handler.post_error(body, str(e))
 
+        logger.error("=" * 80, exc_info=True)
+        logger.error("")
         raise kopf.TemporaryError(f"Scheduling failed: {e}", delay=60)
 
 
@@ -202,13 +257,32 @@ def deletion_handler(
     Note: optional=True prevents the finalizer from blocking deletion
     if the operator is not running or can't process the delete event.
     """
-    logger.info(f"DELETE handler triggered for '{name}' in namespace '{namespace}'")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info(f"DELETION TRIGGERED: '{name}' (namespace: {namespace})")
+    logger.info("=" * 80)
 
     # Post Kubernetes event: Resource being deleted
+    logger.info("")
+    logger.info("Posting deletion event")
+    logger.info("-" * 80)
     event_handler.post_deletion(body, name)
+    logger.info("Event posted: Deleting")
+    logger.info("-" * 80)
 
     # Add any cleanup logic here (e.g., delete associated deployments)
-    logger.info(f"EnergyAwareOrchestration '{name}' cleanup completed.")
+    logger.info("")
+    logger.info("Performing cleanup")
+    logger.info("-" * 80)
+    # TODO: Add cleanup logic here
+    logger.info("Cleanup completed")
+    logger.info("-" * 80)
+
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info(f"DELETION COMPLETED: '{name}'")
+    logger.info("=" * 80)
+    logger.info("")
 
 
 @kopf.timer(API_GROUP, API_VERSION, PLURAL, interval=3600.0)  # Re-evaluate every hour
@@ -237,31 +311,67 @@ async def periodic_reconcile(
         logger.debug(f"Skipping re-evaluation for '{name}': phase is {current_phase}")
         return {"skipped": True, "reason": f"Phase is {current_phase}"}
 
-    logger.info(f"Periodic re-evaluation for '{name}'")
+    logger.info("")
+    logger.info("=" * 80)
+    logger.info(f"PERIODIC RE-EVALUATION: '{name}' (namespace: {namespace})")
+    logger.info(f"   Current Phase: {current_phase}")
+    logger.info("=" * 80)
 
     # Extract spec fields (skip validation as it was already validated on create/update)
+    logger.info("")
+    logger.info("Extracting spec fields")
+    logger.info("-" * 80)
     energy_consumption = int(
         validation_handler.extract_spec_field(spec, "energyConsumption", 0)
     )
     priority = validation_handler.extract_spec_field(spec, "priority", "Preferred")
+    logger.info(f"   Priority: {priority}")
+    logger.info(f"   Energy Required: {energy_consumption}W")
+    logger.info("-" * 80)
 
     # Post re-evaluation event
+    logger.info("")
+    logger.info("Posting re-evaluation event")
+    logger.info("-" * 80)
     event_handler.post_periodic_reevaluation(body, name)
+    logger.info("Event posted")
+    logger.info("-" * 80)
 
     try:
+        logger.info("")
+        logger.info("Recalculating schedule")
+        logger.info("-" * 80)
         schedule_result = await scheduler_handler.calculate_schedule(
             priority, energy_consumption
         )
 
         if schedule_result:
+            logger.info("Schedule recalculated")
+            logger.info("-" * 80)
+
+            logger.info("")
+            logger.info("Updating status")
+            logger.info("-" * 80)
             status_update = status_handler.build_status_from_schedule(schedule_result)
             status_handler.apply_status_patch(patch, status_update)
+            logger.info("Status updated")
+            logger.info("-" * 80)
 
-            logger.info(f"Re-evaluated '{name}': {schedule_result.decision.action.value}")
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info(f"RE-EVALUATION COMPLETED: '{name}'")
+            logger.info(f"   New Action: {schedule_result.decision.action.value}")
+            logger.info("=" * 80)
+            logger.info("")
 
             return {"re_evaluated": True, "action": schedule_result.decision.action.value}
 
     except Exception as e:
-        logger.warning(f"Error during periodic re-evaluation for '{name}': {e}")
+        logger.warning("")
+        logger.warning("=" * 80)
+        logger.warning(f"RE-EVALUATION ERROR: '{name}'")
+        logger.warning(f"   Error: {e}")
+        logger.warning("=" * 80)
+        logger.warning("")
 
     return {"re_evaluated": False}
