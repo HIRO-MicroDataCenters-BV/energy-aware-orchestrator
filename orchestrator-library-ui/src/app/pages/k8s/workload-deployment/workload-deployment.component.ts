@@ -689,6 +689,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
     return this.deploymentRequests.filter(r =>
       r.status === 'Schedule' ||
       r.status === 'Created' ||
+      r.status === 'Failed' ||
       !!r.schedule_at
     );
   }

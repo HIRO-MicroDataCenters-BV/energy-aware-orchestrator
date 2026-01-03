@@ -70,18 +70,6 @@ It follows the **Kubernetes Operator Pattern** with a separate **Scheduler Servi
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Architecture Pattern: Option B (Operator + Scheduler Service)
-
-This architecture separates concerns between the Kubernetes Operator and the Scheduling Logic:
-
-| Component | Responsibility |
-|-----------|---------------|
-| **Kopf Operator** | Kubernetes lifecycle management, CR watching, status updates, events |
-| **Scheduler Service** | Business logic for scheduling decisions based on priority and energy |
-
----
 
 ## Time Slot System
 
@@ -110,7 +98,7 @@ The day is divided into **4 time slots** of **6 hours each**:
 │  Decision: DeployImmediately                                        │
 │  Behavior: Run 24/7, regardless of energy availability              │
 │                                                                     │
-│  Example Use Cases:                                                 │
+│  Example Use Cases [e.g of workload type]:                          │
 │  • Production APIs                                                  │
 │  • Real-time data processing                                        │
 │  • Security services                                                │

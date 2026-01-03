@@ -73,13 +73,13 @@ import type { WorkloadDefinitionResponse } from '../../../shared/interfaces/work
                 </label>
               </div>
             </div>
-            <select 
+            <select
               [(ngModel)]="selectedDefinitionId"
               name="definition"
               class="mt-2 w-full px-2 py-1 border border-blue-200 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white">
               <option [ngValue]="''">-- None --</option>
               <option *ngFor="let d of workloadDefinitions" [ngValue]="d.id">
-                {{ d.name }} ({{ d.namespace }}) — {{ d.workload_type }}
+                {{ d.name }} ({{ d.namespace }}) — {{ d.workload_type }}{{ d.deployment_type ? ' — [' + d.deployment_type + ']' : '' }}
               </option>
             </select>
             <div *ngIf="!workloadDefinitions || workloadDefinitions.length === 0" class="mt-2 text-[11px] text-blue-800">
@@ -91,6 +91,12 @@ import type { WorkloadDefinitionResponse } from '../../../shared/interfaces/work
                   Type:
                   <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getWorkloadTypeClass(sel.workload_type)">
                     {{ sel.workload_type }}
+                  </span>
+                </div>
+                <div *ngIf="sel.deployment_type" class="mt-1">
+                  Deployment Type:
+                  <span class="px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+                    {{ sel.deployment_type }}
                   </span>
                 </div>
                 <div>Estimated Energy: <span class="font-medium">{{ sel.estimated_energy_required || '-' }} W</span></div>

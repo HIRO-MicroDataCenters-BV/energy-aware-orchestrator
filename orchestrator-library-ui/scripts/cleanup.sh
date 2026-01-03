@@ -102,3 +102,4 @@ if [ "$REINSTALL" = true ]; then
     "$SCRIPT_DIR/deploy.sh" -n "$NAMESPACE"
 fi
 
+

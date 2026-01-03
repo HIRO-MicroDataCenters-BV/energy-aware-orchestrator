@@ -8,7 +8,7 @@ This operator watches EnergyAwareOrchestration custom resources and:
 
 Scheduling Logic:
 - Critical: Deploy immediately (24/7 operation)
-- Preferred: If energy insufficient, delay by 6 hours
+- Preferred: If energy insufficient, delay by 6 hours  
 - Optional: Find best slot in next 24 hours based on energy availability
 """
 
@@ -18,35 +18,34 @@ from typing import Any, Dict
 import kopf
 from kubernetes import config
 
-from app.crd.config import (
+from app.config import (
     API_GROUP,
     API_VERSION,
     PLURAL,
+    get_energy_api_url,
     get_reevaluation_interval,
 )
-from app.crd.handlers import (
-    EventHandler,
-    SchedulerHandler,
-    StatusHandler,
-    ValidationHandler,
+from app.handlers import (
+    ValidationError,
     get_event_handler,
-    get_scheduler_handler,
     get_status_handler,
     get_validation_handler,
 )
-from app.crd.handlers.validation_handler import ValidationError
+from app.services import SimpleSchedulerService
 
 # Get configuration from environment
 REEVALUATION_INTERVAL_SECONDS = get_reevaluation_interval()
+ENERGY_API_URL = get_energy_api_url()
 
 logger = logging.getLogger(__name__)
 
 # Handler instances - initialized at module load time
-# These are pure Python objects and don't require Kubernetes config
-validation_handler: ValidationHandler = get_validation_handler()
-scheduler_handler: SchedulerHandler = get_scheduler_handler()
-status_handler: StatusHandler = get_status_handler()
-event_handler: EventHandler = get_event_handler()
+validation_handler = get_validation_handler()
+status_handler = get_status_handler()
+event_handler = get_event_handler()
+
+# Scheduler service
+scheduler_service: SimpleSchedulerService = SimpleSchedulerService(energy_api_url=ENERGY_API_URL)
 
 
 def _load_kube_config() -> None:
@@ -72,28 +71,24 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     This runs once when the operator starts and:
     - Loads Kubernetes configuration
     - Configures Kopf settings
-
-    Note: Handlers are already initialized at module load time.
     """
     _load_kube_config()
 
     # Tune Kopf settings for production use
-    settings.posting.enabled = True  # Disabled - we use EventHandler explicitly
+    settings.posting.enabled = True
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
         prefix="eas.hiro.io"
     )
 
+    logger.info("=" * 80)
     logger.info("EAO Operator configured with energy-aware scheduling")
-    logger.info(
-        f"Handlers ready: {type(validation_handler).__name__}, "
-        f"{type(scheduler_handler).__name__}, "
-        f"{type(status_handler).__name__}, "
-        f"{type(event_handler).__name__}"
-    )
-    logger.info(
-        f"Re-evaluation interval: {REEVALUATION_INTERVAL_SECONDS} seconds "
-        f"({REEVALUATION_INTERVAL_SECONDS / 60:.1f} minutes)"
-    )
+    logger.info(f"Handlers ready: {validation_handler.__class__.__name__}, "
+                f"{status_handler.__class__.__name__}, "
+                f"{event_handler.__class__.__name__}")
+    logger.info(f"Re-evaluation interval: {REEVALUATION_INTERVAL_SECONDS} seconds "
+                f"({REEVALUATION_INTERVAL_SECONDS / 60:.1f} minutes)")
+    logger.info(f"Energy API URL: {ENERGY_API_URL}")
+    logger.info("=" * 80)
 
 
 @kopf.on.create(API_GROUP, API_VERSION, PLURAL)
@@ -141,8 +136,7 @@ async def reconcile_handler(
 
         # Update status with validation error
         failure_status = status_handler.build_validation_failure_status(
-            field=e.field or "unknown",
-            message=e.message
+            field=e.field or "unknown", message=e.message
         )
         status_handler.apply_status_patch(patch, failure_status)
 
@@ -167,18 +161,19 @@ async def reconcile_handler(
     logger.info("Event posted: Scheduling started")
     logger.info("-" * 80)
 
-    # Calculate schedule using async scheduler (Kopf handles the event loop)
+    # Calculate schedule using async scheduler
     logger.info("")
     logger.info("STEP 3: Calculating Schedule")
     logger.info("-" * 80)
     try:
-        schedule_result = await scheduler_handler.calculate_schedule(
-            priority, energy_consumption
+        schedule_result = await scheduler_service.calculate_schedule(
+            priority, float(energy_consumption)
         )
 
         if schedule_result:
             logger.info("Schedule calculation successful")
             logger.info("-" * 80)
+            
             # Build status patch
             logger.info("")
             logger.info("STEP 4: Updating CR Status")
@@ -206,11 +201,12 @@ async def reconcile_handler(
             logger.info("")
             logger.info("=" * 80)
             logger.info(f"RECONCILIATION COMPLETED: '{name}'")
-            logger.info(f"   Action: {schedule_result.decision.action.value}")
+            action = schedule_result.get("decision", {}).get("action", "Unknown")
+            logger.info(f"   Action: {action}")
             logger.info("=" * 80)
             logger.info("")
 
-            return {"scheduled": True, "action": schedule_result.decision.action.value}
+            return {"scheduled": True, "action": action}
         else:
             # Scheduling failed
             logger.error("")
@@ -240,8 +236,7 @@ async def reconcile_handler(
         logger.error("-" * 80)
 
         failure_status = status_handler.build_failure_status(
-            reason=f"Scheduling error: {str(e)}",
-            error=str(e)
+            reason=f"Scheduling error: {str(e)}", error=str(e)
         )
         status_handler.apply_status_patch(patch, failure_status)
         event_handler.post_error(body, str(e))
@@ -253,11 +248,7 @@ async def reconcile_handler(
 
 @kopf.on.delete(API_GROUP, API_VERSION, PLURAL, optional=True)
 def deletion_handler(
-    name: str,
-    namespace: str,
-    body: Dict[str, Any],
-    logger: kopf.Logger,
-    **_: Any,
+    name: str, namespace: str, body: Dict[str, Any], logger: kopf.Logger, **_: Any
 ) -> None:
     """
     Cleanup hook for CR deletion.
@@ -307,14 +298,14 @@ async def periodic_reconcile(
     """
     Periodic timer to re-evaluate schedules.
 
-    This runs every hour to:
+    This runs at configured intervals to:
     - Re-calculate schedules based on updated energy availability
     - Update CR status if scheduling decision changes
     """
     # Get current phase
     current_phase = status.get("phase", "Pending")
 
-    # Only re-evaluate if not already completed or failed permanently
+    # Only re-evaluate if not already completed
     if current_phase in ["Completed"]:
         logger.debug(f"Skipping re-evaluation for '{name}': phase is {current_phase}")
         return {"skipped": True, "reason": f"Phase is {current_phase}"}
@@ -325,7 +316,7 @@ async def periodic_reconcile(
     logger.info(f"   Current Phase: {current_phase}")
     logger.info("=" * 80)
 
-    # Extract spec fields (skip validation as it was already validated on create/update)
+    # Extract spec fields
     logger.info("")
     logger.info("Extracting spec fields")
     logger.info("-" * 80)
@@ -349,8 +340,8 @@ async def periodic_reconcile(
         logger.info("")
         logger.info("Recalculating schedule")
         logger.info("-" * 80)
-        schedule_result = await scheduler_handler.calculate_schedule(
-            priority, energy_consumption
+        schedule_result = await scheduler_service.calculate_schedule(
+            priority, float(energy_consumption)
         )
 
         if schedule_result:
@@ -368,11 +359,12 @@ async def periodic_reconcile(
             logger.info("")
             logger.info("=" * 80)
             logger.info(f"RE-EVALUATION COMPLETED: '{name}'")
-            logger.info(f"   New Action: {schedule_result.decision.action.value}")
+            action = schedule_result.get("decision", {}).get("action", "Unknown")
+            logger.info(f"   New Action: {action}")
             logger.info("=" * 80)
             logger.info("")
 
-            return {"re_evaluated": True, "action": schedule_result.decision.action.value}
+            return {"re_evaluated": True, "action": action}
 
     except Exception as e:
         logger.warning("")
@@ -383,3 +375,4 @@ async def periodic_reconcile(
         logger.warning("")
 
     return {"re_evaluated": False}
+
