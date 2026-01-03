@@ -22,10 +22,6 @@ podSecurityContext: {}
 
 securityContext: {}
 
-tolerations: []
-
-# nodeSelector:
-
 resources:
   requests:
     cpu: 100m
@@ -57,9 +53,6 @@ readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 5
-
-# ServiceMonitor for Prometheus metrics scraping
-serviceMonitorEnabled: false
 
 configuration:
   # Operator configuration

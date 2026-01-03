@@ -21,7 +21,10 @@ NAMESPACE="${NAMESPACE:-default}"
 IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-energy-aware-operator}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 IMAGE_PULL_POLICY="${IMAGE_PULL_POLICY:-IfNotPresent}"
-BUILD_IMAGE="${BUILD_IMAGE:-true}"
+BUILD_IMAGE="${BUILD_IMAGE:-false}"
+APPLY_CRD="${APPLY_CRD:-true}"
+WAIT="${WAIT:-true}"
+TIMEOUT="${TIMEOUT:-5m}"
 
 usage() {
     cat << EOF
@@ -36,20 +39,28 @@ Options:
     --image-repo REPO         Docker image repository (default: energy-aware-operator)
     --image-tag TAG           Docker image tag (default: latest)
     --pull-policy POLICY      Image pull policy (default: IfNotPresent)
-    --no-build                Skip Docker image build
-    --skip-crd                Skip CRD generation/application
+    --build                   Build image before deploying (runs build.sh)
+    --skip-crd                Skip CRD application
+    --no-wait                 Don't wait for deployment to be ready
+    --timeout DURATION        Wait timeout (default: 5m)
 
 Examples:
-    $0                                    # Build and deploy to default namespace
+    $0                                    # Deploy with defaults
+    $0 --build                            # Build then deploy
     $0 -n operators                       # Deploy to operators namespace
-    $0 --no-build                         # Deploy without building image
-    $0 -r my-operator --image-tag v1.0.0  # Custom release name and tag
+    $0 --no-wait                          # Deploy without waiting
+    $0 -r my-operator --image-tag v1.0.0  # Custom release and tag
+
+Environment Variables:
+    RELEASE_NAME              Helm release name
+    NAMESPACE                 Kubernetes namespace
+    IMAGE_REPOSITORY          Docker image repository
+    IMAGE_TAG                 Docker image tag
+    IMAGE_PULL_POLICY         Image pull policy
 
 EOF
     exit 0
 }
-
-SKIP_CRD=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -59,8 +70,10 @@ while [[ $# -gt 0 ]]; do
         --image-repo) IMAGE_REPOSITORY="$2"; shift 2 ;;
         --image-tag) IMAGE_TAG="$2"; shift 2 ;;
         --pull-policy) IMAGE_PULL_POLICY="$2"; shift 2 ;;
-        --no-build) BUILD_IMAGE=false; shift ;;
-        --skip-crd) SKIP_CRD=true; shift ;;
+        --build) BUILD_IMAGE=true; shift ;;
+        --skip-crd) APPLY_CRD=false; shift ;;
+        --no-wait) WAIT=false; shift ;;
+        --timeout) TIMEOUT="$2"; shift 2 ;;
         *) print_error "Unknown option: $1"; usage ;;
     esac
 done
@@ -70,58 +83,45 @@ echo -e "${GREEN}║  Deploy Energy-Aware Operator          ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
 echo ""
 
-print_info "Configuration:"
+print_info "Deployment Configuration:"
 echo "  Release:       $RELEASE_NAME"
 echo "  Namespace:     $NAMESPACE"
 echo "  Image:         $IMAGE_REPOSITORY:$IMAGE_TAG"
 echo "  Pull Policy:   $IMAGE_PULL_POLICY"
 echo "  Build Image:   $BUILD_IMAGE"
+echo "  Apply CRD:     $APPLY_CRD"
+echo "  Wait:          $WAIT"
 echo ""
 
 # Check prerequisites
 print_info "Checking prerequisites..."
 command -v kubectl &> /dev/null || { print_error "kubectl not found"; exit 1; }
 command -v helm &> /dev/null || { print_error "helm not found"; exit 1; }
-command -v docker &> /dev/null || { print_error "docker not found"; exit 1; }
 
-# Build Docker image
+# Build image if requested
 if [ "$BUILD_IMAGE" = true ]; then
     print_info "Building Docker image..."
-    cd "$PROJECT_ROOT"
-    
-    # Check if using minikube
-    if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
-        print_info "Detected minikube - building in minikube Docker environment..."
-        eval $(minikube docker-env)
-        IMAGE_PULL_POLICY="Never"
-    fi
-    
-    docker build -t "$IMAGE_REPOSITORY:$IMAGE_TAG" .
-    if [ $? -eq 0 ]; then
-        print_info "Docker image built successfully ✓"
-    else
-        print_error "Docker build failed"
-        exit 1
-    fi
+    "$SCRIPT_DIR/build.sh" --image-repo "$IMAGE_REPOSITORY" --image-tag "$IMAGE_TAG"
+    echo ""
 fi
 
-# Generate and apply CRD
-if [ "$SKIP_CRD" = false ]; then
-    print_info "Generating CRD..."
-    cd "$PROJECT_ROOT"
+# Apply CRD if requested
+if [ "$APPLY_CRD" = true ]; then
+    CRD_FILE="$CHART_PATH/crds/energy-aware-orchestration-crd.yaml"
     
-    if command -v uv &> /dev/null; then
-        uv run python -m app.crd.builder || print_warn "CRD generation failed, using existing"
-    else
-        print_warn "uv not found, skipping CRD generation"
-    fi
-    
-    if [ -f "$CHART_PATH/crds/energy-aware-orchestration-crd.yaml" ]; then
+    if [ -f "$CRD_FILE" ]; then
         print_info "Applying CRD..."
-        kubectl apply -f "$CHART_PATH/crds/energy-aware-orchestration-crd.yaml"
+        if kubectl apply -f "$CRD_FILE"; then
+            print_info "CRD applied successfully ✓"
+        else
+            print_error "Failed to apply CRD"
+            exit 1
+        fi
     else
-        print_warn "CRD file not found, skipping"
+        print_warn "CRD file not found: $CRD_FILE"
     fi
+else
+    print_info "Skipping CRD application"
 fi
 
 # Create namespace if it doesn't exist
@@ -132,43 +132,65 @@ fi
 
 # Deploy with Helm
 print_info "Deploying operator with Helm..."
-helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
-    --namespace "$NAMESPACE" \
-    --set "image.repository=$IMAGE_REPOSITORY" \
-    --set "image.tag=$IMAGE_TAG" \
-    --set "image.pullPolicy=$IMAGE_PULL_POLICY" \
-    --wait \
-    --timeout 5m
+HELM_CMD="helm upgrade --install $RELEASE_NAME $CHART_PATH \
+    --namespace $NAMESPACE \
+    --set image.repository=$IMAGE_REPOSITORY \
+    --set image.tag=$IMAGE_TAG \
+    --set image.pullPolicy=$IMAGE_PULL_POLICY"
 
-if [ $? -ne 0 ]; then
+if [ "$WAIT" = true ]; then
+    HELM_CMD="$HELM_CMD --wait --timeout $TIMEOUT"
+fi
+
+if eval "$HELM_CMD"; then
+    print_info "Helm deployment successful ✓"
+else
     print_error "Helm deployment failed"
     exit 1
 fi
 
 # Wait for operator to be ready
-print_info "Waiting for operator to be ready..."
-kubectl wait --for=condition=ready pod \
-    -l app.kubernetes.io/name=energy-aware-operator \
-    -n "$NAMESPACE" \
-    --timeout=120s || {
-    print_error "Operator failed to become ready"
-    print_info "Checking pod status..."
-    kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=energy-aware-operator
-    print_info "Checking pod logs..."
-    kubectl logs -n "$NAMESPACE" -l app.kubernetes.io/name=energy-aware-operator --tail=50
-    exit 1
-}
+if [ "$WAIT" = true ]; then
+    print_info "Waiting for operator pod to be ready..."
+    if kubectl wait --for=condition=ready pod \
+        -l app.kubernetes.io/name=energy-aware-operator \
+        -n "$NAMESPACE" \
+        --timeout=120s 2>/dev/null; then
+        print_info "Operator pod is ready ✓"
+    else
+        print_warn "Timeout waiting for pod readiness (pod may still be starting)"
+        print_info "Checking pod status..."
+        kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=energy-aware-operator
+    fi
+fi
 
-print_info "Operator deployed successfully! ✅"
 echo ""
-echo "📊 Verify deployment:"
+print_info "Deployment complete! ✅"
+echo ""
+
+# Show deployment status
+print_info "Deployment Status:"
+kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=energy-aware-operator
+
+echo ""
+echo "📊 Useful commands:"
+echo ""
+echo "  # View pods"
 echo "  kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=energy-aware-operator"
+echo ""
+echo "  # View logs"
 echo "  kubectl logs -f -n $NAMESPACE -l app.kubernetes.io/name=energy-aware-operator"
+echo ""
+echo "  # View all resources"
+echo "  kubectl get all -n $NAMESPACE -l app.kubernetes.io/name=energy-aware-operator"
+echo ""
+echo "  # View Helm release"
+echo "  helm status $RELEASE_NAME -n $NAMESPACE"
 echo ""
 echo "📝 Apply sample CR:"
 echo "  kubectl apply -f examples/sample-eao.yaml"
 echo "  kubectl get eao -A"
 echo ""
-echo "🔍 View operator service:"
-echo "  kubectl get svc -n $NAMESPACE"
+echo "🧹 Cleanup:"
+echo "  ./scripts/cleanup.sh -n $NAMESPACE -r $RELEASE_NAME"
 echo ""
