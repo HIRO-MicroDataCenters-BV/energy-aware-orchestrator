@@ -1,0 +1,10 @@
+# Simple values - minimal configuration needed
+replicaCount: 1
+
+image:
+  repository: energy-aware-operator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# That's it! Everything else uses sensible defaults.
+
