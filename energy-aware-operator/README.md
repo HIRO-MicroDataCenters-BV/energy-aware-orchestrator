@@ -496,11 +496,41 @@ kubectl get crd energyawareorchestrations.eas.hiro.io
 # Set PYTHONPATH
 export PYTHONPATH=/Users/rahul/Desktop/Hiro/code/2025/energy-aware-orchestrator/energy-aware-operator
 
+# Set environment variables (optional)
+export LOG_LEVEL=INFO
+export KOPF_RECONCILE_INTERVAL_SECONDS=600
+export ENERGY_API_URL=http://localhost:8000
+
 # Run the operator locally
 uv run kopf run app/operator.py --verbose
 
 # Or with python directly
 python -m kopf run app/operator.py --verbose
+```
+
+**Environment Variables:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `KOPF_RECONCILE_INTERVAL_SECONDS` | `600` | How often to re-evaluate schedules (seconds) |
+| `ENERGY_API_URL` | `http://energy-metric-service:8000` | Energy metrics service endpoint |
+
+**One-line with environment variables:**
+```bash
+PYTHONPATH=. LOG_LEVEL=DEBUG ENERGY_API_URL=http://localhost:8000 uv run kopf run app/operator.py --verbose
+```
+
+**Or create a `.env` file:**
+```bash
+# Copy the example
+cp env.local.example .env
+
+# Edit with your values
+vim .env
+
+# Source it and run
+source .env
+uv run kopf run app/operator.py --verbose
 ```
 
 ### Test Local Changes
