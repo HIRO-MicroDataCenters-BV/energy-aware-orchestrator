@@ -1,0 +1,54 @@
+# Sample EnergyAwareOrchestration Custom Resources
+
+## Critical Workload (Always On)
+---
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: critical-api-service
+  namespace: default
+spec:
+  # Energy consumption in Watts
+  energyConsumption: 100
+  
+  # Forecast window (1-30 days)
+  forecastWindowDays: 14
+  
+  # Priority: Critical, Preferred, or Optional
+  priority: Critical
+  
+  # Application reference
+  applicationRef:
+    name: api-gateway
+    namespace: production
+
+---
+## Preferred Workload (ML Training)
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: ml-training-job
+  namespace: default
+spec:
+  energyConsumption: 500
+  forecastWindowDays: 7
+  priority: Preferred
+  applicationRef:
+    name: ml-training-deployment
+    namespace: default
+
+---
+## Optional Workload (Batch Processing)
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: batch-processing-job
+  namespace: default
+spec:
+  energyConsumption: 200
+  forecastWindowDays: 3
+  priority: Optional
+  applicationRef:
+    name: batch-processor
+    namespace: default
+
