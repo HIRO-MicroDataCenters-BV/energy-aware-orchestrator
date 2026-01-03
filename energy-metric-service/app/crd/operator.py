@@ -18,6 +18,12 @@ from typing import Any, Dict
 import kopf
 from kubernetes import config
 
+from app.crd.config import (
+    API_GROUP,
+    API_VERSION,
+    PLURAL,
+    get_reevaluation_interval,
+)
 from app.crd.handlers import (
     EventHandler,
     SchedulerHandler,
@@ -30,9 +36,8 @@ from app.crd.handlers import (
 )
 from app.crd.handlers.validation_handler import ValidationError
 
-API_GROUP = "eas.hiro.io"
-API_VERSION = "v1"
-PLURAL = "energyawareorchestrations"
+# Get configuration from environment
+REEVALUATION_INTERVAL_SECONDS = get_reevaluation_interval()
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +77,8 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     """
     _load_kube_config()
 
-    # Tune Kopf settings for production use.
-    settings.posting.level = logging.INFO
-    settings.posting.enabled = True
+    # Tune Kopf settings for production use
+    settings.posting.enabled = True  # Disabled - we use EventHandler explicitly
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
         prefix="eas.hiro.io"
     )
@@ -85,6 +89,10 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
         f"{type(scheduler_handler).__name__}, "
         f"{type(status_handler).__name__}, "
         f"{type(event_handler).__name__}"
+    )
+    logger.info(
+        f"Re-evaluation interval: {REEVALUATION_INTERVAL_SECONDS} seconds "
+        f"({REEVALUATION_INTERVAL_SECONDS / 60:.1f} minutes)"
     )
 
 
@@ -285,7 +293,7 @@ def deletion_handler(
     logger.info("")
 
 
-@kopf.timer(API_GROUP, API_VERSION, PLURAL, interval=3600.0)  # Re-evaluate every hour
+@kopf.timer(API_GROUP, API_VERSION, PLURAL, interval=REEVALUATION_INTERVAL_SECONDS)
 async def periodic_reconcile(
     spec: Dict[str, Any],
     status: Dict[str, Any],
