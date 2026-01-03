@@ -463,3 +463,59 @@ kubectl get eao
 # Uninstall
 ./uninstall.sh
 ```
+
+---
+
+## Local Development Without Kubernetes
+
+You can develop and test the operator locally without deploying to Kubernetes.
+
+### Prerequisites
+
+```bash
+# Install Python dependencies
+uv sync
+```
+
+### Apply CRD to Cluster
+
+```bash
+# Generate the CRD
+uv run python -m app.crd.builder
+
+# Apply it to your cluster
+kubectl apply -f charts/energy-aware-operator/crds/energy-aware-orchestration-crd.yaml
+
+# Verify CRD is installed
+kubectl get crd energyawareorchestrations.eas.hiro.io
+```
+
+### Run Kopf Operator Locally
+
+```bash
+# Set PYTHONPATH
+export PYTHONPATH=/Users/rahul/Desktop/Hiro/code/2025/energy-aware-orchestrator/energy-aware-operator
+
+# Run the operator locally
+uv run kopf run app/operator.py --verbose
+
+# Or with python directly
+python -m kopf run app/operator.py --verbose
+```
+
+### Test Local Changes
+
+```bash
+# Terminal 1: Run operator locally
+uv run kopf run app/operator.py --verbose
+
+# Terminal 2: Apply a test resource
+kubectl apply -f examples/sample-eao.yaml
+
+# Watch the operator logs in Terminal 1
+```
+
+
+# Check what CRDs operator will watch
+kubectl get crd | grep eas.hiro.io
+```
