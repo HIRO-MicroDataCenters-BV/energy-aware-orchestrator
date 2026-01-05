@@ -2,10 +2,8 @@
 FastAPI application entry point.
 """
 
-import asyncio
 import logging
 import os
-import threading
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -31,44 +29,9 @@ deployment_scheduler = None
 if os.environ.get("ENABLE_DEPLOYMENT_SCHEDULER", "true").lower() == "true":
     deployment_scheduler = DeploymentScheduler(interval_seconds=30)  # Runs every 1 minute
 
-# Kopf operator thread
-operator_thread = None
-operator_stop_flag = threading.Event()
-
-
-def run_kopf_operator(stop_flag: threading.Event):
-    """
-    Run the Kopf operator in a separate thread.
-    
-    This function imports and runs the operator module which registers
-    handlers for EnergyAwareOrchestration CRD events.
-    
-    Note: Kopf manages its own event loop internally, so we don't create one here.
-    """
-    import kopf
-    
-    # Import the operator module to register handlers
-    from app.crd import operator  # noqa: F401
-    
-    logging.info("Starting Kopf operator for EnergyAwareOrchestration CRD...")
-    
-    try:
-        # Run kopf operator - it manages its own event loop
-        kopf.run(
-            clusterwide=True,
-            standalone=True,
-            stop_flag=stop_flag,
-        )
-    except Exception as e:
-        logging.error(f"Kopf operator error: {e}")
-    finally:
-        logging.info("Kopf operator stopped")
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global operator_thread
-    
     # Initialize services on startup
     if metrics_scheduler:
         metrics_scheduler.start()
@@ -76,17 +39,6 @@ async def lifespan(app: FastAPI):
     if deployment_scheduler:
         deployment_scheduler.start()
         logging.info("Deployment scheduler started - will check pending deployments every 1 minute")
-
-    # Start Kopf operator in background thread
-    if os.environ.get("ENABLE_OPERATOR", "true").lower() == "true":
-        operator_thread = threading.Thread(
-            target=run_kopf_operator,
-            args=(operator_stop_flag,),
-            daemon=True,
-            name="kopf-operator"
-        )
-        operator_thread.start()
-        logging.info("Kopf operator thread started")
 
     # Initialize singleton forecasting service
     # Temporarily disable to isolate async issues
@@ -105,13 +57,6 @@ async def lifespan(app: FastAPI):
     if deployment_scheduler:
         deployment_scheduler.stop()
         logging.info("Deployment scheduler stopped")
-    
-    # Stop Kopf operator
-    if operator_thread and operator_thread.is_alive():
-        logging.info("Stopping Kopf operator...")
-        operator_stop_flag.set()
-        operator_thread.join(timeout=5)
-        logging.info("Kopf operator thread stopped")
 
 
 app = FastAPI(lifespan=lifespan)
