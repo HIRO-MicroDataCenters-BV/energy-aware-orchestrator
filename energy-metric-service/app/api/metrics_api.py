@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_async_db
 from app.repositories.node_power_metrics import NodePowerMetricsRepository
-from app.repositories.energy_availability import EnergyAvailabilityRepository
 from app.servicesv2.prometheus_metrics_service import PrometheusMetricsService
 from app.servicesv2.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
 from app.services.energy_forecasting_service import EnergyForecastingService
@@ -577,87 +576,3 @@ async def get_timeseries_metrics_v2(
     except Exception as e:
         logging.error(f"Error fetching time series data with PrometheusMetricsServiceV2: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch time series data from Prometheus: {str(e)}")
-
-
-# =============================================================================
-# ENERGY AVAILABILITY ENDPOINTS
-# =============================================================================
-
-@router.get("/energy-availability")
-async def get_energy_availability(
-        provider_name: Optional[str] = Query(None, description="Filter by energy provider name"),
-        location: Optional[str] = Query(None, description="Filter by location"),
-        energy_source_type: Optional[str] = Query(None, description="Filter by energy source type"),
-        hours_ahead: Optional[int] = Query(None, ge=1, le=168, description="Filter for slots starting within N hours"),
-        limit: int = Query(100, ge=1, le=1000, description="Number of records to return (1-1000)"),
-        is_active: bool = Query(True, description="Filter by active status"),
-        db: AsyncSession = Depends(get_async_db)
-):
-    """
-    Get energy availability forecasts and predictions.
-    
-    Returns information about available energy capacity from different providers,
-    including renewable sources, weather dependencies, and forecast confidence.
-    """
-    try:
-        repository = EnergyAvailabilityRepository(db)
-
-        # Calculate time filter if hours_ahead specified
-        start_time = None
-        end_time = None
-        if hours_ahead:
-            start_time = datetime.now().replace(tzinfo=None)
-            end_time = (datetime.now() + timedelta(hours=hours_ahead)).replace(tzinfo=None)
-
-        # Use ascending order when filtering by time range (chronological order)
-        order_direction = "asc" if hours_ahead else "desc"
-
-        availability_records = await repository.get_all(
-            provider_name=provider_name,
-            location=location,
-            energy_source_type=energy_source_type,
-            start_time=start_time,
-            end_time=end_time,
-            is_active=is_active,
-            limit=limit,
-            order_direction=order_direction
-        )
-
-        return {
-            "status": "success",
-            "energy_source_type": "Solar",  # Example, can be dynamic based on data
-            "filters": {
-                "provider_name": provider_name,
-                "location": location,
-                "energy_source_type": energy_source_type,
-                "hours_ahead": hours_ahead,
-                "is_active": is_active,
-                "limit": limit
-            },
-            "availability": [
-                {
-                    "id": record.id,
-                    "provider_name": record.provider_name,
-                    "location": record.location,
-                    "energy_source_type": record.energy_source_type,
-                    "slot_start_time": record.slot_start_time.isoformat() if record.slot_start_time else None,
-                    "slot_end_time": record.slot_end_time.isoformat() if record.slot_end_time else None,
-                    "available_watts": float(record.available_watts) if record.available_watts else None,
-                    "guaranteed_minimum_watts": float(
-                        record.guaranteed_minimum_watts) if record.guaranteed_minimum_watts else None,
-                    "potential_maximum_watts": float(
-                        record.potential_maximum_watts) if record.potential_maximum_watts else None,
-                    "confidence_percentage": float(
-                        record.confidence_percentage) if record.confidence_percentage else None,
-                    "weather_dependency": record.weather_dependency,
-                    "forecast_date": record.forecast_date.isoformat() if record.forecast_date else None,
-                    "is_active": record.is_active,
-                    "created_at": record.created_at.isoformat() if record.created_at else None
-                }
-                for record in availability_records
-            ],
-            "count": len(availability_records)
-        }
-    except Exception as e:
-        logging.error(f"Error retrieving energy availability: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve energy availability")

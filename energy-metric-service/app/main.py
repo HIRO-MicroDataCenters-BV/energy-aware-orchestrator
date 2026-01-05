@@ -15,6 +15,7 @@ from app.api import energy_forecast_api
 from app.api import kubernetes_api
 from app.api import app_deployment_api
 from app.api import app_definition_api
+from app.api import energy_availability_api
 from app.scheduler.metric_collector_scheduler import MetricCollectorScheduler
 from app.scheduler.deployment_scheduler import DeploymentScheduler
 from app.services.energy_forecasting_service import EnergyForecastingService
@@ -76,6 +77,7 @@ app.include_router(energy_forecast_api.router)
 app.include_router(kubernetes_api.router)
 app.include_router(app_deployment_api.router)
 app.include_router(app_definition_api.router)
+app.include_router(energy_availability_api.router)
 
 init_exception_handlers(app)
 
