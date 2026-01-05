@@ -24,3 +24,4 @@ echo "To remove CRD (optional):"
 echo "  kubectl delete crd energyawareorchestrations.eas.hiro.io"
 echo ""
 
+
