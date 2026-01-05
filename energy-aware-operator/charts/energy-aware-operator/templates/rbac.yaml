@@ -1,0 +1,52 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "app.fullname" . }}-clusterrole
+  labels:
+  {{- include "app.labels" . | nindent 4 }}
+rules:
+  # Core API resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/status", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  
+  # Apps API
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale", "replicasets/scale", "statefulsets/scale"]
+    verbs: ["get", "update", "patch"]
+  
+  # Batch API
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  
+  # Custom Resource Definitions
+  - apiGroups: ["eas.hiro.io"]
+    resources: ["energyawareorchestrations"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["eas.hiro.io"]
+    resources: ["energyawareorchestrations/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["eas.hiro.io"]
+    resources: ["energyawareorchestrations/finalizers"]
+    verbs: ["update"]
+  
+  # CRD management (needed by Kopf for discovery)
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  
+  # Kopf operator framework requirements
+  - apiGroups: ["kopf.dev"]
+    resources: ["clusterkopfpeerings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]

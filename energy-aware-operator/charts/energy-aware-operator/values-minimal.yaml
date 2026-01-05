@@ -1,0 +1,23 @@
+# Minimal values for simple deployments
+replicaCount: 1
+
+image:
+  repository: energy-aware-operator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+configuration:
+  log_level: INFO
+  reconcile_interval_seconds: 600
+

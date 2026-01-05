@@ -1,0 +1,11 @@
+apiVersion: v2
+name: energy-aware-operator
+description: Energy-Aware Kubernetes Operator for Workload Orchestration
+type: application
+version: "0.1.0"
+appVersion: "0.1.0"
+home: https://github.com/HIRO-MicroDataCenters-BV/energy-aware-orchestrator
+maintainers:
+  - name: HIRO-Microdatacenters
+    url: https://hiro-microdatacenters.nl
+
