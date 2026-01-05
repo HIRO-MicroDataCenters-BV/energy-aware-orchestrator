@@ -98,11 +98,73 @@ print_info "Checking prerequisites..."
 command -v kubectl &> /dev/null || { print_error "kubectl not found"; exit 1; }
 command -v helm &> /dev/null || { print_error "helm not found"; exit 1; }
 
+# Detect cluster type (check kind first to avoid conflicts)
+CLUSTER_TYPE="unknown"
+KIND_CLUSTER=""
+USING_MINIKUBE=false
+
+if kubectl config current-context 2>/dev/null | grep -q "kind-"; then
+    CLUSTER_TYPE="kind"
+    KIND_CLUSTER=$(kubectl config current-context | sed 's/kind-//')
+    print_info "Detected kind cluster: $KIND_CLUSTER"
+elif command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
+    CLUSTER_TYPE="minikube"
+    USING_MINIKUBE=true
+    print_info "Detected minikube cluster"
+fi
+
 # Build image if requested
 if [ "$BUILD_IMAGE" = true ]; then
     print_info "Building Docker image..."
+    
+    # For minikube, use minikube Docker environment
+    if [ "$USING_MINIKUBE" = true ]; then
+        print_info "Using minikube Docker environment for build"
+        eval $(minikube docker-env)
+    fi
+    
     "$SCRIPT_DIR/build.sh" --image-repo "$IMAGE_REPOSITORY" --image-tag "$IMAGE_TAG"
     echo ""
+fi
+
+# Handle image loading for local clusters
+IMAGE_FULL="${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+
+if [ "$IMAGE_PULL_POLICY" != "Always" ]; then
+    # For kind cluster - load image explicitly
+    if [ "$CLUSTER_TYPE" = "kind" ]; then
+        print_info "Checking/loading image to kind cluster..."
+        
+        # Check if image exists in local Docker
+        if docker image inspect "$IMAGE_FULL" &> /dev/null; then
+            if kind load docker-image "$IMAGE_FULL" --name "$KIND_CLUSTER" 2>&1; then
+                print_info "Image loaded to kind successfully ✓"
+                IMAGE_PULL_POLICY="Never"
+            else
+                print_warn "Failed to load image to kind"
+                print_warn "Run: ./scripts/build.sh && kind load docker-image $IMAGE_FULL --name $KIND_CLUSTER"
+            fi
+        else
+            print_warn "Image $IMAGE_FULL not found locally"
+            print_warn "Run: ./scripts/build.sh to build the image first"
+        fi
+    
+    # For minikube cluster - check image in minikube Docker
+    elif [ "$USING_MINIKUBE" = true ]; then
+        print_info "Checking image in minikube Docker environment..."
+        
+        # Switch to minikube Docker env to check image
+        eval $(minikube docker-env)
+        
+        if docker image inspect "$IMAGE_FULL" &> /dev/null; then
+            print_info "Image found in minikube Docker environment ✓"
+            IMAGE_PULL_POLICY="Never"
+        else
+            print_warn "Image not found in minikube Docker environment"
+            print_warn "Run: eval \$(minikube docker-env) && ./scripts/build.sh"
+            print_warn "Or: ./scripts/build.sh (auto-detects minikube)"
+        fi
+    fi
 fi
 
 # Apply CRD if requested

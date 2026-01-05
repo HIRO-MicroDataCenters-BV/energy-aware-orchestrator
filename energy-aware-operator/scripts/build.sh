@@ -80,9 +80,17 @@ echo ""
 print_info "Checking prerequisites..."
 command -v docker &> /dev/null || { print_error "docker not found"; exit 1; }
 
-# Check for minikube
+# Detect cluster type and set Docker environment
 USING_MINIKUBE=false
-if [ "$USE_MINIKUBE" = "yes" ] || [ "$USE_MINIKUBE" = "auto" ]; then
+USING_KIND=false
+
+# Check for kind first
+if kubectl config current-context 2>/dev/null | grep -q "kind-"; then
+    USING_KIND=true
+    print_info "Detected kind cluster - building for kind"
+    
+# Then check for minikube
+elif [ "$USE_MINIKUBE" = "yes" ] || [ "$USE_MINIKUBE" = "auto" ]; then
     if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
         print_info "Detected minikube - using minikube Docker environment"
         eval $(minikube docker-env)
@@ -93,7 +101,7 @@ if [ "$USE_MINIKUBE" = "yes" ] || [ "$USE_MINIKUBE" = "auto" ]; then
     fi
 fi
 
-if [ "$USING_MINIKUBE" = false ]; then
+if [ "$USING_MINIKUBE" = false ] && [ "$USING_KIND" = false ]; then
     print_info "Using host Docker environment"
 fi
 

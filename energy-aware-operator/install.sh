@@ -17,21 +17,21 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 IMAGE_NAME="energy-aware-operator:latest"
 
-# Detect cluster type
+# Detect cluster type (kind first to avoid conflicts)
 CLUSTER_TYPE="unknown"
 PULL_POLICY="IfNotPresent"
 KIND_CLUSTER=""
 
-if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
-    CLUSTER_TYPE="minikube"
-    echo "✓ Detected: Minikube"
-    eval $(minikube docker-env)
-    PULL_POLICY="Never"
-    
-elif kubectl config current-context 2>/dev/null | grep -q "kind-"; then
+if kubectl config current-context 2>/dev/null | grep -q "kind-"; then
     CLUSTER_TYPE="kind"
     KIND_CLUSTER=$(kubectl config current-context | sed 's/kind-//')
     echo "✓ Detected: Kind (cluster: $KIND_CLUSTER)"
+    PULL_POLICY="Never"
+    
+elif command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
+    CLUSTER_TYPE="minikube"
+    echo "✓ Detected: Minikube"
+    eval $(minikube docker-env)
     PULL_POLICY="Never"
     
 elif command -v microk8s.kubectl &> /dev/null; then
