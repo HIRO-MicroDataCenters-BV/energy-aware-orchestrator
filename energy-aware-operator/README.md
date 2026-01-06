@@ -122,6 +122,15 @@ kubectl get crd energyawareorchestrations.eas.hiro.io
 
 ## Usage
 
+## Priority Levels
+
+| Priority | Behavior | Use Case |
+|----------|----------|----------|
+| **critical** | Must run regardless of energy cost | Production services, safety systems |
+| **preferred** | Run when energy is available/cheap | Batch processing, data analysis |
+| **optional** | Run only when excess energy available | Nice-to-have tasks, cleanup jobs |
+
+
 ### Create an Energy-Aware Orchestration
 
 ```yaml
@@ -355,15 +364,6 @@ readinessProbe:
 ```
 
 ---
-
-## Priority Levels
-
-| Priority | Behavior | Use Case |
-|----------|----------|----------|
-| **critical** | Must run regardless of energy cost | Production services, safety systems |
-| **preferred** | Run when energy is available/cheap | Batch processing, data analysis |
-| **optional** | Run only when excess energy available | Nice-to-have tasks, cleanup jobs |
-
 
 ### View Events
 
