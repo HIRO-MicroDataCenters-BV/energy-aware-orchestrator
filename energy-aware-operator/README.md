@@ -133,7 +133,6 @@ metadata:
 spec:
   priority: preferred              # critical | preferred | optional
   energyConsumption: 1000          # Estimated watts
-  minDuration: 7200                # Minimum 2 hours
   applicationRef:
     apiVersion: apps/v1
     kind: Deployment

@@ -1,9 +1,8 @@
 """
 Simple Scheduler Service for EnergyAwareOrchestration.
 
-This is a standalone scheduler that implements the core scheduling logic
-without external dependencies. It can be extended to integrate with
-an energy availability service.
+This scheduler implements the core scheduling logic using the EnergyAPIClient
+to fetch and process energy availability data.
 
 Scheduling Logic by Priority:
 - Critical: Deploy immediately (always on, 24/7)
@@ -15,8 +14,9 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-import httpx
 from dateutil import parser as date_parser
+
+from app.services.energy_api_client import EnergyAPIClient
 
 logger = logging.getLogger(__name__)
 
@@ -25,32 +25,22 @@ class SimpleSchedulerService:
     """
     Simple scheduler service that implements priority-based scheduling.
     
-    This is a standalone version that works without external dependencies.
-    For production use, integrate with an energy availability service.
+    Uses EnergyAPIClient to fetch and process energy availability data.
     """
 
-    def __init__(self, energy_api_url: Optional[str] = None):
+    def __init__(self, energy_api_client: Optional[EnergyAPIClient] = None):
         """
         Initialize the scheduler service.
 
         Args:
-            energy_api_url: Optional URL for energy API integration
+            energy_api_client: Optional EnergyAPIClient instance for fetching energy data
         """
-        self.energy_api_url = energy_api_url
+        self.energy_api_client = energy_api_client
 
-        # Initialize HTTP client for energy API calls
-        self.http_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(10.0, connect=5.0),
-            limits=httpx.Limits(max_connections=10),
-            follow_redirects=True
+        logger.info(
+            f"SimpleSchedulerService initialized "
+            f"(energy_api_client: {'configured' if energy_api_client else 'not configured'})"
         )
-
-        logger.info(f"SimpleSchedulerService initialized (energy_api_url: {energy_api_url})")
-
-    async def close(self):
-        """Close HTTP client connections."""
-        if hasattr(self, 'http_client'):
-            await self.http_client.aclose()
 
     async def calculate_schedule(
         self, priority: str, required_energy_watts: float
@@ -88,7 +78,7 @@ class SimpleSchedulerService:
                 return self._build_optional_result(now, required_energy_watts)
 
         # Map API slots to scheduler slots
-        mapped_slots = self._map_api_slots_to_scheduler_slots(energy_slots, now)
+        mapped_slots = self._map_api_slots_to_scheduler_slots(energy_slots)
 
         # Preferred/Optional: Find first sufficient slot
         if priority == "Preferred":
@@ -102,118 +92,41 @@ class SimpleSchedulerService:
 
     async def _fetch_energy_forecast(self, hours_ahead: int = 24) -> Optional[List[Dict[str, Any]]]:
         """
-        Fetch energy forecast from API.
+        Fetch energy forecast using the EnergyAPIClient.
 
         Args:
             hours_ahead: Number of hours ahead to fetch forecast for
 
         Returns:
-            List of energy slots or None if API unavailable
+            List of energy slots or None if client not configured or API unavailable
         """
-        if not self.energy_api_url:
+        if not self.energy_api_client:
+            logger.debug("No energy API client configured")
             return None
 
-        url = f"{self.energy_api_url}/api/energy-availability/future/forecast"
-        params = {"hours_ahead": hours_ahead, "limit": 100}
-
-        try:
-            response = await self.http_client.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            availability = data.get("availability", [])
-
-            if not isinstance(availability, list):
-                logger.error("Invalid response: 'availability' is not a list")
-                return None
-
-            logger.info(f"Fetched {len(availability)} energy slots from API")
-            return availability
-
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
-            logger.warning(f"Energy API unavailable: {e.__class__.__name__}")
-            return None
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Energy API error: {e.response.status_code}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected error fetching energy data: {e}")
-            return None
+        return await self.energy_api_client.fetch_energy_forecast(hours_ahead=hours_ahead)
 
     def _map_api_slots_to_scheduler_slots(
         self,
-        api_slots: List[Dict[str, Any]],
-        now: datetime
+        api_slots: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Map API slots to 6-hour scheduler slots, aggregating energy by time period.
+        Map API slots to 6-hour scheduler slots using the EnergyAPIClient.
 
         Args:
             api_slots: List of energy slots from API
-            now: Current datetime
 
         Returns:
             List of enriched scheduler slots
         """
-        from collections import defaultdict
+        if not self.energy_api_client:
+            logger.warning("No energy API client configured for slot mapping")
+            return []
 
-        aggregated = defaultdict(lambda: {
-            "total_watts": 0,
-            "confidence_sum": 0,
-            "confidence_count": 0,
-        })
-
-        for api_slot in api_slots:
-            try:
-                start = date_parser.isoparse(api_slot["slot_start_time"])
-                end = date_parser.isoparse(api_slot["slot_end_time"])
-                watts = float(api_slot["available_watts"])
-
-                # Ensure UTC timezone
-                if start.tzinfo is None:
-                    start = start.replace(tzinfo=timezone.utc)
-                if end.tzinfo is None:
-                    end = end.replace(tzinfo=timezone.utc)
-
-                # Determine which scheduler slot this overlaps
-                date = start.date()
-                slot_num = self._get_current_slot_number(start)
-                key = (date, slot_num)
-
-                # Aggregate energy
-                aggregated[key]["total_watts"] += watts
-
-                # Track confidence
-                if "confidence_percentage" in api_slot:
-                    aggregated[key]["confidence_sum"] += api_slot["confidence_percentage"]
-                    aggregated[key]["confidence_count"] += 1
-
-            except (KeyError, ValueError) as e:
-                logger.warning(f"Skipping invalid API slot: {e}")
-                continue
-
-        # Convert to scheduler slot format
-        scheduler_slots = []
-        for (date, slot_num), agg_data in sorted(aggregated.items()):
-            slot_start, slot_end = self._get_slot_boundaries(
-                datetime.combine(date, datetime.min.time()).replace(tzinfo=timezone.utc),
-                slot_num
-            )
-
-            avg_confidence = None
-            if agg_data["confidence_count"] > 0:
-                avg_confidence = agg_data["confidence_sum"] / agg_data["confidence_count"]
-
-            scheduler_slots.append({
-                "slotNumber": slot_num,
-                "slotStart": slot_start.isoformat(),
-                "slotEnd": slot_end.isoformat(),
-                "availableEnergyWatts": agg_data["total_watts"],
-                "confidencePercentage": avg_confidence,
-                "date": date.isoformat(),
-            })
-
-        logger.debug(f"Mapped {len(api_slots)} API slots to {len(scheduler_slots)} scheduler slots")
-        return scheduler_slots
+        return self.energy_api_client.map_api_slots_to_scheduler_slots(
+            api_slots,
+            slot_number_calculator=self._get_current_slot_number
+        )
 
     def _build_critical_result(
         self, now: datetime, required_energy_watts: float
