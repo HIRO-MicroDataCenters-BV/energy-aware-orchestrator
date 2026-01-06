@@ -364,22 +364,6 @@ readinessProbe:
 | **preferred** | Run when energy is available/cheap | Batch processing, data analysis |
 | **optional** | Run only when excess energy available | Nice-to-have tasks, cleanup jobs |
 
----
-
-## Monitoring
-
-### Check Operator Health
-
-```bash
-# Port forward to health endpoint
-kubectl port-forward svc/energy-operator-energy-aware-operator 8080:8080
-
-# Check health
-curl http://localhost:8080/healthz
-
-# Check metrics (if enabled)
-curl http://localhost:8080/metrics
-```
 
 ### View Events
 
@@ -405,22 +389,6 @@ kubectl logs energy-operator-energy-aware-operator-xxxxx-xxxxx
 ```
 
 ---
-
-## Troubleshooting
-
-### Operator Not Starting
-
-```bash
-# Check pod status
-kubectl describe pod -l app.kubernetes.io/name=energy-aware-operator
-
-# Check logs
-kubectl logs -l app.kubernetes.io/name=energy-aware-operator
-
-# Common fix: rebuild image
-./scripts/build.sh
-kubectl delete pod -l app.kubernetes.io/name=energy-aware-operator
-```
 
 
 ## Testing
