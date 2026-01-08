@@ -47,9 +47,24 @@ class Action(str, Enum):
 
 
 class ApplicationRef(BaseModel):
-    """Reference to the application."""
-    name: str = Field(..., description="Name of the application")
-    namespace: Optional[str] = Field(None, description="Target namespace for the application")
+    """
+    Reference to the application/workload to be scheduled.
+    
+    Follows Kubernetes object reference conventions with apiVersion, kind, name, and namespace.
+    """
+    apiVersion: Optional[str] = Field(
+        default="apps/v1",
+        description="API version of the target resource (e.g., apps/v1, batch/v1)"
+    )
+    kind: str = Field(
+        ...,
+        description="Kind of the target resource (e.g., Deployment, StatefulSet, Job, CronJob)"
+    )
+    name: str = Field(..., description="Name of the application/workload")
+    namespace: Optional[str] = Field(
+        None,
+        description="Target namespace for the application (defaults to CR namespace)"
+    )
 
 
 class EnergyAwareOrchestrationSpec(BaseModel):

@@ -69,15 +69,29 @@ spec:
                 - Optional
               applicationRef:
                 type: object
-                description: Reference to the application.
+                description: 'Reference to the application/workload to be scheduled.
+
+
+                  Follows Kubernetes object reference conventions with apiVersion,
+                  kind, name, and namespace.'
                 properties:
+                  apiVersion:
+                    type: string
+                    description: API version of the target resource (e.g., apps/v1,
+                      batch/v1)
+                  kind:
+                    type: string
+                    description: Kind of the target resource (e.g., Deployment, StatefulSet,
+                      Job, CronJob)
                   name:
                     type: string
-                    description: Name of the application
+                    description: Name of the application/workload
                   namespace:
                     type: string
-                    description: Target namespace for the application
+                    description: Target namespace for the application (defaults to
+                      CR namespace)
                 required:
+                - kind
                 - name
             required:
             - energyConsumption

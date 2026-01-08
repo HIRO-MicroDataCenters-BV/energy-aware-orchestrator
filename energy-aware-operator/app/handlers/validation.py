@@ -91,10 +91,18 @@ class ValidationHandler:
         application_ref = self.extract_spec_field(spec, "applicationRef", {})
 
         # Extract application details
+        app_api_version = application_ref.get("apiVersion", "apps/v1")
+        app_kind = application_ref.get("kind")
         app_name = application_ref.get("name")
         app_namespace = application_ref.get("namespace", namespace)
 
         # Validate required fields
+        if not app_kind:
+            raise ValidationError(
+                "applicationRef.kind is required",
+                field="applicationRef.kind"
+            )
+        
         if not app_name:
             raise ValidationError(
                 "applicationRef.name is required",
@@ -127,13 +135,15 @@ class ValidationHandler:
 
         logger.info(
             f"Validated spec: priority={priority}, energy={energy_consumption}W, "
-            f"app={app_name}, namespace={app_namespace}"
+            f"app={app_kind}/{app_name}, namespace={app_namespace}"
         )
 
         return {
             "energy_consumption": energy_consumption,
             "forecast_window_days": forecast_window_days,
             "priority": priority,
+            "app_api_version": app_api_version,
+            "app_kind": app_kind,
             "app_name": app_name,
             "app_namespace": app_namespace,
         }
@@ -153,8 +163,12 @@ class ValidationHandler:
         """
         try:
             application_ref = self.extract_spec_field(spec, "applicationRef", {})
+            app_kind = application_ref.get("kind")
             app_name = application_ref.get("name")
 
+            if not app_kind:
+                return False, "applicationRef.kind is required"
+            
             if not app_name:
                 return False, "applicationRef.name is required"
 

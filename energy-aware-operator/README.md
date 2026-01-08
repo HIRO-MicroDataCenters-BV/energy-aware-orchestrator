@@ -184,6 +184,8 @@ spec:
   
   # Application reference
   applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: api-gateway
     namespace: production
 ```
@@ -228,6 +230,8 @@ spec:
   priority: Preferred
   
   applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: ml-training-deployment
     namespace: default
 ```
@@ -238,20 +242,6 @@ spec:
 -  **If Insufficient Now**: Schedules for next 6-hour slot with sufficient energy
 -  **Re-evaluation**: Checks again after 10 minutes (configurable)
 -  **Status**: `phase: Scheduled`, `action: DeployImmediately` or `Scheduled`
-
-**Expected Status (Sufficient Energy):**
-```yaml
-status:
-  phase: Scheduled
-  decision:
-    action: DeployImmediately
-    reason: "Preferred priority - current slot has sufficient energy (15000W >= 500W)"
-  energyMetrics:
-    currentSlotAvailableWatts: 15000
-    requiredWatts: 500
-    sufficient: true
-  lastUpdated: "2026-01-06T14:00:00Z"
-```
 
 **Expected Status (Insufficient Energy - Scheduled for Later):**
 ```yaml
@@ -292,6 +282,8 @@ spec:
   priority: Optional
   
   applicationRef:
+    apiVersion: batch/v1
+    kind: Job
     name: batch-processor
     namespace: default
 ```
@@ -320,6 +312,27 @@ status:
     nextEvaluationTime: "2026-01-06T12:00:00Z"
   lastUpdated: "2026-01-06T08:30:00Z"
 ```
+
+---
+
+#### Supported Kubernetes Resource Kinds
+
+The `applicationRef` field supports any Kubernetes resource kind. Common examples:
+
+| apiVersion | kind | Use Case |
+|------------|------|----------|
+| `apps/v1` | `Deployment` | Long-running applications, microservices |
+| `apps/v1` | `StatefulSet` | Stateful applications (databases, caches) |
+| `apps/v1` | `DaemonSet` | Node-level services |
+| `batch/v1` | `Job` | One-time batch processing |
+| `batch/v1` | `CronJob` | Scheduled recurring tasks |
+| `v1` | `Pod` | Standalone pods (not recommended) |
+
+**Field Description:**
+- `apiVersion`: API version of the target resource (defaults to `apps/v1`)
+- `kind`: **Required** - Type of Kubernetes resource
+- `name`: **Required** - Name of the workload
+- `namespace`: Target namespace (defaults to CR namespace)
 
 ---
 
@@ -378,8 +391,10 @@ Spec:
   Forecast Window Days:  14
   Priority:              Critical
   Application Ref:
-    Name:       api-gateway
-    Namespace:  production
+    Api Version:  apps/v1
+    Kind:         Deployment
+    Name:         api-gateway
+    Namespace:    production
 Status:
   Phase:        Scheduled
   Decision:
@@ -409,8 +424,10 @@ Spec:
   Forecast Window Days:  7
   Priority:              Preferred
   Application Ref:
-    Name:       ml-training-deployment
-    Namespace:  default
+    Api Version:  apps/v1
+    Kind:         Deployment
+    Name:         ml-training-deployment
+    Namespace:    default
 Status:
   Phase:        Scheduled
   Decision:
@@ -465,8 +482,10 @@ Spec:
   Forecast Window Days:  3
   Priority:              Optional
   Application Ref:
-    Name:       batch-processor
-    Namespace:  default
+    Api Version:  batch/v1
+    Kind:         Job
+    Name:         batch-processor
+    Namespace:    default
 Status:
   Phase:        Scheduled
   Decision:

@@ -19,6 +19,8 @@ spec:
   
   # Application reference
   applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: api-gateway
     namespace: production
 
@@ -34,6 +36,8 @@ spec:
   forecastWindowDays: 7
   priority: Preferred
   applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: ml-training-deployment
     namespace: default
 
@@ -49,6 +53,8 @@ spec:
   forecastWindowDays: 3
   priority: Optional
   applicationRef:
+    apiVersion: batch/v1
+    kind: Job
     name: batch-processor
     namespace: default
 
