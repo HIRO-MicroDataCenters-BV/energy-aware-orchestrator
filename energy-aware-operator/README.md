@@ -122,32 +122,232 @@ kubectl get crd energyawareorchestrations.eas.hiro.io
 
 ## Usage
 
+## Priority Levels
+
+Understanding how the operator schedules workloads based on priority:
+
+| Priority | Scheduling Behavior | Energy Check | Use Case | Examples |
+|----------|---------------------|-----------|----------|----------|
+| **Critical** |  Deploy immediately (24/7)<br/>No delays, no energy checks |  No | Mission-critical services that must run regardless of cost | • Production APIs<br/>• Payment systems<br/>• Safety-critical services<br/>• Real-time monitoring |
+| **Preferred** |  Deploy now if energy sufficient<br/>Otherwise schedule for next available slot (6h) |  Yes | Important workloads that should run when energy is available | • ML training jobs<br/>• Data processing<br/>• Report generation<br/>• Database backups |
+| **Optional** |  Wait for optimal energy window<br/>Schedule for best slot in 24h period |  Yes | Low-priority tasks that can wait for cheapest/cleanest energy | • Batch processing<br/>• Cleanup jobs<br/>• Analytics<br/>• Archive tasks |
+
+### Scheduling Logic Flow
+
+```
+Critical:   User Request → Deploy Immediately (No Energy Check)
+                         ↓
+                    Status: Scheduled (Action: DeployImmediately)
+
+Preferred:  User Request → Check Current Energy
+                         ↓
+            ┌────────────┴────────────┐
+            ↓                         ↓
+      Sufficient?                 Insufficient?
+            ↓                         ↓
+    Deploy Now              Find Next Slot (6h+)
+            ↓                         ↓
+    Action: DeployImmediately   Action: Scheduled
+    
+Optional:   User Request → Find Best Slot in 24h
+                         ↓
+                   Schedule for Optimal Time
+                         ↓
+                   Action: Scheduled
+```
+
+
 ### Create an Energy-Aware Orchestration
 
+The operator supports three priority levels, each with different scheduling behavior:
+
+#### 1. Critical Workload - Always On (24/7)
+
+**Use Case:** Production services, APIs, safety-critical systems that must run regardless of energy cost.
+
 ```yaml
-# sample-eao.yaml
+# critical-workload.yaml
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: critical-api-service
+  namespace: default
+spec:
+  # Energy consumption in Watts
+  energyConsumption: 100
+  
+  # Forecast window (1-30 days)
+  forecastWindowDays: 14
+  
+  # Priority: Critical = Deploy immediately, always on
+  priority: Critical
+  
+  # Application reference
+  applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+    namespace: production
+```
+
+**Expected Behavior:**
+-  **Immediate Deployment**: No energy checks performed
+-  **24/7 Operation**: Runs continuously regardless of energy availability
+-  **No Delays**: Bypasses all energy scheduling logic
+-  **Status**: `phase: Scheduled`, `action: DeployImmediately`
+
+**Expected Status:**
+```yaml
+status:
+  phase: Scheduled
+  decision:
+    action: DeployImmediately
+    reason: "Critical priority workload - deploying immediately for 24/7 operation"
+  energyMetrics:
+    requiredWatts: 100
+    sufficient: true
+  lastUpdated: "2026-01-06T10:30:00Z"
+```
+
+---
+
+#### 2. Preferred Workload - Schedule When Energy Available
+
+**Use Case:** Important batch jobs, ML training, data processing that should run when energy is available but can be delayed if needed.
+
+```yaml
+# preferred-workload.yaml
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: ml-training-job
+  namespace: default
+spec:
+  energyConsumption: 500
+  forecastWindowDays: 7
+  
+  # Priority: Preferred = Run when energy sufficient, else delay
+  priority: Preferred
+  
+  applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-training-deployment
+    namespace: default
+```
+
+**Expected Behavior:**
+-  **Energy Check**: Fetches current and future energy availability
+-  **If Sufficient Now**: Deploys immediately
+-  **If Insufficient Now**: Schedules for next 6-hour slot with sufficient energy
+-  **Re-evaluation**: Checks again after 10 minutes (configurable)
+-  **Status**: `phase: Scheduled`, `action: DeployImmediately` or `Scheduled`
+
+**Expected Status (Insufficient Energy - Scheduled for Later):**
+```yaml
+status:
+  phase: Scheduled
+  decision:
+    action: Scheduled
+    reason: "Preferred priority - scheduled for first sufficient energy slot (18000W >= 500W)"
+    scheduledSlot:
+      slotNumber: 3
+      slotStart: "2026-01-06T12:00:00Z"
+      slotEnd: "2026-01-06T18:00:00Z"
+      availableEnergyWatts: 18000
+      requiredEnergyWatts: 500
+      confidencePercentage: 85.5
+    nextEvaluationTime: "2026-01-06T12:00:00Z"
+  lastUpdated: "2026-01-06T08:30:00Z"
+```
+
+---
+
+#### 3. Optional Workload - Run Only During Optimal Energy
+
+**Use Case:** Low-priority tasks, cleanup jobs, non-urgent analytics that should only run during excess/cheap energy periods.
+
+```yaml
+# optional-workload.yaml
 apiVersion: eas.hiro.io/v1
 kind: EnergyAwareOrchestration
 metadata:
   name: batch-processing-job
+  namespace: default
 spec:
-  priority: preferred              # critical | preferred | optional
-  energyConsumption: 1000          # Estimated watts
-  minDuration: 7200                # Minimum 2 hours
+  energyConsumption: 200
+  forecastWindowDays: 3
+  
+  # Priority: Optional = Wait for best energy availability in 24h window
+  priority: Optional
+  
   applicationRef:
-    apiVersion: apps/v1
-    kind: Deployment
+    apiVersion: batch/v1
+    kind: Job
     name: batch-processor
     namespace: default
-  schedule:
-    type: daily
-    preferredStartTime: "02:00:00"
-    preferredEndTime: "06:00:00"
 ```
 
-Apply it:
+**Expected Behavior:**
+-  **Find Best Slot**: Scans next 24 hours for optimal energy availability
+- ️ **Skip Current Slot**: Does not deploy in current slot (waits for better timing)
+-  **Maximize Efficiency**: Schedules for slot with highest available energy
+-  **Continuous Optimization**: Re-evaluates periodically to find better slots
+-  **Status**: `phase: Scheduled`, `action: Scheduled`
+
+**Expected Status:**
+```yaml
+status:
+  phase: Scheduled
+  decision:
+    action: Scheduled
+    reason: "Optional priority - scheduled for optimal energy slot (25000W >= 200W)"
+    scheduledSlot:
+      slotNumber: 3
+      slotStart: "2026-01-06T12:00:00Z"
+      slotEnd: "2026-01-06T18:00:00Z"
+      availableEnergyWatts: 25000
+      requiredEnergyWatts: 200
+      confidencePercentage: 92.3
+    nextEvaluationTime: "2026-01-06T12:00:00Z"
+  lastUpdated: "2026-01-06T08:30:00Z"
+```
+
+---
+
+#### Supported Kubernetes Resource Kinds
+
+The `applicationRef` field supports any Kubernetes resource kind. Common examples:
+
+| apiVersion | kind | Use Case |
+|------------|------|----------|
+| `apps/v1` | `Deployment` | Long-running applications, microservices |
+| `apps/v1` | `StatefulSet` | Stateful applications (databases, caches) |
+| `apps/v1` | `DaemonSet` | Node-level services |
+| `batch/v1` | `Job` | One-time batch processing |
+| `batch/v1` | `CronJob` | Scheduled recurring tasks |
+| `v1` | `Pod` | Standalone pods (not recommended) |
+
+**Field Description:**
+- `apiVersion`: API version of the target resource (defaults to `apps/v1`)
+- `kind`: **Required** - Type of Kubernetes resource
+- `name`: **Required** - Name of the workload
+- `namespace`: Target namespace (defaults to CR namespace)
+
+---
+
+#### Apply Your Workload
+
 ```bash
-kubectl apply -f sample-eao.yaml
+# Apply any of the above examples
+kubectl apply -f critical-workload.yaml
+# OR
+kubectl apply -f preferred-workload.yaml
+# OR
+kubectl apply -f optional-workload.yaml
+
+# Or apply all examples at once
+kubectl apply -f examples/sample-eao.yaml
 ```
 
 ### Check Status
@@ -156,11 +356,16 @@ kubectl apply -f sample-eao.yaml
 # View all energy-aware orchestrations
 kubectl get eao
 
-# Describe to see schedule and status
+# Describe to see detailed schedule and status
+kubectl describe eao critical-api-service
+kubectl describe eao ml-training-job
 kubectl describe eao batch-processing-job
 
-# Watch operator logs
+# Watch operator logs in real-time
 kubectl logs -f -l app.kubernetes.io/name=energy-aware-operator
+
+# View events for a specific resource
+kubectl get events --field-selector involvedObject.name=ml-training-job
 ```
 
 ### Example Output
@@ -168,22 +373,157 @@ kubectl logs -f -l app.kubernetes.io/name=energy-aware-operator
 ```bash
 $ kubectl get eao
 NAME                   PRIORITY    PHASE       AGE
-batch-processing-job   preferred   Scheduled   5m
-
-$ kubectl describe eao batch-processing-job
-...
-Status:
-  Execution Schedule:
-    Schedule:
-      Date: 2026-01-04
-      Times:
-        Cost: 0.05
-        Start: 02:00:00
-        Stop: 06:00:00
-    Updated: 2026-01-03T10:30:00Z
-  Phase: Scheduled
-...
+critical-api-service   Critical    Scheduled   5m
+ml-training-job        Preferred   Scheduled   3m
+batch-processing-job   Optional    Scheduled   2m
 ```
+
+#### Critical Workload Status
+
+```bash
+$ kubectl describe eao critical-api-service
+Name:         critical-api-service
+Namespace:    default
+API Version:  eas.hiro.io/v1
+Kind:         EnergyAwareOrchestration
+Spec:
+  Energy Consumption:    100
+  Forecast Window Days:  14
+  Priority:              Critical
+  Application Ref:
+    Api Version:  apps/v1
+    Kind:         Deployment
+    Name:         api-gateway
+    Namespace:    production
+Status:
+  Phase:        Scheduled
+  Decision:
+    Action:     DeployImmediately
+    Reason:     Critical priority workload - deploying immediately for 24/7 operation
+  Energy Metrics:
+    Required Watts:  100
+    Sufficient:      true
+  Last Updated:      2026-01-06T10:30:00Z
+Events:
+  Type    Reason     Age   Message
+  ----    ------     ----  -------
+  Normal  Scheduling 5m    [Event 1] Calculating schedule for 'critical-api-service' (Priority: Critical, Energy: 100W)
+  Normal  Scheduled  5m    [Event 2] DeployImmediately: Critical priority workload - deploying immediately for 24/7 operation
+```
+
+#### Preferred Workload Status (With Energy Available Now)
+
+```bash
+$ kubectl describe eao ml-training-job
+Name:         ml-training-job
+Namespace:    default
+API Version:  eas.hiro.io/v1
+Kind:         EnergyAwareOrchestration
+Spec:
+  Energy Consumption:    500
+  Forecast Window Days:  7
+  Priority:              Preferred
+  Application Ref:
+    Api Version:  apps/v1
+    Kind:         Deployment
+    Name:         ml-training-deployment
+    Namespace:    default
+Status:
+  Phase:        Scheduled
+  Decision:
+    Action:     DeployImmediately
+    Reason:     Preferred priority - current slot has sufficient energy (15000W >= 500W)
+  Energy Metrics:
+    Current Slot Available Watts:  15000
+    Required Watts:                500
+    Sufficient:                    true
+  Last Updated:                    2026-01-06T14:00:00Z
+Events:
+  Type    Reason     Age   Message
+  ----    ------     ----  -------
+  Normal  Scheduling 3m    [Event 1] Calculating schedule for 'ml-training-job' (Priority: Preferred, Energy: 500W)
+  Normal  Scheduled  3m    [Event 2] DeployImmediately: Preferred priority - current slot has sufficient energy (15000W >= 500W)
+```
+
+#### Preferred Workload Status (Scheduled for Later)
+
+```bash
+$ kubectl describe eao ml-training-job
+Status:
+  Phase:        Scheduled
+  Decision:
+    Action:     Scheduled
+    Reason:     Preferred priority - scheduled for first sufficient energy slot (18000W >= 500W)
+    Scheduled Slot:
+      Slot Number:               3
+      Slot Start:                2026-01-06T12:00:00Z
+      Slot End:                  2026-01-06T18:00:00Z
+      Available Energy Watts:    18000
+      Required Energy Watts:     500
+      Confidence Percentage:     85.5
+    Next Evaluation Time:        2026-01-06T12:00:00Z
+  Energy Metrics:
+    Current Slot Available Watts:  300
+    Required Watts:                500
+    Sufficient:                    false
+  Last Updated:                    2026-01-06T08:30:00Z
+```
+
+#### Optional Workload Status
+
+```bash
+$ kubectl describe eao batch-processing-job
+Name:         batch-processing-job
+Namespace:    default
+API Version:  eas.hiro.io/v1
+Kind:         EnergyAwareOrchestration
+Spec:
+  Energy Consumption:    200
+  Forecast Window Days:  3
+  Priority:              Optional
+  Application Ref:
+    Api Version:  batch/v1
+    Kind:         Job
+    Name:         batch-processor
+    Namespace:    default
+Status:
+  Phase:        Scheduled
+  Decision:
+    Action:     Scheduled
+    Reason:     Optional priority - scheduled for optimal energy slot (25000W >= 200W)
+    Scheduled Slot:
+      Slot Number:               3
+      Slot Start:                2026-01-06T12:00:00Z
+      Slot End:                  2026-01-06T18:00:00Z
+      Available Energy Watts:    25000
+      Required Energy Watts:     200
+      Confidence Percentage:     92.3
+    Next Evaluation Time:        2026-01-06T12:00:00Z
+  Energy Metrics:
+    Current Slot Available Watts:  8000
+    Required Watts:                200
+    Sufficient:                    false
+  Last Updated:                    2026-01-06T08:30:00Z
+Events:
+  Type    Reason     Age   Message
+  ----    ------     ----  -------
+  Normal  Scheduling 2m    [Event 1] Calculating schedule for 'batch-processing-job' (Priority: Optional, Energy: 200W)
+  Normal  Scheduled  2m    [Event 2] Scheduled: Optional priority - scheduled for optimal energy slot (25000W >= 200W)
+```
+
+
+### Time Slot Windows
+
+The operator divides each day into **4 six-hour slots**:
+
+| Slot | Time Window (UTC) | Typical Use |
+|------|-------------------|-------------|
+| **Slot 1** | 00:00 - 06:00 | Night processing, off-peak |
+| **Slot 2** | 06:00 - 12:00 | Morning operations |
+| **Slot 3** | 12:00 - 18:00 | Afternoon (often highest solar) |
+| **Slot 4** | 18:00 - 24:00 | Evening operations |
+
+**Note:** The operator fetches energy forecasts and schedules workloads for slots with the best energy availability and cost.
 
 ---
 
@@ -357,31 +697,6 @@ readinessProbe:
 
 ---
 
-## Priority Levels
-
-| Priority | Behavior | Use Case |
-|----------|----------|----------|
-| **critical** | Must run regardless of energy cost | Production services, safety systems |
-| **preferred** | Run when energy is available/cheap | Batch processing, data analysis |
-| **optional** | Run only when excess energy available | Nice-to-have tasks, cleanup jobs |
-
----
-
-## Monitoring
-
-### Check Operator Health
-
-```bash
-# Port forward to health endpoint
-kubectl port-forward svc/energy-operator-energy-aware-operator 8080:8080
-
-# Check health
-curl http://localhost:8080/healthz
-
-# Check metrics (if enabled)
-curl http://localhost:8080/metrics
-```
-
 ### View Events
 
 ```bash
@@ -406,22 +721,6 @@ kubectl logs energy-operator-energy-aware-operator-xxxxx-xxxxx
 ```
 
 ---
-
-## Troubleshooting
-
-### Operator Not Starting
-
-```bash
-# Check pod status
-kubectl describe pod -l app.kubernetes.io/name=energy-aware-operator
-
-# Check logs
-kubectl logs -l app.kubernetes.io/name=energy-aware-operator
-
-# Common fix: rebuild image
-./scripts/build.sh
-kubectl delete pod -l app.kubernetes.io/name=energy-aware-operator
-```
 
 
 ## Testing

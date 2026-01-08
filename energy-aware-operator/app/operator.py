@@ -32,6 +32,7 @@ from app.handlers import (
     get_validation_handler,
 )
 from app.services import SimpleSchedulerService
+from app.services.energy_api_client import EnergyAPIClient
 
 # Get configuration from environment
 REEVALUATION_INTERVAL_SECONDS = get_reevaluation_interval()
@@ -44,8 +45,9 @@ validation_handler = get_validation_handler()
 status_handler = get_status_handler()
 event_handler = get_event_handler()
 
-# Scheduler service
-scheduler_service: SimpleSchedulerService = SimpleSchedulerService(energy_api_url=ENERGY_API_URL)
+# Initialize Energy API Client and Scheduler Service
+energy_api_client = EnergyAPIClient(api_url=ENERGY_API_URL) if ENERGY_API_URL else None
+scheduler_service: SimpleSchedulerService = SimpleSchedulerService(energy_api_client=energy_api_client)
 
 
 def _load_kube_config() -> None:
@@ -145,12 +147,14 @@ async def reconcile_handler(
     # Extract validated fields
     energy_consumption = validated_spec["energy_consumption"]
     priority = validated_spec["priority"]
+    app_api_version = validated_spec["app_api_version"]
+    app_kind = validated_spec["app_kind"]
     app_name = validated_spec["app_name"]
     app_namespace = validated_spec["app_namespace"]
 
     logger.info(f"   Priority: {priority}")
     logger.info(f"   Energy Required: {energy_consumption}W")
-    logger.info(f"   Application: {app_name} (namespace: {app_namespace})")
+    logger.info(f"   Application: {app_api_version} {app_kind}/{app_name} (namespace: {app_namespace})")
     logger.info("-" * 80)
 
     # Post event: Processing started
@@ -375,4 +379,14 @@ async def periodic_reconcile(
         logger.warning("")
 
     return {"re_evaluated": False}
+
+
+@kopf.on.cleanup()
+async def cleanup(**_: Any) -> None:
+    """
+    Cleanup handler - closes HTTP connections on operator shutdown.
+    """
+    if energy_api_client:
+        await energy_api_client.close()
+        logger.info("Energy API client connections closed")
 

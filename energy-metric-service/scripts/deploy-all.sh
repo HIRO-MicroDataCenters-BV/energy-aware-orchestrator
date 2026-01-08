@@ -107,22 +107,10 @@ echo ""
 kubectl get pods -n "$NAMESPACE"
 echo ""
 
-# Check CRD
-if kubectl get crd energyawareorchestrations.eas.hiro.io &> /dev/null; then
-    print_info "CRD installed ✓"
-else
-    print_warn "CRD not found"
-fi
-
-echo ""
 echo "Quick commands:"
 echo "  # Access API"
 echo "  kubectl port-forward -n $NAMESPACE svc/energy-metric-service 8000:8000"
 echo ""
 echo "  # View logs"
 echo "  kubectl logs -n $NAMESPACE -l app=energy-metric-service -f"
-echo ""
-echo "  # Test CRD"
-echo "  kubectl apply -f sample_deployments/sample-eao.yaml"
-echo "  kubectl get eao"
 echo ""

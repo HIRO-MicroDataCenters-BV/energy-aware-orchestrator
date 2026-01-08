@@ -35,8 +35,6 @@ spec:
               value: "{{ .Values.app.env.ENABLE_METRICS_SCHEDULER }}"
             - name: ENABLE_DEPLOYMENT_SCHEDULER
               value: "{{ .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}"
-            - name: ENABLE_OPERATOR
-              value: "{{ .Values.app.env.ENABLE_OPERATOR }}"
             - name: LOG_LEVEL
               value: "{{ .Values.app.env.LOG_LEVEL }}"
             - name: USE_KUBECTL_PROXY

@@ -86,14 +86,6 @@ if [ "$BUILD_IMAGE" = true ]; then
     fi
 fi
 
-# Generate CRD
-print_info "Generating CRD..."
-"$SCRIPT_DIR/generate-crd.sh" || print_warn "CRD generation failed, using existing"
-
-# Apply CRD first (in case of updates)
-print_info "Applying CRD..."
-kubectl apply -f "$PROJECT_ROOT/charts/app/crds/"
-
 # Deploy application
 print_info "Deploying application..."
 helm upgrade --install "$RELEASE_NAME" "$PROJECT_ROOT/charts/app" \
@@ -113,13 +105,6 @@ echo ""
 echo "Access the API:"
 echo "  kubectl port-forward -n $NAMESPACE svc/energy-metric-service 8000:8000"
 echo "  Open: http://localhost:8000/docs"
-echo ""
-echo "Check CRD:"
-echo "  kubectl get crd energyawareorchestrations.eas.hiro.io"
-echo ""
-echo "Test with sample CR:"
-echo "  kubectl apply -f sample_deployments/sample-eao.yaml"
-echo "  kubectl get eao"
 echo ""
 
 

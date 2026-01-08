@@ -5,14 +5,9 @@ metadata:
   name: ml-training-job
   namespace: default
 spec:
-  # Estimated energy consumption in kWh
-  energyConsumption: 500
-
-  # Forecast schedule for the next 7 days
-  forecastWindowDays: 7
-
-  # Business priority (Critical, Preferred, Optional)
-  priority: Preferred
+  priority: Preferred      # Business priority (Critical, Preferred, Optional)
+  forecastWindowDays: 7    # Forecast schedule for the next 7 days
+  energyConsumption: 500   # Estimated energy consumption in kWh
 
   # Reference to the application/workload
   applicationRef:
