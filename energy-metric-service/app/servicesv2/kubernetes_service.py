@@ -1,8 +1,5 @@
 import aiohttp
-import asyncio
-import json
 import ssl
-from datetime import datetime
 from typing import List, Dict, Any, Optional
 import logging
 import os
@@ -306,3 +303,211 @@ class KubernetesService:
                 "error": str(e),
                 "authenticated": False
             }
+
+    async def get_custom_resources(
+        self,
+        group: str = "eas.hiro.io",
+        version: str = "v1",
+        plural: str = "energyawareorchestrations",
+        namespace: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get custom resources (EnergyAwareOrchestration CRs).
+
+        Args:
+            group: API group (default: eas.hiro.io)
+            version: API version (default: v1)
+            plural: Plural name of the custom resource (default: energyawareorchestrations)
+            namespace: Optional namespace filter. If None, gets from all namespaces.
+
+        Returns:
+            List of custom resources with their spec and status
+        """
+        headers = await self._get_auth_headers()
+        ssl_context = await self._get_ssl_context()
+
+        # Build URL for custom resources
+        if namespace:
+            # Namespaced custom resources
+            url = f"{self.k8s_base_url}/apis/{group}/{version}/namespaces/{namespace}/{plural}"
+        else:
+            # All namespaces
+            url = f"{self.k8s_base_url}/apis/{group}/{version}/{plural}"
+
+        logging.debug(f"Fetching custom resources from: {url}")
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, ssl=ssl_context) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        items = data.get("items", [])
+
+                        custom_resources = []
+                        for item in items:
+                            metadata = item.get("metadata", {})
+                            spec = item.get("spec", {})
+                            status = item.get("status", {})
+
+                            # Parse application ref
+                            app_ref = spec.get("applicationRef", {})
+                            
+                            custom_resource = {
+                                "name": metadata.get("name", ""),
+                                "namespace": metadata.get("namespace", ""),
+                                "uid": metadata.get("uid", ""),
+                                "created_at": metadata.get("creationTimestamp", ""),
+                                "api_version": item.get("apiVersion", f"{group}/{version}"),
+                                "kind": item.get("kind", "EnergyAwareOrchestration"),
+                                "generation": metadata.get("generation", 0),
+                                "resource_version": metadata.get("resourceVersion", ""),
+                                "labels": metadata.get("labels", {}),
+                                "annotations": metadata.get("annotations", {}),
+                                "spec": {
+                                    "energy_consumption": spec.get("energyConsumption", 0),
+                                    "forecast_window_days": spec.get("forecastWindowDays", 0),
+                                    "priority": spec.get("priority", ""),
+                                    "application_ref": {
+                                        "api_version": app_ref.get("apiVersion"),
+                                        "kind": app_ref.get("kind", ""),
+                                        "name": app_ref.get("name", ""),
+                                        "namespace": app_ref.get("namespace"),
+                                    }
+                                },
+                                "status": self._parse_cr_status(status) if status else None
+                            }
+
+                            custom_resources.append(custom_resource)
+
+                        return custom_resources
+                    else:
+                        error_text = await response.text()
+                        logging.error(f"Failed to fetch custom resources: {response.status} - {error_text}")
+                        raise Exception(f"Failed to fetch custom resources: {response.status}")
+
+        except Exception as e:
+            logging.error(f"Error fetching custom resources: {e}")
+            raise
+
+    async def get_custom_resource(
+        self,
+        name: str,
+        namespace: str,
+        group: str = "eas.hiro.io",
+        version: str = "v1",
+        plural: str = "energyawareorchestrations"
+    ) -> Dict[str, Any]:
+        """
+        Get a specific custom resource by name and namespace.
+
+        Args:
+            name: Name of the custom resource
+            namespace: Namespace of the custom resource
+            group: API group (default: eas.hiro.io)
+            version: API version (default: v1)
+            plural: Plural name of the custom resource (default: energyawareorchestrations)
+
+        Returns:
+            Custom resource details
+        """
+        headers = await self._get_auth_headers()
+        ssl_context = await self._get_ssl_context()
+
+        url = f"{self.k8s_base_url}/apis/{group}/{version}/namespaces/{namespace}/{plural}/{name}"
+        logging.debug(f"Fetching custom resource from: {url}")
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, ssl=ssl_context) as response:
+                    if response.status == 200:
+                        item = await response.json()
+                        
+                        metadata = item.get("metadata", {})
+                        spec = item.get("spec", {})
+                        status = item.get("status", {})
+
+                        # Parse application ref
+                        app_ref = spec.get("applicationRef", {})
+                        
+                        custom_resource = {
+                            "name": metadata.get("name", ""),
+                            "namespace": metadata.get("namespace", ""),
+                            "uid": metadata.get("uid", ""),
+                            "created_at": metadata.get("creationTimestamp", ""),
+                            "api_version": item.get("apiVersion", f"{group}/{version}"),
+                            "kind": item.get("kind", "EnergyAwareOrchestration"),
+                            "generation": metadata.get("generation", 0),
+                            "resource_version": metadata.get("resourceVersion", ""),
+                            "labels": metadata.get("labels", {}),
+                            "annotations": metadata.get("annotations", {}),
+                            "spec": {
+                                "energy_consumption": spec.get("energyConsumption", 0),
+                                "forecast_window_days": spec.get("forecastWindowDays", 0),
+                                "priority": spec.get("priority", ""),
+                                "application_ref": {
+                                    "api_version": app_ref.get("apiVersion"),
+                                    "kind": app_ref.get("kind", ""),
+                                    "name": app_ref.get("name", ""),
+                                    "namespace": app_ref.get("namespace"),
+                                }
+                            },
+                            "status": self._parse_cr_status(status) if status else None
+                        }
+
+                        return custom_resource
+                    elif response.status == 404:
+                        raise Exception(f"Custom resource '{name}' not found in namespace '{namespace}'")
+                    else:
+                        error_text = await response.text()
+                        logging.error(f"Failed to fetch custom resource: {response.status} - {error_text}")
+                        raise Exception(f"Failed to fetch custom resource: {response.status}")
+
+        except Exception as e:
+            logging.error(f"Error fetching custom resource '{name}': {e}")
+            raise
+
+    def _parse_cr_status(self, status: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Parse custom resource status section.
+
+        Args:
+            status: Raw status dict from Kubernetes API
+
+        Returns:
+            Parsed status dict
+        """
+        decision = status.get("decision", {})
+        scheduled_slot = decision.get("scheduledSlot", {})
+        energy_metrics = status.get("energyMetrics", {})
+
+        parsed_status = {
+            "phase": status.get("phase"),
+            "last_updated": status.get("lastUpdated"),
+        }
+
+        if decision:
+            parsed_status["decision"] = {
+                "action": decision.get("action", ""),
+                "reason": decision.get("reason", ""),
+                "next_evaluation_time": decision.get("nextEvaluationTime"),
+            }
+
+            if scheduled_slot:
+                parsed_status["decision"]["scheduled_slot"] = {
+                    "slot_number": scheduled_slot.get("slotNumber"),
+                    "slot_start": scheduled_slot.get("slotStart"),
+                    "slot_end": scheduled_slot.get("slotEnd"),
+                    "available_energy_watts": scheduled_slot.get("availableEnergyWatts"),
+                    "required_energy_watts": scheduled_slot.get("requiredEnergyWatts"),
+                    "confidence_percentage": scheduled_slot.get("confidencePercentage"),
+                }
+
+        if energy_metrics:
+            parsed_status["energy_metrics"] = {
+                "current_slot_available_watts": energy_metrics.get("currentSlotAvailableWatts"),
+                "current_slot_consumed_watts": energy_metrics.get("currentSlotConsumedWatts"),
+                "required_watts": energy_metrics.get("requiredWatts", 0),
+                "sufficient": energy_metrics.get("sufficient", False),
+            }
+
+        return parsed_status
