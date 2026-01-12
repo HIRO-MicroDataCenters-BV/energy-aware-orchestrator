@@ -11,5 +11,7 @@ spec:
 
   # Reference to the application/workload
   applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: ml-training-deployment
     namespace: default

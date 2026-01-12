@@ -384,7 +384,7 @@
                       {{isAppExpanded(app.app_name) ? '▼' : '▶'}}
                     </span>
                     <div>
-                      <div class="text-gray-900 font-medium">{{app.app_name}}</div>
+                      <div class="text-gray-900 font-medium">{{app.app_name_label || app.app_name}}</div>
                       <div class="text-[10px] text-gray-500" *ngIf="app.app_definition_id">ID: {{app.app_definition_id}}</div>
                     </div>
                   </div>
@@ -412,8 +412,8 @@
                 </td>
                 <td class="px-2 py-2">
                   <div class="space-y-0.5">
-                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getPodStatusColor(app.pods[0]?.phase)">
-                      {{app.pods[0]?.phase || '-'}}
+                    <span class="px-1 py-0.5 rounded text-xs font-medium" [class]="getPodStatusColor(app.pods.length > 0 ? app.pods[0].phase : undefined)">
+                      {{app.pods.length > 0 ? app.pods[0].phase : '-'}}
                     </span>
                     <div *ngIf="app.pods.length > 1" class="text-[10px] text-gray-400">
                       +{{app.pods.length - 1}} more
@@ -571,7 +571,7 @@
             </div>
             <div class="bg-gray-50 rounded p-1 text-center">
               <div class="text-gray-500 text-[8px]">Source</div>
-              <div class="text-xs font-bold text-gray-900 truncate">{{chartEnergySlots[0]?.energy_source_type || '-'}}</div>
+              <div class="text-xs font-bold text-gray-900 truncate">{{chartEnergySlots.length > 0 ? chartEnergySlots[0].energy_source_type : '-'}}</div>
             </div>
           </div>
         </div>

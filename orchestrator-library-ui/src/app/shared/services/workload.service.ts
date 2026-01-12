@@ -8,6 +8,7 @@ import {
   WorkloadDefinitionResponse,
 } from '../interfaces/workload.interface';
 import { K8sConnectionTestResponse } from '../models/kubernetes.model';
+import { AppPodsResponseV2 } from '../interfaces/app-pods.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -32,12 +33,13 @@ export class WorkloadService {
   }
 
   /**
-   * Get pods grouped by application
-   * @returns Observable<AppPodsResponse>
+   * Get pods grouped by application (V2 API)
+   * Returns apps with enhanced identification including app_name_label
+   * @returns Observable<AppPodsResponseV2>
    */
-  getPodsByApp(): Observable<any> {
-    const fullUrl = `${this.baseUrl}/pods/by-app`;
-    return this.http.get<any>(fullUrl);
+  getPodsByApp(): Observable<AppPodsResponseV2> {
+    const fullUrl = `${this.baseUrl}/pods/by-app/v2`;
+    return this.http.get<AppPodsResponseV2>(fullUrl);
   }
 
   /**

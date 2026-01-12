@@ -15,6 +15,7 @@ import { WorkloadService } from '../../../shared/services/workload.service';
 import { HlmSidebarService } from '../../../../../libs/ui/ui-sidebar-helm/src/lib/hlm-sidebar.service';
 import { EnergyAvailabilityService } from '../../../shared/services/energy-availability.service';
 import { K8sConnectionTestResponse } from '../../../shared/models/kubernetes.model';
+import { AppPodsInfoV2 } from '../../../shared/interfaces/app-pods.interface';
 import { HighchartsChartComponent } from 'highcharts-angular';
 import * as Highcharts from 'highcharts';
 
@@ -62,7 +63,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
   workloads: WorkloadItem[] = [];
   deploymentRequests: any[] = [];
   pods: any[] = [];
-  appPods: any[] = [];
+  appPods: AppPodsInfoV2[] = [];
   expandedApps: Set<string> = new Set();
   expandedRequests: Set<string> = new Set();
   availableEnergy = 0;
@@ -732,7 +733,10 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
     };
   }
 
-  getStatusColor(status: string): string {
+  getStatusColor(status: string | null | undefined): string {
+    if (!status) {
+      return 'bg-gray-100 text-gray-800';
+    }
     const colors: { [key: string]: string } = {
       'Created': 'bg-yellow-100 text-yellow-800',
       'Scheduled': 'bg-blue-100 text-blue-800',
@@ -743,13 +747,36 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
     return colors[status] || 'bg-gray-100 text-gray-800';
   }
 
-  getWorkloadTypeClass(type?: string): string {
+  getWorkloadTypeClass(type?: string | null): string {
+    if (!type) {
+      return 'text-gray-600 bg-gray-50';
+    }
     const typeColors: { [key: string]: string } = {
       'Critical': 'text-red-600 bg-red-50',
       'Preferred': 'text-orange-600 bg-orange-50',
       'Optional': 'text-blue-600 bg-blue-50'
     };
-    return typeColors[type || ''] || 'text-gray-600 bg-gray-50';
+    return typeColors[type] || 'text-gray-600 bg-gray-50';
+  }
+
+  /**
+   * Get CSS classes for app-name label badge
+   * @param appNameLabel - The app-name label value (e.g., "K8s", "Custom-app")
+   */
+  getAppNameLabelClass(appNameLabel: string | null | undefined): string {
+    if (!appNameLabel) {
+      return 'bg-gray-100 text-gray-800 border border-gray-200';
+    }
+    const labelStyles: { [key: string]: string } = {
+      'K8s': 'bg-blue-100 text-blue-800 border border-blue-200',
+      'Custom-app': 'bg-purple-100 text-purple-800 border border-purple-200',
+      'Production': 'bg-green-100 text-green-800 border border-green-200',
+      'Staging': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      'Development': 'bg-gray-100 text-gray-800 border border-gray-200',
+    };
+    
+    // Return specific style or default gray style
+    return labelStyles[appNameLabel] || 'bg-gray-100 text-gray-800 border border-gray-200';
   }
 
   formatDate(date: Date | undefined): string {
@@ -818,7 +845,10 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
     return [...new Set(namespaces)];
   }
 
-  getPodStatusColor(status: string): string {
+  getPodStatusColor(status: string | undefined): string {
+    if (!status) {
+      return 'bg-gray-100 text-gray-800';
+    }
     const colors: { [key: string]: string } = {
       'Running': 'bg-green-100 text-green-800',
       'Pending': 'bg-yellow-100 text-yellow-800',

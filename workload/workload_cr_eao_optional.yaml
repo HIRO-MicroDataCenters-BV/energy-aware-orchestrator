@@ -9,5 +9,7 @@ spec:
   forecastWindowDays: 3
   priority: Optional
   applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
     name: batch-processor
     namespace: default

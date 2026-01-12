@@ -9,5 +9,7 @@ spec:
   forecastWindowDays: 14
   priority: Critical
   applicationRef:
+    apiVersion: apps/v2
+    kind: Deployment
     name: api-gateway
     namespace: production
