@@ -1,329 +1,231 @@
 # Energy Metric Service
 
-A comprehensive energy monitoring service that integrates with Prometheus, Kepler, and Kubernetes to provide real-time energy consumption metrics, forecasting, and pod management capabilities.
+A comprehensive energy monitoring and forecasting service for Kubernetes clusters. Integrates with Prometheus, Kepler, and Kubernetes to provide real-time energy consumption metrics, forecasting, and pod management. Includes both the FastAPI application and a custom PostgreSQL Helm chart for persistent storage.
 
-## Features
+---
 
-- **Energy Metrics Collection**: Fetches energy consumption data from Kepler via Prometheus
-- **Resource Monitoring**: CPU and memory utilization tracking
-- **Energy Forecasting**: ML-powered energy consumption predictions
-- **Kubernetes Integration**: Pod and namespace management
-- **Time Series Analysis**: Historical data analysis and trend monitoring
+## 📁 Project Structure
 
-## API Endpoints
+```
+energy-metric-service/
+├── app/                  # FastAPI application source code
+│   ├── api/              # API routers (metrics, k8s, forecasting, etc.)
+│   ├── db/               # Database connection logic
+│   ├── models/           # ORM/data models
+│   ├── repositories/     # Data access logic
+│   ├── scheduler/        # Background schedulers
+│   ├── schemas/          # Pydantic schemas
+│   ├── services/         # Metrics, forecasting, and integration logic
+│   ├── servicesv2/       # Newer service implementations
+│   └── utils/            # Utilities and helpers
+├── charts/
+│   ├── app/              # Helm chart for FastAPI app
+│   └── postgres/         # Helm chart for PostgreSQL
+├── scripts/
+│   ├── deploy-all.sh     # Deploys both PostgreSQL and app (recommended)
+│   ├── deploy-app.sh     # Deploys only the FastAPI app
+│   └── deploy-postgres.sh# Deploys only PostgreSQL
+├── Dockerfile            # Container build for FastAPI app
+├── docker-compose.yaml   # Local dev (optional)
+├── README.md             # This file
+└── ...
+```
 
-### Energy & Metrics APIs
+---
 
-- **Prometheus Metrics V2**: `/api/metrics/prometheus/metrics-v2/`
-  - `GET /latest` - Latest energy and resource metrics
-  - `GET /timeseries` - Historical time series data
+## 🚀 Features
 
-- **Energy Forecasting**: `/energy-forecast/`
-  - `POST /predict` - Single prediction
-  - `POST /forecast-day` - 24-hour forecasting
-  - `GET /metrics-with-forecast` - Enhanced metrics with predictions
+- **Energy Metrics Collection:** Fetches energy data from Kepler via Prometheus
+- **Resource Monitoring:** Tracks CPU and memory utilization
+- **Energy Forecasting:** ML-powered predictions for energy consumption
+- **Kubernetes Integration:** Pod and namespace management APIs
+- **Time Series Analysis:** Historical data and trend monitoring
+- **Custom PostgreSQL Helm Chart:** Easy, persistent storage setup
 
-### Kubernetes APIs
+---
 
-- **Connection & Health**: `/api/kubernetes/`
-  - `GET /test` - Test Kubernetes API connection
-  - `GET /namespaces` - List all namespaces
+## ⚡ Quick Start (Recommended)
 
-- **Pod Management**: `/api/kubernetes/pods`
-  - `GET /` - Get pods by namespace
-  - `GET /all` - Get pods from all namespaces
-  - `GET /summary` - Cluster-wide pod statistics
-  - `GET /by-node/{node_name}` - Pods on specific node
+### 1. Prerequisites
 
-## Environment Variables
-
-### Kubernetes Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `USE_KUBECTL_PROXY` | `true` | Use kubectl proxy for local development |
-| `KUBERNETES_SERVICE_HOST` | `localhost` | Kubernetes API server host |
-| `KUBERNETES_SERVICE_PORT` | `8080` / `8443` | Kubernetes API server port |
-
-### Application Settings
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_METRICS_SCHEDULER` | `false` | Enable automatic metrics collection |
-| `NODE_MAPPINGS` | - | Map IP addresses to node names (format: `ip1:name1,ip2:name2`) |
-
-## Deployment Scenarios
-
-### 1. Local Development with Minikube
-
-**Prerequisites:**
-- Minikube running
+- Kubernetes cluster (tested with Minikube)
+- Helm 3.x
 - kubectl configured
+- Docker (for building the app image)
 
-**Setup:**
+### 2. Deploy Everything (App + PostgreSQL)
+
+From the `energy-metric-service/` directory:
+
 ```bash
-# Start Minikube
-minikube start
-
-# Start kubectl proxy
-kubectl proxy --port=8080
-
-# Set environment variables
-export USE_KUBECTL_PROXY=true
-export KUBERNETES_SERVICE_HOST=localhost
-export KUBERNETES_SERVICE_PORT=8080
-
-# Run the service
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8086
+./scripts/deploy-all.sh
 ```
 
-**Test Connection:**
-```bash
-curl http://localhost:8086/api/kubernetes/test
-curl http://localhost:8086/api/kubernetes/namespaces
-curl http://localhost:8086/api/kubernetes/pods?namespace=default
-```
+- This script will:
+  - Deploy PostgreSQL using the custom Helm chart
+  - Build and deploy the FastAPI application
+  - Wait for all pods to be ready
 
-### 2. In-Cluster Deployment
+#### Options
 
-**Prerequisites:**
-- Kubernetes cluster
-- Service account with appropriate permissions
+- Deploy only DB: `./scripts/deploy-all.sh --db-only`
+- Deploy only App: `./scripts/deploy-all.sh --app-only`
+- Skip image build: `./scripts/deploy-all.sh --no-build`
+- Specify namespace: `./scripts/deploy-all.sh -n my-namespace`
 
-**Create RBAC:**
-```yaml
-# rbac.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: energy-metrics-sa
-  namespace: default
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: energy-metrics-reader
-rules:
-- apiGroups: [""]
-  resources: ["pods", "namespaces"]
-  verbs: ["get", "list"]
+
+## 🛠️ Manual Installation
+
+### 1. Deploy PostgreSQL Only
+
+```bash
+./scripts/deploy-postgres.sh
+```
+
+- Custom options:
+  - `-n my-namespace` — set namespace
+  - `--db mydb` — set database name
+  - `--user myuser` — set username
+  - `--password mypass` — set password
+  - `--storage 20Gi` — set storage size
+  - `-f my-values.yaml` — use custom values file
+
+### 2. Deploy FastAPI App Only
+
+```bash
+./scripts/deploy-app.sh
+```
+
+- Options:
+  - `-n my-namespace` — set namespace
+  - `--no-build` — skip Docker image build
+
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: energy-metrics-binding
-subjects:
-- kind: ServiceAccount
-  name: energy-metrics-sa
-  namespace: default
-roleRef:
-  kind: ClusterRole
-  name: energy-metrics-reader
-  apiGroup: rbac.authorization.k8s.io
+
+## 📦 Helm Installation (Advanced)
+
+### Deploy PostgreSQL Chart Directly
+
+```bash
+cd charts
+helm install postgres ./postgres
 ```
 
-**Deploy Service:**
+- With custom values:
+  ```bash
+  helm install postgres ./postgres \
+    --set postgres.credentials.database=mydb \
+    --set postgres.credentials.username=myuser \
+    --set postgres.credentials.password=mypass \
+    --set postgres.persistence.size=20Gi
+  ```
+- Or with a values file:
+  ```bash
+  helm install postgres ./postgres -f my-values.yaml
+  ```
+
+### Deploy App Chart Directly
+
+```bash
+cd charts
+helm install energy-metric-service ./app
+```
+
+- Set image/tag or environment variables as needed.
+
+---
+
+## ⚙️ Configuration & Customization
+
+### PostgreSQL Chart (`charts/postgres/values.yaml`)
+
 ```yaml
-# eao-app-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: energy-metric-service
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: energy-metric-service
-  template:
-    metadata:
-      labels:
-        app: energy-metric-service
-    spec:
-      serviceAccountName: energy-metrics-sa
-      containers:
-      - name: energy-metric-service
-        image: your-registry/energy-metric-service:latest
-        ports:
-        - containerPort: 8086
-        env:
-        - name: USE_KUBECTL_PROXY
-          value: "false"
-        - name: ENABLE_METRICS_SCHEDULER
-          value: "true"
+postgres:
+  name: eao-postgres
+  image:
+    repository: postgres
+    tag: "14"
+  credentials:
+    username: postgres
+    password: postgres
+    database: orchestration_db
+  persistence:
+    enabled: true
+    size: 8Gi
+  service:
+    type: ClusterIP
+    port: 5432
 ```
 
-**Apply:**
-```bash
-kubectl apply -f rbac.yaml
-kubectl apply -f eao-app-deployment.yaml
-```
+- **Override any value** via `--set` or a custom values file.
+- **Init scripts:** Edit `charts/postgres/templates/postgres-configmap.yaml` to add custom SQL.
 
-### 3. External Cluster Access
+### App Chart (`charts/app/values.yaml`)
 
-**Setup:**
-```bash
-# Get cluster info
-kubectl cluster-info
+- Set image repository/tag, environment variables, and resource limits as needed.
 
-# Create service account token
-kubectl create token energy-metrics-sa
+---
 
-# Set environment variables
-export USE_KUBECTL_PROXY=false
-export KUBERNETES_SERVICE_HOST=<cluster-ip>
-export KUBERNETES_SERVICE_PORT=6443
-export K8S_TOKEN=<service-account-token>
+## 🌐 Accessing the Service
 
-# Run service
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8086
-```
+- **API Docs:**  
+  After deployment, port-forward the service:
+  ```bash
+  kubectl port-forward -n <namespace> svc/energy-metric-service 8000:8000
+  ```
+  Open: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## API Usage Examples
+- **PostgreSQL Connection:**  
+  Get the connection string:
+  ```bash
+  kubectl get configmap orchestration-api-config -o jsonpath='{.data.databaseURL}'
+  ```
 
-### Get Pod Information
+---
+
+## 🧹 Uninstallation
+
+### Remove Everything (App + DB)
 
 ```bash
-# List all namespaces
-curl http://localhost:8086/api/kubernetes/namespaces
+# Remove app and DB using scripts
+./scripts/deploy-postgres.sh --uninstall
+helm uninstall energy-metric-service -n <namespace> || true
 
-# Get pods in specific namespace
-curl "http://localhost:8086/api/kubernetes/pods?namespace=default"
-
-# Filter running pods
-curl "http://localhost:8086/api/kubernetes/pods?namespace=default&phase=Running"
-
-# Get pods on specific node
-curl "http://localhost:8086/api/kubernetes/pods?namespace=default&node_name=minikube"
-
-# Get all pods (excluding system namespaces)
-curl "http://localhost:8086/api/kubernetes/pods/all?include_system=false"
-
-# Get cluster summary
-curl http://localhost:8086/api/kubernetes/pods/summary
-
-# Get pods by node
-curl http://localhost:8086/api/kubernetes/pods/by-node/minikube
+# Optionally delete PVC (data loss!)
+kubectl delete pvc -n <namespace> -l app=eao-postgres
 ```
 
-### Energy Metrics
+### Remove via Helm
 
 ```bash
-# Get latest energy metrics (last 1 hour)
-curl "http://localhost:8086/api/metrics/prometheus/metrics-v2/latest?hours_back=1"
-
-# Get time series data
-curl "http://localhost:8086/api/metrics/prometheus/metrics-v2/timeseries?hours_back=2"
-
-# Filter by node
-curl "http://localhost:8086/api/metrics/prometheus/metrics-v2/timeseries?hours_back=1&node_name=minikube"
+helm uninstall postgres -n <namespace>
+helm uninstall energy-metric-service -n <namespace>
+kubectl delete pvc -n <namespace> -l app=eao-postgres
 ```
 
-## Response Formats
+---
 
-### Pod Information Response
-```json
-{
-  "status": "success",
-  "namespace": "default",
-  "pods": [
-    {
-      "name": "my-pod",
-      "namespace": "default",
-      "node_name": "minikube",
-      "phase": "Running",
-      "pod_ip": "10.244.0.5",
-      "host_ip": "192.168.49.2",
-      "containers": [
-        {
-          "name": "app",
-          "image": "nginx:latest",
-          "resources": {}
-        }
-      ],
-      "container_statuses": [
-        {
-          "name": "app",
-          "ready": true,
-          "restart_count": 0,
-          "state": {}
-        }
-      ]
-    }
-  ],
-  "count": 1,
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
+## 📝 API Endpoints
 
-### Energy Metrics Response
-```json
-{
-  "status": "success",
-  "source": "prometheus-metrics-service-v2",
-  "time_series": {
-    "total_energy_watts": {
-      "minikube": [
-        {"timestamp": 1705320600, "value": 45.67},
-        {"timestamp": 1705320660, "value": 46.12}
-      ]
-    },
-    "cpu_utilization": {
-      "minikube": [
-        {"timestamp": 1705320600, "value": 25.5},
-        {"timestamp": 1705320660, "value": 27.8}
-      ]
-    }
-  }
-}
-```
+- **Prometheus Metrics:** `/api/metrics/prometheus/metrics-v2/`
+- **Energy Forecasting:** `/energy-forecast/`
+- **Kubernetes APIs:** `/api/kubernetes/`
+- See [http://localhost:8000/docs](http://localhost:8000/docs) for full OpenAPI docs.
 
-## Troubleshooting
+---
 
-### Connection Issues
+## 🐳 Local Development
 
-**Problem:** `Unauthorized access to Kubernetes API`
-**Solution:**
-- Check service account permissions
-- Verify RBAC configuration
-- Ensure token is valid
+- Use `docker-compose.yaml` for local dev (optional).
+- For Minikube:  
+  - Start Minikube  
+  - Start `kubectl proxy`  
+  - Set environment variables as needed  
+  - Run the app locally with Uvicorn
 
-**Problem:** `Failed to fetch pods: Network error`
-**Solution:**
-- Verify kubectl proxy is running: `kubectl proxy --port=8080`
-- Check Minikube status: `minikube status`
-- Test direct API access: `curl http://localhost:8080/api/v1/namespaces`
-
-**Problem:** `Namespace not found`
-**Solution:**
-- List available namespaces: `kubectl get namespaces`
-- Use correct namespace name in API calls
-
-### Development Tips
-
-1. **Use kubectl proxy** for local development - it's the easiest setup
-2. **Check logs** for detailed error information
-3. **Test connection first** using `/api/kubernetes/test` endpoint
-4. **Verify permissions** if getting 403 errors
-
-## Architecture
-
-```
-┌─────────────────┐    ┌──────────────┐    ┌─────────────┐
-│   FastAPI App   │    │  Kubernetes  │    │ Prometheus  │
-│                 │────│     API      │    │   Server    │
-│ • REST APIs     │    │              │    │             │
-│ • Pod Management│    │ • Pods       │    │ • Kepler    │
-│ • Energy Data   │    │ • Namespaces │    │ • cAdvisor  │
-└─────────────────┘    └──────────────┘    └─────────────┘
-         │                       │                  │
-         └───────────────────────┼──────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │   kubectl       │
-                    │   proxy         │
-                    │  (development)  │
-                    └─────────────────┘
-```
+---
 
 ## Dependencies
 
@@ -334,7 +236,9 @@ curl "http://localhost:8086/api/metrics/prometheus/metrics-v2/timeseries?hours_b
 - **Kubernetes**: Container orchestration
 - **Kepler**: Energy consumption monitoring
 
-## Contributing
+---
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -342,6 +246,8 @@ curl "http://localhost:8086/api/metrics/prometheus/metrics-v2/timeseries?hours_b
 4. Test with Minikube
 5. Submit a pull request
 
-## License
+---
+
+## 📄 License
 
 [Your License Here]

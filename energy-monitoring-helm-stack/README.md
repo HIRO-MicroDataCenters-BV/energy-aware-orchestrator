@@ -59,7 +59,7 @@ This setup provides real-time energy consumption monitoring for:
 ### Quick Start
 ```bash
 # 1. Clone or navigate to the chart directory
-cd energy-metrics
+cd energy-monitoring-helm-stack
 
 # 2. Update dependencies
 helm dependency update

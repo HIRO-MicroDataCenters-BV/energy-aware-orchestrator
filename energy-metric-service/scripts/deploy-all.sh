@@ -79,7 +79,7 @@ if [ "$APP_ONLY" = false ]; then
     echo "═══════════════════════════════════════════════════════"
     print_info "Step 1: Deploying PostgreSQL..."
     echo "═══════════════════════════════════════════════════════"
-    NAMESPACE="$NAMESPACE" "$SCRIPT_DIR/deploy-db.sh"
+    NAMESPACE="$NAMESPACE" "$SCRIPT_DIR/deploy-postgres.sh"
 fi
 
 # Step 2: Deploy Application

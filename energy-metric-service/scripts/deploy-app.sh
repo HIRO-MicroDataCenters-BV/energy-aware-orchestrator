@@ -84,6 +84,12 @@ if [ "$BUILD_IMAGE" = true ]; then
     if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
         print_info "Image built in minikube environment"
     fi
+
+    # Load the Docker image into the cluster (for kind)
+    if command -v kind &> /dev/null && kind get clusters &> /dev/null 2>&1; then
+        print_info "Loading image into kind cluster..."
+        kind load docker-image energy-metric-service:latest --name "$(kind get clusters | head -n 1)" || true 
+    fi
 fi
 
 # Deploy application
