@@ -65,11 +65,21 @@ cd energy-monitoring-helm-stack
 helm dependency update
 
 # 3. Install the chart
-helm install energy-metrics . --namespace energy-metrics --create-namespace
+helm upgrade --install energy-metrics . --namespace energy-metrics --create-namespace
 
 # 4. Wait for all pods to be ready
 kubectl get pods -n energy-metrics
 ```
+Alternatively, you can use the provided scripts for cleanup and deployment:
+
+```bash
+# Clean up all resources
+bash scripts/cleanup.sh
+
+# Deploy the energy monitoring stack
+bash scripts/deploy.sh
+```
+
 
 ## 🌐 Access URLs
 
