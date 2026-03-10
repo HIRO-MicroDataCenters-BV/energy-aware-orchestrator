@@ -46,7 +46,7 @@ The project follows a modular architecture with clear separation of concerns:
 - `libs/ui`: Shared UI components and Spartan UI integration
 - `public`: Static assets (images, icons, fonts)
 - `src`: Application source code
-- `i18n`: Internationalization files
+<!-- - `i18n`: Internationalization files -->
 - `docker`: Docker configuration files
 
 ### Source Code Structure (`src/app`)

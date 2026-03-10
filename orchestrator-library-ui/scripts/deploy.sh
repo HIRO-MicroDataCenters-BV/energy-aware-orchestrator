@@ -251,6 +251,14 @@ build_image() {
     print_success "Docker image built successfully"
 }
 
+# Load the Docker image into the cluster (for kind)
+load_image_into_kind() {
+    if command -v kind &> /dev/null && kind get clusters &> /dev/null 2>&1; then
+        print_status "Loading image into kind cluster..."
+        kind load docker-image orchestrator-library-ui:latest --name "$(kind get clusters | head -n 1)" || true 
+    fi
+}
+
 # Deploy the chart
 deploy_chart() {
     print_status "Deploying Orchestrator Library UI..."
@@ -263,7 +271,7 @@ deploy_chart() {
         --namespace "$NAMESPACE" \
         --create-namespace \
         --set app.image.tag=latest \
-        --set app.image.pullPolicy=Never \
+        --set app.image.pullPolicy=IfNotPresent \
         --wait \
         --timeout 10m
     
@@ -419,6 +427,7 @@ main() {
             display_config
             get_cluster_info
             build_image
+            load_image_into_kind
             deploy_chart
             wait_for_pods
             setup_port_forwarding
