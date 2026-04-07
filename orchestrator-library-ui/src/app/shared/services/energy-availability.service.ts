@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface EnergyAvailabilityResponse {
   status: string;
@@ -36,7 +37,10 @@ export interface EnergyAvailabilitySlot {
   providedIn: 'root'
 })
 export class EnergyAvailabilityService {
-  private readonly baseUrl = 'http://localhost:8086/api/metrics/energy-availability';
+  private readonly apiBasePath = environment.apiUrl.startsWith('/')
+    ? `${environment.backendBaseUrl}${environment.apiUrl}`
+    : `${environment.backendBaseUrl}/api`;
+  private readonly baseUrl = `${this.apiBasePath}/metrics/energy-availability`;
 
   constructor(private http: HttpClient) { }
 

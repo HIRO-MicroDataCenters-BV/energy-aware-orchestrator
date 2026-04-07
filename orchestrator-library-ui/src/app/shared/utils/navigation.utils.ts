@@ -9,6 +9,11 @@ import { BreadcrumbItem, RouteMetadata } from '../types/navigation.types';
  * Default route metadata mapping
  */
 const DEFAULT_ROUTE_METADATA: Record<string, RouteMetadata> = {
+  'energy-metrics': {
+    breadcrumb: 'energy_metrics',
+    title: 'Energy Metrics',
+    icon: 'lucideZap',
+  },
   emdc: {
     breadcrumb: 'emdc',
     title: 'EMDC',

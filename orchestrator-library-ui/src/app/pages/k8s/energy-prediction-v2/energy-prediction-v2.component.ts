@@ -49,7 +49,10 @@ export class EnergyPredictionV2Component implements OnInit, OnDestroy {
     if (isPlatformBrowser(this.platformId)) {
       import('highcharts/modules/heatmap')
         .then((module) => {
-          (module as any).default(Highcharts);
+          const initHeatmap = (module as any).default ?? (module as any);
+          if (typeof initHeatmap === 'function') {
+            initHeatmap(Highcharts);
+          }
         })
         .catch((err) => {
           console.error('Failed to load Highcharts heatmap module:', err);

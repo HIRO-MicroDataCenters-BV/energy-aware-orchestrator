@@ -1,14 +1,18 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { MetricsApiResponse, NodeMetric, ChartDataPoint, EnergyForecast, EnergyForecastPoint, PrometheusMetricsResponse } from '../interfaces/metrics-api.interface';
+import { MetricsApiResponse, NodeMetric, ChartDataPoint, EnergyForecast, PrometheusMetricsResponse } from '../interfaces/metrics-api.interface';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MetricsApiService {
-  private readonly baseUrl = 'http://0.0.0.0:8086/api/metrics/nodes/';
-  private readonly prometheusUrl = 'http://0.0.0.0:8086/api/metrics/prometheus/metrics-v2/timeseries';
+  private readonly apiBasePath = environment.apiUrl.startsWith('/')
+    ? `${environment.backendBaseUrl}${environment.apiUrl}`
+    : `${environment.backendBaseUrl}/api`;
+  private readonly baseUrl = `${this.apiBasePath}/metrics/nodes/`;
+  private readonly prometheusUrl = `${this.apiBasePath}/metrics/prometheus/metrics-v2/timeseries`;
 
   constructor(private http: HttpClient) { }
 
@@ -211,29 +215,6 @@ export class MetricsApiService {
   }
 
   /**
-   * Transform energy forecast data for memory utilization chart
-   * @param forecast - EnergyForecast object
-   * @returns Array of chart data points for memory forecast
-   */
-  transformMemoryForecastData(forecast: EnergyForecast): [number, number][] {
-    return forecast.forecast_points.map(point => [
-      point.timestamp * 1000, // Convert to milliseconds
-      point.forecasted_memory_utilization_percent
-    ] as [number, number]).sort((a, b) => a[0] - b[0]);
-  }
-
-  /**
-   * Get formatted forecast data for energy chart
-   * @param nodeName - Optional node name filter
-   * @returns Observable with chart-formatted forecast data
-   */
-  getEnergyForecastChartData(nodeName?: string): Observable<[number, number][]> {
-    return this.getEnergyForecast(nodeName).pipe(
-      map(forecast => forecast ? this.transformEnergyForecastData(forecast) : [])
-    );
-  }
-
-  /**
    * Fetch Prometheus metrics timeseries data
    * @param hoursBack - Number of hours back to fetch data (default: 1)
    * @param nodeFilter - Optional node name filter
@@ -304,29 +285,5 @@ export class MetricsApiService {
     });
 
     return result;
-  }
-
-  /**
-   * Get CPU utilization data from Prometheus formatted for charts
-   * @param hoursBack - Number of hours back to fetch data (default: 1)
-   * @param nodeFilter - Optional node name filter
-   * @returns Observable with chart-formatted CPU data
-   */
-  getPrometheusCpuUtilizationChartData(hoursBack = 1, nodeFilter?: string): Observable<{ [nodeName: string]: [number, number][] }> {
-    return this.getPrometheusMetrics(hoursBack, nodeFilter).pipe(
-      map(response => this.transformPrometheusCpuData(response.time_series.cpu_utilization))
-    );
-  }
-
-  /**
-   * Get memory utilization data from Prometheus formatted for charts
-   * @param hoursBack - Number of hours back to fetch data (default: 1)
-   * @param nodeFilter - Optional node name filter
-   * @returns Observable with chart-formatted memory data
-   */
-  getPrometheusMemoryUtilizationChartData(hoursBack = 1, nodeFilter?: string): Observable<{ [nodeName: string]: [number, number][] }> {
-    return this.getPrometheusMetrics(hoursBack, nodeFilter).pipe(
-      map(response => this.transformPrometheusMemoryData(response.time_series.memory_utilization))
-    );
   }
 }
