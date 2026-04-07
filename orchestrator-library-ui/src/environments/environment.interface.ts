@@ -11,7 +11,6 @@ export interface Environment {
   refreshTokenKey: string;
   userKey: string;
   dashboardUrl: string;
-  cogUrl: string;
   oidc: {
     authority: string;
     clientId: string;

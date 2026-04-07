@@ -53,22 +53,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: '/overview',
+        redirectTo: '/energy-metrics',
         pathMatch: 'full',
-      },
-      {
-        path: 'overview',
-        loadComponent: () =>
-          import('./pages/overview/overview.component').then(
-            (m) => m.OverviewComponent
-          ),
-        data: { title: 'Overview' },
-      },
-      {
-        path: 'cog',
-        loadComponent: () =>
-          import('./pages/cog/cog.component').then((m) => m.CogComponent),
-        data: { title: 'COG' },
       },
       {
         path: 'energy-metrics',
@@ -91,66 +77,11 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'k8s',
-        loadComponent: () =>
-          import('./pages/k8s/k8s.component').then((m) => m.K8sComponent),
-        data: { title: 'Kubernetes Dashboard' },
-        children: [
-          {
-            path: '',
-            loadComponent: () =>
-              import('./pages/k8s/k8s.component').then((m) => m.K8sComponent),
-          },
-          {
-            path: 'energy-prediction',
-            loadComponent: () =>
-              import('./pages/k8s/energy-prediction/energy-prediction.component').then(
-                (m) => m.EnergyPredictionComponent
-              ),
-            data: { title: 'Energy Prediction' },
-          },
-          {
-            path: 'energy-prediction-v2',
-            loadComponent: () =>
-              import('./pages/k8s/energy-prediction-v2/energy-prediction-v2.component').then(
-                (m) => m.EnergyPredictionV2Component
-              ),
-            data: { title: 'Energy Prediction V2' },
-          },
-          {
-            path: 'full-chart',
-            loadComponent: () =>
-              import('./pages/k8s/full-chart/full-chart.component').then(
-                (m) => m.FullChartComponent
-              ),
-            data: { title: 'Full Chart' },
-          },
-          // create-workload is under EMDC > Workloads in the sidebar, so route is defined there
-        ],
-      },
-
-      {
         path: 'emdc',
         children: [
           {
             path: 'workloads',
             children: [
-              {
-                path: 'request_decisions',
-                loadComponent: () =>
-                  import(
-                    './pages/emdc/request_decisions/request_decisions.component'
-                  ).then((m) => m.RequestDecisionsComponent),
-                data: { title: 'Request Decisions' },
-              },
-              {
-                path: 'actions',
-                loadComponent: () =>
-                  import('./pages/emdc/actions/actions.component').then(
-                    (m) => m.ActionsComponent
-                  ),
-                data: { title: 'Actions' },
-              },
               {
                 path: 'system-utilization',
                 loadComponent: () =>
@@ -176,14 +107,6 @@ export const routes: Routes = [
                 data: { title: 'Register Workload' },
               },
             ],
-          },
-          {
-            path: 'alerts',
-            loadComponent: () =>
-              import('./pages/emdc/alerts/alerts.component').then(
-                (m) => m.AlertsComponent
-              ),
-            data: { title: 'Alerts' },
           },
         ],
       },

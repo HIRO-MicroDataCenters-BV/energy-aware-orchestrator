@@ -18,9 +18,6 @@ export const API_CONSTANTS = {
 
 export const API_PATHS = {
   BASE: '',
-  WORKLOAD_ACTIONS: '/workload_action',
-  WORKLOAD_DECISIONS: '/workload_request_decision',
-  ALERTS: '/alerts',
   KUBERNETES: '/k8s',
   TUNING_PARAMETERS: '/tuning_parameters',
 } as const;
@@ -64,17 +61,6 @@ export const STORAGE_KEYS = {
 
 export const ROUTES = {
   HOME: '/',
-  COG: '/cog',
-  K8S: '/k8s',
-  OVERVIEW: '/overview',
-  EMDC: {
-    BASE: '/emdc',
-    ALERTS: '/emdc/alerts',
-    WORKLOADS: {
-      REQUEST_DECISIONS: '/emdc/workloads/request_decisions',
-      ACTIONS: '/emdc/workloads/actions',
-    },
-  },
   ERROR: {
     NOT_FOUND: '/error/404',
     FORBIDDEN: '/error/403',
@@ -153,7 +139,6 @@ export const ENVIRONMENT = {
 
 export const EXTERNAL_URLS = {
   DASHBOARD: environment.dashboardUrl,
-  COG: environment.cogUrl,
   API: environment.apiUrl,
 } as const;
 
@@ -396,7 +381,7 @@ export const AUTH_CONSTANTS = {
     DEX_LOGOUT: '/api/dex/auth/logout',
     UNAUTHORIZED: '/auth/unauthorized',
     FORBIDDEN: '/auth/forbidden',
-    AFTER_LOGIN: '/overview',
+    AFTER_LOGIN: '/energy-metrics',
     AFTER_LOGOUT: '/',
   },
   TOKENS: {

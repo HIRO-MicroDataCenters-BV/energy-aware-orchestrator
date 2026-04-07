@@ -8,7 +8,6 @@ export const environment: Environment = {
   refreshTokenKey: 'refresh_token',
   userKey: 'user',
   dashboardUrl: 'http://localhost:8086',
-  cogUrl: '/cog',
 
   // OIDC Configuration
   oidc: {

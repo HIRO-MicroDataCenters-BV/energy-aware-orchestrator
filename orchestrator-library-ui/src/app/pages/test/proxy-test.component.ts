@@ -229,12 +229,6 @@ export class ProxyTestComponent implements OnInit {
 
   private testEndpoints = [
     {
-      name: '/api/k8s_cluster_info/',
-      url: '/api/k8s_cluster_info/',
-      method: 'GET',
-      description: 'API Backend Health Check',
-    },
-    {
       name: '/dex/.well-known/openid_configuration',
       url: '/dex/.well-known/openid_configuration',
       method: 'GET',
@@ -251,20 +245,6 @@ export class ProxyTestComponent implements OnInit {
       url: '/authservice/oidc/callback',
       method: 'GET',
       description: 'AuthService OIDC Callback',
-    },
-    {
-      name: '/cog (with token)',
-      url: '/cog',
-      method: 'GET',
-      description: 'COG Dashboard Proxy',
-      requiresAuth: true,
-    },
-    {
-      name: '/cog-iframe (with token)',
-      url: '/cog-iframe',
-      method: 'GET',
-      description: 'COG iframe Proxy (Production)',
-      requiresAuth: true,
     },
     {
       name: '/iframe/api/v1/namespace',

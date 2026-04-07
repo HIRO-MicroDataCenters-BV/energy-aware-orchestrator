@@ -50,7 +50,6 @@ export function getOidcConfig(): OidcConfig {
     secureRoutes: [
       environment.apiUrl,
       environment.dashboardUrl,
-      environment.cogUrl,
     ],
 
     // Custom parameters for auth requests

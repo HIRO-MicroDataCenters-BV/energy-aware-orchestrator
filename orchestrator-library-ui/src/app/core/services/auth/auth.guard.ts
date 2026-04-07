@@ -211,7 +211,7 @@ export class GuestGuard implements CanActivate {
 
       if (isAuthenticated) {
         // Redirect authenticated users to main app
-        this.router.navigate(['/overview']);
+        this.router.navigate(['/energy-metrics']);
         return of(false);
       }
 

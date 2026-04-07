@@ -12,25 +12,9 @@ export const API_ENDPOINTS = {
   K8S: {
     PODS: '/k8s_pod/',
     NODES: '/k8s_node/',
-    CLUSTER_INFO: '/k8s_cluster_info/',
     TOKEN: '/k8s_get_token/',
     USER_PODS: '/k8s_user_pod/',
     POD_PARENT: '/k8s_pod_parent/',
-  },
-
-  // Alert endpoints
-  ALERTS: '/alerts/',
-
-  // Workload Request Decision endpoints
-  WORKLOAD_REQUEST_DECISION: {
-    BASE: '/workload_request_decision/',
-    BY_ID: (id: string) => `/workload_request_decision/${id}`,
-  },
-
-  // Workload Action endpoints
-  WORKLOAD_ACTION: {
-    BASE: '/workload_action/',
-    BY_ID: (id: string) => `/workload_action/${id}`,
   },
 
   // Dummy ACES UI

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -15,13 +15,8 @@ import {
   lucideSearch,
   lucideHardDrive,
   lucideServer,
-  lucideLayoutDashboard,
-  lucideSiren,
-  lucideCog,
-  lucideChartColumnStacked,
   lucideChevronDown,
   lucideChevronRight,
-  lucideGrip,
   lucideZap,
   lucideActivity,
 } from '@ng-icons/lucide';
@@ -73,20 +68,15 @@ import { NgIf, NgFor } from '@angular/common';
       lucideSearch,
       lucideHardDrive,
       lucideServer,
-      lucideLayoutDashboard,
-      lucideSiren,
-      lucideCog,
-      lucideChartColumnStacked,
       lucideChevronDown,
       lucideChevronRight,
-      lucideGrip,
       lucideZap,
       lucideActivity,
     }),
   ],
   templateUrl: './main-layout.component.html',
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent {
   private readonly platformId = inject(PLATFORM_ID);
   currentRoute: string | null = null;
   showSubmenuOnHover: MenuItem | null = null;
@@ -97,13 +87,6 @@ export class MainLayoutComponent implements OnInit {
       icon: null,
       route: '',
       items: [
-        {
-          label: 'overview',
-          icon: 'lucideGrip',
-          route: '/overview',
-        },
-        { label: 'cog', icon: 'lucideCog', route: '/cog' },
-        { label: 'k8s', icon: 'lucideLayoutDashboard', route: '/k8s' },
         { label: 'energy_metrics', icon: 'lucideZap', route: '/energy-metrics' },
       ],
     },
@@ -117,22 +100,10 @@ export class MainLayoutComponent implements OnInit {
           icon: 'lucideLayers',
           route: '/workloads',
           items: [
-            {
-              label: 'request_decisions',
-              icon: null,
-              route: '/request_decisions',
-            },
-            { label: 'actions', icon: null, route: '/actions' },
             { label: 'System Utilization', icon: null, route: '/system-utilization' },
             { label: 'workload_deployment', icon: null, route: '/workload-deployment' },
             { label: 'Register Workload', icon: null, route: '/register-workload' },
           ],
-        },
-        { label: 'alerts', icon: 'lucideSiren', route: '/alerts' },
-        {
-          label: 'monitoring',
-          icon: 'lucideChartColumnStacked',
-          route: '/monitoring',
         },
       ],
     },
@@ -141,10 +112,6 @@ export class MainLayoutComponent implements OnInit {
   constructor(
     public sidebarService: HlmSidebarService
   ) {}
-
-  ngOnInit(): void {
-    // Removed getClusterInfo() call - it should only be called on the overview page
-  }
 
   toggleSubmenu(item: MenuItem): void {
     item.expanded = !item.expanded;
