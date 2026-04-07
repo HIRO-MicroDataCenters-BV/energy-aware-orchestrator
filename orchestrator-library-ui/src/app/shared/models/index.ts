@@ -19,11 +19,6 @@ export * from './kubernetes.model';
 export * from './alerts.model';
 
 // ===================
-// Auth Models
-// ===================
-export * from './auth.models';
-
-// ===================
 // Tuning Parameters Models
 // ===================
 export * from './tuning-parameters.model';

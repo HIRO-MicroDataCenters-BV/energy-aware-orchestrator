@@ -11,24 +11,4 @@ export interface Environment {
   refreshTokenKey: string;
   userKey: string;
   dashboardUrl: string;
-  oidc: {
-    authority: string;
-    clientId: string;
-    clientSecret: string;
-    scope: string;
-    responseType: string;
-    silentRenew: boolean;
-    useRefreshToken: boolean;
-    renewTimeBeforeTokenExpiresInSeconds: number;
-    historyCleanupOff: boolean;
-    autoUserInfo: boolean;
-    triggerRefreshWhenIdTokenExpired: boolean;
-    logLevel: number;
-    redirectUri: string;
-    postLogoutRedirectUri: string;
-    tokenEndpoint: string;
-    authorizationEndpoint: string;
-    userInfoEndpoint: string;
-    endSessionEndpoint: string;
-  };
 }

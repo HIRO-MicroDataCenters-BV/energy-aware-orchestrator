@@ -1,55 +1,12 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { ErrorLayoutComponent } from './layouts/error-layout/error-layout.component';
-import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
-import { AuthGuard, GuestGuard } from './core/services/auth';
 
 export const routes: Routes = [
-  // Auth routes (public, for non-authenticated users)
-  {
-    path: 'auth',
-    component: AuthLayoutComponent,
-    canActivate: [GuestGuard],
-    children: [
-      {
-        path: 'login',
-        loadComponent: () =>
-          import('./pages/auth/login/login.component').then(
-            (m) => m.LoginComponent
-          ),
-        data: { title: 'Login' },
-      },
-      {
-        path: 'callback',
-        loadComponent: () =>
-          import('./pages/auth/callback/callback.component').then(
-            (m) => m.CallbackComponent
-          ),
-        data: { title: 'Authentication Callback' },
-      },
-      {
-        path: '',
-        redirectTo: 'login',
-        pathMatch: 'full',
-      },
-    ],
-  },
-
-  // Ambassador Auth callback route (public)
-  {
-    path: 'authservice/oidc/callback',
-    loadComponent: () =>
-      import('./pages/auth/callback/callback.component').then(
-        (m) => m.CallbackComponent
-      ),
-    data: { title: 'Authentication Callback' },
-  },
-
-  // Protected routes (require authentication)
+  // Application routes (authentication disabled)
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [AuthGuard],
     children: [
       {
         path: '',
@@ -143,24 +100,6 @@ export const routes: Routes = [
         data: { title: '500 - Server Error' },
       },
     ],
-  },
-
-  // Auth-specific error routes without layout guards
-  {
-    path: 'auth/unauthorized',
-    loadComponent: () =>
-      import('./pages/error/unauthorized/unauthorized.component').then(
-        (m) => m.UnauthorizedComponent
-      ),
-    data: { title: 'Unauthorized' },
-  },
-  {
-    path: 'auth/forbidden',
-    loadComponent: () =>
-      import('./pages/error/forbidden/forbidden.component').then(
-        (m) => m.ForbiddenComponent
-      ),
-    data: { title: 'Access Denied' },
   },
 
   {

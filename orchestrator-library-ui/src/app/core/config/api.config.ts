@@ -11,11 +11,6 @@ export interface ApiConfig {
       nodes: string;
       token: string;
     };
-    auth: {
-      login: string;
-      callback: string;
-      logout: string;
-    };
   };
 }
 
@@ -28,11 +23,6 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
       pods: '/k8s_pod/',
       nodes: '/k8s_node/',
       token: '/k8s_token/',
-    },
-    auth: {
-      login: '/auth/login',
-      callback: '/auth/callback',
-      logout: '/auth/logout',
     },
   },
 };

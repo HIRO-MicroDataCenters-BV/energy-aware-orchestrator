@@ -3,8 +3,6 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../core/services/auth/auth.service';
-import { LoginCredentials } from '../../shared/models/auth.models';
 
 interface ProxyTestResult {
   endpoint: string;
@@ -38,57 +36,6 @@ interface ProxyTestResult {
           >
             Clear Results
           </button>
-
-          <button
-            (click)="testOpenIDFlow()"
-            [disabled]="isRunning"
-            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Test OpenID Flow
-          </button>
-        </div>
-
-        <div class="mb-6 p-4 bg-blue-50 rounded">
-          <h2 class="font-semibold mb-2">OpenID Connect Test</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium mb-1">Email:</label>
-              <input
-                [(ngModel)]="testCredentials.email"
-                type="email"
-                class="w-full px-3 py-2 border rounded"
-                placeholder="test@example.com"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1">Password:</label>
-              <input
-                [(ngModel)]="testCredentials.password"
-                type="password"
-                class="w-full px-3 py-2 border rounded"
-                placeholder="password"
-              />
-            </div>
-          </div>
-          <button
-            (click)="testOpenIDLogin()"
-            [disabled]="
-              isRunning || !testCredentials.email || !testCredentials.password
-            "
-            class="mt-3 bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Test OpenID Login
-          </button>
-          <div
-            *ngIf="openidTestResult"
-            class="mt-3 p-3 rounded"
-            [ngClass]="{
-              'bg-green-100 text-green-800': openidTestResult.success,
-              'bg-red-100 text-red-800': !openidTestResult.success
-            }"
-          >
-            {{ openidTestResult.message }}
-          </div>
         </div>
 
         <div class="test-results-container">
@@ -155,8 +102,7 @@ interface ProxyTestResult {
           </p>
           <div class="mt-2 text-sm text-gray-600">
             <p>
-              <strong>Note:</strong> Authentication is managed by AuthService
-              via cookies
+              <strong>Note:</strong> Proxy endpoints can be checked here.
             </p>
             <p>
               <strong>Cookie:</strong>
@@ -215,7 +161,6 @@ interface ProxyTestResult {
 })
 export class ProxyTestComponent implements OnInit {
   protected readonly http = inject(HttpClient);
-  private readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -224,27 +169,13 @@ export class ProxyTestComponent implements OnInit {
   hasToken = false;
   tokenPreview = '';
   isAuthenticated = false;
-  testCredentials: LoginCredentials = { email: '', password: '' };
-  openidTestResult: { success: boolean; message: string } | null = null;
 
   private testEndpoints = [
     {
       name: '/dex/.well-known/openid_configuration',
       url: '/dex/.well-known/openid_configuration',
       method: 'GET',
-      description: 'DEX OIDC Discovery (May require auth)',
-    },
-    {
-      name: '/dex/auth (Test Auth Endpoint)',
-      url: '/dex/auth?client_id=authservice-oidc&redirect_uri=/authservice/oidc/callback&response_type=code&scope=openid+profile+email+groups',
-      method: 'GET',
-      description: 'DEX Authentication Endpoint',
-    },
-    {
-      name: '/authservice/oidc/callback',
-      url: '/authservice/oidc/callback',
-      method: 'GET',
-      description: 'AuthService OIDC Callback',
+      description: 'DEX discovery endpoint',
     },
     {
       name: '/iframe/api/v1/namespace',
@@ -260,9 +191,8 @@ export class ProxyTestComponent implements OnInit {
   }
 
   private checkAuthStatus(): void {
-    this.isAuthenticated = this.authService.authenticated();
-    const token = this.authService.getAccessToken();
-    this.hasToken = !!token;
+    this.isAuthenticated = false;
+    this.hasToken = false;
 
     // Check for authservice_session cookie as well
     let sessionCookie = null;
@@ -272,15 +202,9 @@ export class ProxyTestComponent implements OnInit {
         .find((row) => row.startsWith('authservice_session='));
     }
 
-    if (token && token !== 'managed-by-authservice') {
-      // Show first and last 10 characters of token
-      this.tokenPreview =
-        token.length > 20
-          ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}`
-          : token;
-    } else if (sessionCookie) {
+    if (sessionCookie) {
       this.hasToken = true;
-      this.tokenPreview = 'AuthService Session Cookie';
+      this.tokenPreview = 'Session Cookie';
     }
   }
 
@@ -327,10 +251,8 @@ export class ProxyTestComponent implements OnInit {
         );
       }
 
-      // Prepare headers - AuthService manages authentication via cookies
+      // Prepare headers
       const headers: any = {};
-      // Note: AuthService uses cookies, so we don't need to manually add Authorization header
-      // The authservice_session cookie will be automatically included
 
       // Make request
       const response = await this.http
@@ -427,50 +349,4 @@ export class ProxyTestComponent implements OnInit {
     return '';
   }
 
-  testOpenIDFlow(): void {
-    console.log('Testing OpenID Connect flow...');
-    this.openidTestResult = {
-      success: true,
-      message:
-        'OpenID Connect flow test: Check browser console for detailed logs and network tab for requests.',
-    };
-  }
-
-  testOpenIDLogin(): void {
-    if (!this.testCredentials.email || !this.testCredentials.password) {
-      this.openidTestResult = {
-        success: false,
-        message: 'Please provide both email and password',
-      };
-      return;
-    }
-
-    console.log('Testing OpenID login with credentials:', {
-      email: this.testCredentials.email,
-      password: '[HIDDEN]',
-    });
-
-    this.openidTestResult = {
-      success: true,
-      message: 'Testing OpenID login... Check console and network tab.',
-    };
-
-    this.authService.login(this.testCredentials).subscribe({
-      next: (response) => {
-        console.log('OpenID login test response:', response);
-        this.openidTestResult = {
-          success: true,
-          message: `OpenID login successful: ${response.message}`,
-        };
-        this.checkAuthStatus(); // Refresh auth status
-      },
-      error: (error) => {
-        console.error('OpenID login test error:', error);
-        this.openidTestResult = {
-          success: false,
-          message: `OpenID login failed: ${error.message}`,
-        };
-      },
-    });
-  }
 }
