@@ -138,7 +138,6 @@ export const ENVIRONMENT = {
 // ===================
 
 export const EXTERNAL_URLS = {
-  DASHBOARD: environment.dashboardUrl,
   API: environment.apiUrl,
 } as const;
 

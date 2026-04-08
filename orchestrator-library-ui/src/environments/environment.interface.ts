@@ -10,5 +10,4 @@ export interface Environment {
   tokenKey: string;
   refreshTokenKey: string;
   userKey: string;
-  dashboardUrl: string;
 }
