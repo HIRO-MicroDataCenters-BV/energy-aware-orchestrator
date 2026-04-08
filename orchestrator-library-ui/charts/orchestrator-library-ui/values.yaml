@@ -13,18 +13,7 @@ app:
     nodePort: 30010
   env:
     API_TARGET: 'http://51.44.28.47:30015'
-    DEX_TARGET: 'http://51.44.28.47:30080'
-    DASHBOARD_TARGET: 'http://51.44.28.47:30016'
-    GRAFANA_TARGET: 'http://51.44.28.47:30000'
-    COG_TARGET: 'https://dashboard.cog.hiro-develop.nl'
     K8S_PROXY_TARGET: 'http://51.44.28.47:30020'
-    OIDC_AUTHORITY: 'http://51.44.28.47:30015/dex'
-    OIDC_CLIENT_ID: 'authservice-oidc'
-    OIDC_CLIENT_SECRET: '${OIDC_CLIENT_SECRET}'
-    OIDC_SCOPE: 'openid profile email groups'
-    OIDC_RESPONSE_TYPE: 'code'
-    OIDC_REDIRECT_URI: 'http://51.44.28.47:30015/authservice/oidc/callback'
-    OIDC_POST_LOGOUT_REDIRECT_URI: 'http://51.44.28.47:30015/auth/login'
   ingress:
     enabled: true
     className: nginx

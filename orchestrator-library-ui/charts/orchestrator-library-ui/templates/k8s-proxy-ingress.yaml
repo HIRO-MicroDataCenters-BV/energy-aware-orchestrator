@@ -6,7 +6,7 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
   name: {{ .Values.app.k8sProxy.name }}-ingress
   labels:
-    app: {{ .Values.app.name }}
+    app: {{ .Values.app.k8sProxy.name }}
 spec:
   {{- if .Values.app.k8sProxy.ingress.className }}
   ingressClassName: {{ .Values.app.k8sProxy.ingress.className }}
