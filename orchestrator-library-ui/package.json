@@ -13,7 +13,6 @@
     "clean:start": "pnpm run kill:ports && pnpm start",
     "clean:start:prod": "pnpm run kill:ports && pnpm run start:prod",
     "test": "nx test",
-    "test:dex": "node scripts/test-dex-auth.js",
     "test:dex:fixed": "node scripts/test-fixed-dex-auth.js"
   },
   "private": true,
