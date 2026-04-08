@@ -475,23 +475,11 @@ jobs:
           if [[ "${{ matrix.kubeconfig_secret_name }}" == "HIRO_KUBE_CONFIG_AWS" ]]; then
             echo "orchestrator_ui_env_k8s_proxy_target=http://51.44.28.47:${{ vars.K8S_PROXY_NODE_PORT }}" >> $GITHUB_OUTPUT
             echo "orchestrator_ui_env_api_target=http://51.44.28.47:30015" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_dex_target=http://51.44.28.47:30080" >> $GITHUB_OUTPUT
             echo "orchestrator_ui_env_dashboard_target=http://51.44.28.47:30016" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_grafana_target=http://51.44.28.47:30000" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_cog_target=https://cui-nine.vercel.app/?is_iframe=1" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_oidc_auth=http://51.44.28.47:30015/dex" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_oidc_redirect=http://51.44.28.47:30015/authservice/oidc/callback" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_oidc_post_logout=http://51.44.28.47:30015/auth/login" >> $GITHUB_OUTPUT
           else
             echo "orchestrator_ui_env_k8s_proxy_target=https://${{ vars.K8S_PROXY_INGRESS_HOST }}" >> $GITHUB_OUTPUT
             echo "orchestrator_ui_env_api_target=https://orchestration-api.aces.hiro-develop.nl" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_dex_target=https://dex.aces.hiro-develop.nl" >> $GITHUB_OUTPUT
             echo "orchestrator_ui_env_dashboard_target=https://k8s-dashboard.aces.hiro-develop.nl" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_grafana_target=https://grafana.aces.hiro-develop.nl" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_cog_target=https://cui-nine.vercel.app/?is_iframe=1" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_oidc_auth=https://orchestration-api.aces.hiro-develop.nl/dex" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_oidc_redirect=https://orchestration-api.aces.hiro-develop.nl/authservice/oidc/callback" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_oidc_post_logout=https://orchestration-api.aces.hiro-develop.nl/auth/login" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy Orchestrator Library UI Helm chart
@@ -529,13 +517,6 @@ jobs:
             ${{ steps.helm-app-access.outputs.orchestrator_ui_ingress_host }} \
             --set app.env.K8S_PROXY_TARGET=${{ steps.helm-app-env.outputs.orchestrator_ui_env_k8s_proxy_target }} \
             --set app.env.API_TARGET=${{ steps.helm-app-env.outputs.orchestrator_ui_env_api_target }} \
-            --set app.env.DEX_TARGET=${{ steps.helm-app-env.outputs.orchestrator_ui_env_dex_target }} \
-            --set app.env.DASHBOARD_TARGET=${{ steps.helm-app-env.outputs.orchestrator_ui_env_dashboard_target }} \
-            --set app.env.GRAFANA_TARGET=${{ steps.helm-app-env.outputs.orchestrator_ui_env_grafana_target }} \
-            --set app.env.COG_TARGET=${{ steps.helm-app-env.outputs.orchestrator_ui_env_cog_target }} \
-            --set app.env.OIDC_AUTHORITY=${{ steps.helm-app-env.outputs.orchestrator_ui_env_oidc_auth }} \
-            --set app.env.OIDC_REDIRECT_URI=${{ steps.helm-app-env.outputs.orchestrator_ui_env_oidc_redirect }} \
-            --set app.env.OIDC_POST_LOGOUT_REDIRECT_URI=${{ steps.helm-app-env.outputs.orchestrator_ui_env_oidc_post_logout }} \
             --set app.k8sProxy.enabled=true \
             ${{ steps.helm-app-access.outputs.k8s_proxy_service_type }} \
             ${{ steps.helm-app-access.outputs.k8s_proxy_service_nodePort }} \
