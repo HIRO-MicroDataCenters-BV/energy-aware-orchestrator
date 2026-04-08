@@ -36,11 +36,3 @@ spec:
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 10
-          volumeMounts:
-          - name: env-config
-            mountPath: /usr/share/nginx/html/assets/env.js
-            subPath: env.js
-      volumes:
-        - name: env-config
-          configMap:
-            name: {{ .Values.app.configMap.envName }}
