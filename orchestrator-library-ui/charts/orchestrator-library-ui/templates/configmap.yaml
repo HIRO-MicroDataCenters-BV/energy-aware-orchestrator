@@ -7,6 +7,6 @@ metadata:
 data:
   env.js: |
     window.__env = {
-      apiUrl: "{{ .Values.app.env.API_TARGET }}",
+      backendBaseUrl: "{{ .Values.app.env.BACKEND_BASE_URL }}",
       k8sProxyUrl: "{{ .Values.app.env.K8S_PROXY_TARGET | default .Values.app.k8sProxy.ingress.host }}"
     };
