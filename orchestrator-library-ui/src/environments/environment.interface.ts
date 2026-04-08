@@ -5,7 +5,6 @@
 
 export interface Environment {
   production: boolean;
-  apiUrl: string;
   backendBaseUrl: string;
   tokenKey: string;
   refreshTokenKey: string;

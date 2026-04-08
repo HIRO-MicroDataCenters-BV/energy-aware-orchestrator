@@ -10,7 +10,7 @@ import { environment } from '../../../environments/environment';
 // ===================
 
 export const API_CONSTANTS = {
-  BASE_URL: environment.apiUrl,
+  BASE_URL: environment.backendBaseUrl,
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
@@ -138,7 +138,7 @@ export const ENVIRONMENT = {
 // ===================
 
 export const EXTERNAL_URLS = {
-  API: environment.apiUrl,
+  API: environment.backendBaseUrl,
 } as const;
 
 // ===================

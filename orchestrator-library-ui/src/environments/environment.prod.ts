@@ -2,8 +2,7 @@ import { Environment } from './environment.interface';
 
 export const environment: Environment = {
   production: true,
-  apiUrl: 'http://51.44.28.47:30015',
-  backendBaseUrl: 'http://0.0.0.0:8086',
+  backendBaseUrl: 'http://0.0.0.0:8086/api',
   tokenKey: 'auth_token',
   refreshTokenKey: 'refresh_token',
   userKey: 'user',

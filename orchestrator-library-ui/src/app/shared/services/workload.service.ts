@@ -14,9 +14,11 @@ import { AppPodsResponseV2 } from '../interfaces/app-pods.interface';
   providedIn: 'root',
 })
 export class WorkloadService {
-  private readonly baseUrl = `${environment.backendBaseUrl}/api/kubernetes`;
-  private readonly deploymentApiUrl = `${environment.backendBaseUrl}/app/deployment-request`;
-  private readonly workloadDefinitionsApiUrl = `${environment.backendBaseUrl}/app/definitions`;
+  private readonly apiBaseUrl = environment.backendBaseUrl;
+  private readonly backendOrigin = this.apiBaseUrl.replace(/\/api\/?$/, '');
+  private readonly baseUrl = `${this.apiBaseUrl}/kubernetes`;
+  private readonly deploymentApiUrl = `${this.backendOrigin}/app/deployment-request`;
+  private readonly workloadDefinitionsApiUrl = `${this.backendOrigin}/app/definitions`;
 
   constructor(private http: HttpClient) {}
 

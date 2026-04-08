@@ -15,7 +15,7 @@ export interface ApiConfig {
 }
 
 export const DEFAULT_API_CONFIG: ApiConfig = {
-  baseUrl: environment.apiUrl,
+  baseUrl: environment.backendBaseUrl,
   timeout: 30000,
   retryAttempts: 3,
   endpoints: {

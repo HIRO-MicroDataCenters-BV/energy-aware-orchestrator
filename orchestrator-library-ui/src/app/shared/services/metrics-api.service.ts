@@ -8,11 +8,8 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class MetricsApiService {
-  private readonly apiBasePath = environment.apiUrl.startsWith('/')
-    ? `${environment.backendBaseUrl}${environment.apiUrl}`
-    : `${environment.backendBaseUrl}/api`;
-  private readonly baseUrl = `${this.apiBasePath}/metrics/nodes/`;
-  private readonly prometheusUrl = `${this.apiBasePath}/metrics/prometheus/metrics-v2/timeseries`;
+  private readonly baseUrl = `${environment.backendBaseUrl}/metrics/nodes/`;
+  private readonly prometheusUrl = `${environment.backendBaseUrl}/metrics/prometheus/metrics-v2/timeseries`;
 
   constructor(private http: HttpClient) { }
 

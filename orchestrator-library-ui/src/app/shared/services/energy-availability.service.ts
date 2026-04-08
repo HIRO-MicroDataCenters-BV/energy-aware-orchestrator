@@ -37,10 +37,7 @@ export interface EnergyAvailabilitySlot {
   providedIn: 'root'
 })
 export class EnergyAvailabilityService {
-  private readonly apiBasePath = environment.apiUrl.startsWith('/')
-    ? `${environment.backendBaseUrl}${environment.apiUrl}`
-    : `${environment.backendBaseUrl}/api`;
-  private readonly baseUrl = `${this.apiBasePath}/metrics/energy-availability`;
+  private readonly baseUrl = `${environment.backendBaseUrl}/metrics/energy-availability`;
 
   constructor(private http: HttpClient) { }
 
