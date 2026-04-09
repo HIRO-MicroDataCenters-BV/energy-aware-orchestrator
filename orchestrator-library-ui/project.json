@@ -55,7 +55,6 @@
     "serve": {
       "executor": "@angular/build:dev-server",
       "options": {
-        "proxyConfig": "proxy.conf.js",
         "host": "localhost",
         "port": 4200,
         "open": false,

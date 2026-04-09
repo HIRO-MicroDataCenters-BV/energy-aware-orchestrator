@@ -35,8 +35,11 @@ COPY --from=builder /app/dist/orchestration_library-front/browser ./
 # Rename index.csr.html to index.html for nginx
 RUN mv index.csr.html index.html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy nginx templates and runtime entrypoint
+COPY conf/proxy.conf.template /etc/nginx/templates/proxy.conf.template
+COPY conf/no_proxy.conf /etc/nginx/templates/no_proxy.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 80
@@ -45,5 +48,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget -qO- http://localhost:80 > /dev/null || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start nginx via runtime configuration entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

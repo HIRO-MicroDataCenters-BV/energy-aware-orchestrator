@@ -3,14 +3,15 @@
  * Contains shared constants used across the entire application
  */
 
-import { environment } from '../../../environments/environment';
+import { isDevMode } from '@angular/core';
+import { RUNTIME_CONFIG } from '../../core/config/runtime.config';
 
 // ===================
 // API Constants
 // ===================
 
 export const API_CONSTANTS = {
-  BASE_URL: environment.backendBaseUrl,
+  BASE_URL: RUNTIME_CONFIG.apiBaseUrl,
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
@@ -46,9 +47,9 @@ export const HTTP_STATUS = {
 // ===================
 
 export const STORAGE_KEYS = {
-  ACCESS_TOKEN: environment.tokenKey,
-  REFRESH_TOKEN: environment.refreshTokenKey,
-  USER_KEY: environment.userKey,
+  ACCESS_TOKEN: RUNTIME_CONFIG.tokenKey,
+  REFRESH_TOKEN: RUNTIME_CONFIG.refreshTokenKey,
+  USER_KEY: RUNTIME_CONFIG.userKey,
   USER_PREFERENCES: 'user_preferences',
   THEME: 'theme',
   LANGUAGE: 'language',
@@ -130,7 +131,7 @@ export const ENVIRONMENT = {
   DEVELOPMENT: 'development',
   STAGING: 'staging',
   TEST: 'test',
-  CURRENT: environment.production ? 'production' : 'development',
+  CURRENT: isDevMode() ? 'development' : 'production',
 } as const;
 
 // ===================
@@ -138,7 +139,7 @@ export const ENVIRONMENT = {
 // ===================
 
 export const EXTERNAL_URLS = {
-  API: environment.backendBaseUrl,
+  API: RUNTIME_CONFIG.apiBaseUrl,
 } as const;
 
 // ===================

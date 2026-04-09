@@ -16,6 +16,8 @@ app:
     path: /
     tls: true
     tlsSecretName: orchestrator-ui-tls-secret
+  env:
+    API_URL: ''
   
 
   k8sProxy:

@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { environment } from '../../../environments/environment';
+import { RUNTIME_CONFIG } from './runtime.config';
 
 export interface ApiConfig {
   baseUrl: string;
@@ -15,7 +15,7 @@ export interface ApiConfig {
 }
 
 export const DEFAULT_API_CONFIG: ApiConfig = {
-  baseUrl: environment.backendBaseUrl,
+  baseUrl: RUNTIME_CONFIG.apiBaseUrl,
   timeout: 30000,
   retryAttempts: 3,
   endpoints: {

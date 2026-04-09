@@ -2,14 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { MetricsApiResponse, NodeMetric, ChartDataPoint, EnergyForecast, PrometheusMetricsResponse } from '../interfaces/metrics-api.interface';
-import { environment } from '../../../environments/environment';
+import { RUNTIME_CONFIG } from '../../core/config/runtime.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MetricsApiService {
-  private readonly baseUrl = `${environment.backendBaseUrl}/metrics/nodes/`;
-  private readonly prometheusUrl = `${environment.backendBaseUrl}/metrics/prometheus/metrics-v2/timeseries`;
+  private readonly baseUrl = `${RUNTIME_CONFIG.apiBaseUrl}/metrics/nodes/`;
+  private readonly prometheusUrl = `${RUNTIME_CONFIG.apiBaseUrl}/metrics/prometheus/metrics-v2/timeseries`;
 
   constructor(private http: HttpClient) { }
 
