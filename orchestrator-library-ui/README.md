@@ -32,8 +32,6 @@ Env loading order:
 Supported env keys (priority order):
 
 - `API_URL`
-- `API_BACKEND_URL`
-- `API_TARGET`
 
 Modes:
 

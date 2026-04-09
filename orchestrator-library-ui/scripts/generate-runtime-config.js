@@ -19,11 +19,7 @@ let apiBaseUrl = '/api';
 let appBaseUrl = '/app';
 
 if (useEnvMode) {
-  const configuredBase =
-    process.env.API_URL ||
-    process.env.API_BACKEND_URL ||
-    process.env.API_TARGET ||
-    'http://0.0.0.0:8086';
+  const configuredBase = process.env.API_URL || 'http://0.0.0.0:8086';
 
   const normalized = configuredBase.trim().replace(/\/+$/, '');
   const origin = normalized.replace(/\/(api|app)$/, '');
