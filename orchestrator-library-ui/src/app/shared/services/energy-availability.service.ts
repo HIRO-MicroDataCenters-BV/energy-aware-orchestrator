@@ -36,7 +36,7 @@ export interface EnergyAvailabilitySlot {
   providedIn: 'root'
 })
 export class EnergyAvailabilityService {
-  private readonly baseUrl = 'http://localhost:8086/api/metrics/energy-availability';
+  private readonly baseUrl = 'http://localhost:8000/api/metrics/energy-availability';
 
   constructor(private http: HttpClient) { }
 

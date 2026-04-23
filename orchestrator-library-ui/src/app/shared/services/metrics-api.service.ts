@@ -7,8 +7,8 @@ import { MetricsApiResponse, NodeMetric, ChartDataPoint, EnergyForecast, EnergyF
   providedIn: 'root'
 })
 export class MetricsApiService {
-  private readonly baseUrl = 'http://0.0.0.0:8086/api/metrics/nodes/';
-  private readonly prometheusUrl = 'http://0.0.0.0:8086/api/metrics/prometheus/metrics-v2/timeseries';
+  private readonly baseUrl = 'http://0.0.0.0:8000/api/metrics/nodes/';
+  private readonly prometheusUrl = 'http://0.0.0.0:8000/api/metrics/prometheus/metrics-v2/timeseries';
 
   constructor(private http: HttpClient) { }
 
