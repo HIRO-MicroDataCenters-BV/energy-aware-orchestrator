@@ -21,6 +21,7 @@ NC='\033[0m' # No Color
 # Default configuration
 RELEASE_NAME="${RELEASE_NAME:-energy-metrics}"
 NAMESPACE="${NAMESPACE:-default}"
+SKIP_PORT_FORWARD="${SKIP_PORT_FORWARD:-false}"
 COMMAND="deploy"
 
 # Usage function
@@ -160,19 +161,24 @@ wait_for_pods() {
 
 # Setup port forwarding
 setup_port_forwarding() {
+    if [ "${SKIP_PORT_FORWARD}" = "true" ]; then
+        print_status "Skipping port forwarding (SKIP_PORT_FORWARD=true)"
+        return
+    fi
+
     print_status "Setting up port forwarding..."
-    
+
     # Kill existing port forwards
     pkill -f "kubectl port-forward" || true
-    
+
     # Start new port forwards
     kubectl port-forward -n "$NAMESPACE" svc/${RELEASE_NAME}-grafana 3000:80 &
     kubectl port-forward -n "$NAMESPACE" svc/${RELEASE_NAME}-prometheus-server 9090:80 &
     kubectl port-forward -n "$NAMESPACE" svc/${RELEASE_NAME}-kepler 9102:9102 &
-    
+
     # Wait a moment for port forwarding to start
     sleep 3
-    
+
     print_success "Port forwarding setup complete"
 }
 

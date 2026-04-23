@@ -42,7 +42,14 @@
           "outputHashing": "all",
           "outputMode": "static",
           "ssr": false,
-          "prerender": false
+          "prerender": false,
+          "optimization": {
+            "scripts": true,
+            "styles": true,
+            "fonts": {
+              "inline": false
+            }
+          }
         },
         "development": {
           "optimization": false,
