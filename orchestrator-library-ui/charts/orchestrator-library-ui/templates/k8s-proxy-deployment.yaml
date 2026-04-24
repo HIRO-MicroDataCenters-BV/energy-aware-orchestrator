@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.app.k8sProxy.name }}
+  labels:
+    app: {{ .Values.app.k8sProxy.name }}
 spec:
   replicas: 1
   selector:

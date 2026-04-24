@@ -9,15 +9,10 @@ import { BreadcrumbItem, RouteMetadata } from '../types/navigation.types';
  * Default route metadata mapping
  */
 const DEFAULT_ROUTE_METADATA: Record<string, RouteMetadata> = {
-  overview: {
-    breadcrumb: 'overview',
-    title: 'Overview',
-    icon: 'lucideHome',
-  },
-  k8s: {
-    breadcrumb: 'kubernetes',
-    title: 'Kubernetes Dashboard',
-    icon: 'lucideServer',
+  'energy-metrics': {
+    breadcrumb: 'energy_metrics',
+    title: 'Energy Metrics',
+    icon: 'lucideZap',
   },
   emdc: {
     breadcrumb: 'emdc',
@@ -25,36 +20,16 @@ const DEFAULT_ROUTE_METADATA: Record<string, RouteMetadata> = {
     icon: 'lucideSettings',
     url: null,
   },
-  alerts: {
-    breadcrumb: 'alerts',
-    title: 'Alerts',
-    icon: 'lucideAlertTriangle',
-  },
   clusters: {
     breadcrumb: 'clusters',
     title: 'Clusters',
     icon: 'lucideServer',
-  },
-  actions: {
-    breadcrumb: 'actions',
-    title: 'Actions',
-    icon: 'lucideActivity',
   },
   workloads: {
     breadcrumb: 'workloads',
     title: 'Workloads',
     icon: 'lucideActivity',
     url: null,
-  },
-  request_decisions: {
-    breadcrumb: 'request_decisions',
-    title: 'Request Decisions',
-    icon: 'lucideCheckCircle',
-  },
-  cog: {
-    breadcrumb: 'cog',
-    title: 'COG',
-    icon: 'lucideCog',
   },
   details: {
     breadcrumb: 'details',

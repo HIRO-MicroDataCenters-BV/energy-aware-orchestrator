@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.app.name }}
+  labels:
+    app: {{ .Values.app.name }}
 spec:
   replicas: {{ .Values.app.replicaCount }}
   selector:
@@ -22,16 +24,8 @@ spec:
           env:
             - name: NODE_ENV
               value: 'production'
-            - name: API_TARGET
-              value: '{{ .Values.app.env.API_TARGET }}'
-            - name: DEX_TARGET
-              value: '{{ .Values.app.env.DEX_TARGET }}'
-            - name: DASHBOARD_TARGET
-              value: '{{ .Values.app.env.DASHBOARD_TARGET }}'
-            - name: GRAFANA_TARGET
-              value: '{{ .Values.app.env.GRAFANA_TARGET }}'
-            - name: COG_TARGET
-              value: '{{ .Values.app.env.COG_TARGET }}'
+            - name: API_URL
+              value: '{{ .Values.app.env.API_URL }}'
           livenessProbe:
             httpGet:
               path: /health
@@ -44,11 +38,3 @@ spec:
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 10
-          volumeMounts:
-          - name: env-config
-            mountPath: /usr/share/nginx/html/assets/env.js
-            subPath: env.js
-      volumes:
-        - name: env-config
-          configMap:
-            name: {{ .Values.app.configMap.envName }}

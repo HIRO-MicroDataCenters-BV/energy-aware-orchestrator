@@ -3,6 +3,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Values.app.k8sProxy.configMap.name }}
+  labels:
+    app: {{ .Values.app.k8sProxy.name }}
 data:
   k8s-proxy.js: |
     const http = require('http');

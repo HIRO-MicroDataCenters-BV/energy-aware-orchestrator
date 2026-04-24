@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { environment } from '../../../environments/environment';
+import { RUNTIME_CONFIG } from './runtime.config';
 
 export interface ApiConfig {
   baseUrl: string;
@@ -9,42 +9,20 @@ export interface ApiConfig {
     k8s: {
       pods: string;
       nodes: string;
-      clusterInfo: string;
       token: string;
-    };
-    emdc: {
-      alerts: string;
-      workloadDecisions: string;
-      workloadActions: string;
-    };
-    auth: {
-      login: string;
-      callback: string;
-      logout: string;
     };
   };
 }
 
 export const DEFAULT_API_CONFIG: ApiConfig = {
-  baseUrl: environment.apiUrl,
+  baseUrl: RUNTIME_CONFIG.apiBaseUrl,
   timeout: 30000,
   retryAttempts: 3,
   endpoints: {
     k8s: {
       pods: '/k8s_pod/',
       nodes: '/k8s_node/',
-      clusterInfo: '/k8s_cluster_info/',
       token: '/k8s_token/',
-    },
-    emdc: {
-      alerts: '/alerts/',
-      workloadDecisions: '/workload_decision/',
-      workloadActions: '/workload_action/',
-    },
-    auth: {
-      login: '/auth/login',
-      callback: '/auth/callback',
-      logout: '/auth/logout',
     },
   },
 };

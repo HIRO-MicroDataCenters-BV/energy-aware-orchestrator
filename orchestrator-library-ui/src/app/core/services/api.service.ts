@@ -2,14 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
+import { RUNTIME_CONFIG } from '../config/runtime.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = environment.apiUrl;
+  private readonly baseUrl = RUNTIME_CONFIG.apiBaseUrl;
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public loading$ = this.loadingSubject.asObservable();
@@ -33,14 +33,6 @@ export class ApiService {
   }
 
   /**
-   * Get cluster information
-   * @param params Query parameters
-   */
-  getClusterInfo(params?: any): Observable<any> {
-    return this.get('/k8s_cluster_info/', params);
-  }
-
-  /**
    * Get Kubernetes service account token
    * @param params Token request parameters
    */
@@ -51,104 +43,6 @@ export class ApiService {
       ...params,
     };
     return this.get('/k8s_get_token/', defaultParams);
-  }
-
-  /**
-   * Get all workload decisions
-   * @param params Query parameters for filtering
-   */
-  getWorkloadDecisions(params?: any): Observable<any> {
-    return this.get('/workload_request_decision/', params);
-  }
-
-  /**
-   * Get specific workload decision by ID
-   * @param id Decision ID
-   */
-  getWorkloadDecision(id: string): Observable<any> {
-    return this.get(`/workload_request_decision/${id}`);
-  }
-
-  /**
-   * Create new workload decision
-   * @param data Decision data
-   */
-  createWorkloadDecision(data: any): Observable<any> {
-    return this.post('/workload_request_decision/', data);
-  }
-
-  /**
-   * Update existing workload decision
-   * @param id Decision ID
-   * @param data Updated decision data
-   */
-  updateWorkloadDecision(id: string, data: any): Observable<any> {
-    return this.put(`/workload_request_decision/${id}`, data);
-  }
-
-  /**
-   * Delete workload decision
-   * @param id Decision ID
-   */
-  deleteWorkloadDecision(id: string): Observable<any> {
-    return this.delete(`/workload_request_decision/${id}`);
-  }
-
-  /**
-   * Get all workload actions
-   * @param params Query parameters for filtering
-   */
-  getWorkloadActions(params?: any): Observable<any> {
-    return this.get('/workload_action/', params);
-  }
-
-  /**
-   * Get specific workload action by ID
-   * @param id Action ID
-   */
-  getWorkloadAction(id: string): Observable<any> {
-    return this.get(`/workload_action/${id}`);
-  }
-
-  /**
-   * Create new workload action
-   * @param data Action data
-   */
-  createWorkloadAction(data: any): Observable<any> {
-    return this.post('/workload_action/', data);
-  }
-
-  /**
-   * Update existing workload action
-   * @param id Action ID
-   * @param data Updated action data
-   */
-  updateWorkloadAction(id: string, data: any): Observable<any> {
-    return this.put(`/workload_action/${id}`, data);
-  }
-
-  /**
-   * Delete workload action
-   * @param id Action ID
-   */
-  deleteWorkloadAction(id: string): Observable<any> {
-    return this.delete(`/workload_action/${id}`);
-  }
-
-  /**
-   * Get all alerts
-   * @param params Query parameters for filtering
-   */
-  getAlerts(params?: any): Observable<any> {
-    return this.get('/alerts/', params);
-  }
-
-  /**
-   * Create new alert
-   * @param data Alert data
-   */
-  createAlert(data: any): Observable<any> {
-    return this.post('/alerts/', data);
   }
 
   /**
@@ -269,5 +163,4 @@ export class ApiService {
 
   getPods = this.listPods;
   getNodes = this.listNodes;
-  getPodRequestDecisions = this.getWorkloadDecisions;
 }

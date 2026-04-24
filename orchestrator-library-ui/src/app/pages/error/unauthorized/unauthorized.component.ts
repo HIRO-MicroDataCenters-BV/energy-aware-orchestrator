@@ -96,10 +96,10 @@ export class UnauthorizedComponent {
   private readonly router = inject(Router);
 
   /**
-   * Navigate to login page
+   * Navigate to the application home page
    */
   goToLogin(): void {
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/']);
   }
 
   /**

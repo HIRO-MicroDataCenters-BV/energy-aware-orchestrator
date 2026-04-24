@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { RUNTIME_CONFIG } from '../../core/config/runtime.config';
 
 export interface EnergyAvailabilityResponse {
   status: string;
@@ -36,7 +37,7 @@ export interface EnergyAvailabilitySlot {
   providedIn: 'root'
 })
 export class EnergyAvailabilityService {
-  private readonly baseUrl = 'http://localhost:8086/api/metrics/energy-availability';
+  private readonly baseUrl = `${RUNTIME_CONFIG.apiBaseUrl}/metrics/energy-availability`;
 
   constructor(private http: HttpClient) { }
 

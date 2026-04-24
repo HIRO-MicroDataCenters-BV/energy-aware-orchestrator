@@ -71,23 +71,6 @@ describe('ApiService', () => {
     });
   });
 
-  describe('getClusterInfo', () => {
-    it('should fetch cluster information', () => {
-      const mockClusterInfo = {
-        cluster_name: 'test-cluster',
-        version: '1.21.0',
-      };
-
-      service.getClusterInfo().subscribe((info) => {
-        expect(info).toEqual(mockClusterInfo);
-      });
-
-      const req = httpMock.expectOne(`${baseUrl}/k8s_cluster_info/`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockClusterInfo);
-    });
-  });
-
   describe('loading state', () => {
     it('should set loading to true during request', () => {
       const loadingStates: boolean[] = [];

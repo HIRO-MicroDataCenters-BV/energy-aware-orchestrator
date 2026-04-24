@@ -42,7 +42,14 @@
           "outputHashing": "all",
           "outputMode": "static",
           "ssr": false,
-          "prerender": false
+          "prerender": false,
+          "optimization": {
+            "scripts": true,
+            "styles": true,
+            "fonts": {
+              "inline": false
+            }
+          }
         },
         "development": {
           "optimization": false,
@@ -55,7 +62,6 @@
     "serve": {
       "executor": "@angular/build:dev-server",
       "options": {
-        "proxyConfig": "proxy.conf.js",
         "host": "localhost",
         "port": 4200,
         "open": false,

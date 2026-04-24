@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { RUNTIME_CONFIG } from '../../core/config/runtime.config';
 import {
   PodsResponse,
   ScheduledDeployment,
@@ -14,9 +14,10 @@ import { AppPodsResponseV2 } from '../interfaces/app-pods.interface';
   providedIn: 'root',
 })
 export class WorkloadService {
-  private readonly baseUrl = `${environment.backendBaseUrl}/api/kubernetes`;
-  private readonly deploymentApiUrl = `${environment.backendBaseUrl}/app/deployment-request`;
-  private readonly workloadDefinitionsApiUrl = `${environment.backendBaseUrl}/app/definitions`;
+  private readonly apiBaseUrl = RUNTIME_CONFIG.apiBaseUrl;
+  private readonly baseUrl = `${this.apiBaseUrl}/kubernetes`;
+  private readonly deploymentApiUrl = `${RUNTIME_CONFIG.appBaseUrl}/deployment-request`;
+  private readonly workloadDefinitionsApiUrl = `${RUNTIME_CONFIG.appBaseUrl}/definitions`;
 
   constructor(private http: HttpClient) {}
 

@@ -1,6 +1,5 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID, isDevMode } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { environment } from '../../../environments/environment';
 
 export enum LogLevel {
   DEBUG = 0,
@@ -23,7 +22,7 @@ export interface LogEntry {
 export class LoggerService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
-  private readonly isProduction = environment.production;
+  private readonly isProduction = !isDevMode();
   private readonly logLevel: LogLevel = this.isProduction
     ? LogLevel.WARN
     : LogLevel.DEBUG;
