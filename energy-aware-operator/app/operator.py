@@ -31,6 +31,7 @@ from app.handlers import (
     get_status_handler,
     get_validation_handler,
 )
+from app.index import get_profile_index
 from app.services import SimpleSchedulerService
 from app.services.energy_api_client import EnergyAPIClient
 
@@ -44,6 +45,7 @@ logger = logging.getLogger(__name__)
 validation_handler = get_validation_handler()
 status_handler = get_status_handler()
 event_handler = get_event_handler()
+profile_index = get_profile_index()
 
 # Initialize Energy API Client and Scheduler Service
 energy_api_client = EnergyAPIClient(api_url=ENERGY_API_URL) if ENERGY_API_URL else None
@@ -157,6 +159,19 @@ async def reconcile_handler(
     logger.info(f"   Application: {app_api_version} {app_kind}/{app_name} (namespace: {app_namespace})")
     logger.info("-" * 80)
 
+    # Register in profile index: "<app_namespace>/<app_name>" → this EAO CR
+    profile_index.register(
+        app_namespace=app_namespace,
+        app_name=app_name,
+        eao_name=name,
+        eao_namespace=namespace,
+        priority=priority,
+        energy_consumption=energy_consumption,
+        app_kind=app_kind,
+        app_api_version=app_api_version,
+    )
+    logger.info(f"   Indexed: {app_namespace}/{app_name} → {namespace}/{name} ({len(profile_index)} total)")
+
     # Post event: Processing started
     logger.info("")
     logger.info("STEP 2: Posting Kubernetes Event")
@@ -264,6 +279,14 @@ def deletion_handler(
     logger.info("=" * 80)
     logger.info(f"DELETION TRIGGERED: '{name}' (namespace: {namespace})")
     logger.info("=" * 80)
+
+    # Remove from profile index
+    app_ref = (body.get("spec") or {}).get("applicationRef") or {}
+    app_name = app_ref.get("name")
+    app_namespace = app_ref.get("namespace") or namespace
+    if app_name:
+        profile_index.unregister(app_namespace, app_name)
+        logger.info(f"   Deindexed: {app_namespace}/{app_name} ({len(profile_index)} remaining)")
 
     # Post Kubernetes event: Resource being deleted
     logger.info("")

@@ -87,7 +87,8 @@ USING_KIND=false
 # Check for kind first
 if kubectl config current-context 2>/dev/null | grep -q "kind-"; then
     USING_KIND=true
-    print_info "Detected kind cluster - building for kind"
+    KIND_CLUSTER=$(kubectl config current-context | sed 's/kind-//')
+    print_info "Detected kind cluster: $KIND_CLUSTER"
     
 # Then check for minikube
 elif [ "$USE_MINIKUBE" = "yes" ] || [ "$USE_MINIKUBE" = "auto" ]; then
@@ -136,6 +137,17 @@ if docker build -t "$IMAGE_REPOSITORY:$IMAGE_TAG" .; then
 else
     print_error "Docker build failed"
     exit 1
+fi
+
+# Load image into kind cluster (kind doesn't share the host Docker daemon)
+if [ "$USING_KIND" = true ]; then
+    print_info "Loading image into kind cluster '$KIND_CLUSTER'..."
+    if kind load docker-image "$IMAGE_REPOSITORY:$IMAGE_TAG" --name "$KIND_CLUSTER"; then
+        print_info "Image loaded into kind successfully ✓"
+    else
+        print_error "Failed to load image into kind cluster"
+        exit 1
+    fi
 fi
 
 # Show image info
