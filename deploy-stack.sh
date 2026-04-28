@@ -24,7 +24,12 @@ print_divider() { echo -e "${BLUE}━━━━━━━━━━━━━━━�
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NAMESPACE="${NAMESPACE:-default}"
 
+# Energy-Aware Operator image config (override via env vars)
+OPERATOR_IMAGE_REPO="${OPERATOR_IMAGE_REPO:-energy-aware-operator}"
+OPERATOR_IMAGE_TAG="${OPERATOR_IMAGE_TAG:-latest}"
+
 # Deployment status tracking
+DEPLOY_OPERATOR_BUILD_STATUS="PENDING"
 DEPLOY_OPERATOR_STATUS="PENDING"
 DEPLOY_METRIC_STATUS="PENDING"
 DEPLOY_MONITORING_STATUS="PENDING"
@@ -35,20 +40,130 @@ print_divider
 echo -e "${BOLD}${CYAN}   Energy-Aware Orchestrator — Full Stack Deployment${NC}"
 print_divider
 echo ""
-print_info "Namespace: $NAMESPACE"
-print_info "Port-forwarding: suggested only (not executed automatically)"
+print_info "Namespace:          $NAMESPACE"
+print_info "Operator image:     $OPERATOR_IMAGE_REPO:$OPERATOR_IMAGE_TAG"
+print_info "Port-forwarding:    suggested only (not executed automatically)"
 echo ""
+
+# ─── PREREQUISITES CHECK ─────────────────────────────────────────────────────
+print_header "▶  Prerequisites Check"
+print_divider
+
+PREREQ_FAILED=false
+
+_check() {
+    local label="$1"
+    local cmd="$2"
+    if command -v "$cmd" &>/dev/null; then
+        printf "  ${GREEN}✔${NC}  %-20s %s\n" "$label" "$(command -v "$cmd")"
+    else
+        printf "  ${RED}✘${NC}  %-20s NOT FOUND\n" "$label"
+        PREREQ_FAILED=true
+    fi
+}
+
+_check_optional() {
+    local label="$1"
+    local cmd="$2"
+    local note="$3"
+    if command -v "$cmd" &>/dev/null; then
+        printf "  ${GREEN}✔${NC}  %-20s %s\n" "$label" "$(command -v "$cmd")"
+    else
+        printf "  ${YELLOW}~${NC}  %-20s not found — %s\n" "$label" "$note"
+    fi
+}
+
+echo ""
+echo -e "  ${BOLD}Required tools:${NC}"
+_check "kubectl"   kubectl
+_check "helm"      helm
+_check "docker"    docker
+
+echo ""
+echo -e "  ${BOLD}Optional tools:${NC}"
+_check_optional "uv"       uv       "CRD generation will be skipped in operator build"
+_check_optional "kind"     kind     "only needed if using a kind cluster"
+_check_optional "minikube" minikube "only needed if using a minikube cluster"
+
+# Abort early if any required tool is missing
+if [ "$PREREQ_FAILED" = true ]; then
+    echo ""
+    print_error "One or more required tools are missing. Install them and re-run."
+    exit 1
+fi
+
+# Cluster connectivity
+echo ""
+echo -e "  ${BOLD}Cluster:${NC}"
+if ! kubectl config current-context &>/dev/null; then
+    printf "  ${RED}✘${NC}  %-20s no current context set\n" "kubeconfig"
+    print_error "No kubectl context found. Run: kubectl config use-context <name>"
+    exit 1
+fi
+
+KUBE_CONTEXT=$(kubectl config current-context)
+printf "  ${GREEN}✔${NC}  %-20s %s\n" "context" "$KUBE_CONTEXT"
+
+if ! kubectl cluster-info &>/dev/null 2>&1; then
+    printf "  ${RED}✘${NC}  %-20s unreachable\n" "cluster"
+    print_error "Cannot reach the Kubernetes cluster. Check your kubeconfig / VPN."
+    exit 1
+fi
+printf "  ${GREEN}✔${NC}  %-20s reachable\n" "cluster"
+
+# Cluster-type specific checks
+if echo "$KUBE_CONTEXT" | grep -q "^kind-"; then
+    CLUSTER_TYPE="kind"
+    if ! command -v kind &>/dev/null; then
+        printf "  ${RED}✘${NC}  %-20s kind context detected but 'kind' CLI missing\n" "kind CLI"
+        print_error "Install kind: https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+        exit 1
+    fi
+    printf "  ${GREEN}✔${NC}  %-20s %s\n" "kind CLI" "$(command -v kind)"
+elif command -v minikube &>/dev/null && minikube status &>/dev/null 2>&1; then
+    CLUSTER_TYPE="minikube"
+    printf "  ${GREEN}✔${NC}  %-20s running\n" "minikube"
+else
+    CLUSTER_TYPE="other"
+fi
+
+echo ""
+printf "  ${BOLD}Cluster type:${NC} %s\n" "$CLUSTER_TYPE"
+echo ""
+print_info "All prerequisites satisfied ✓"
+print_divider
 
 # ─── 1. Energy-Aware Operator ────────────────────────────────────────────────
 print_header "▶  [1/4] Energy-Aware Operator"
 print_divider
-if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
-       bash "$ROOT_DIR/energy-aware-operator/scripts/deploy.sh"; then
-    DEPLOY_OPERATOR_STATUS="OK"
-    print_info "Energy-Aware Operator deployed successfully ✓"
+
+# 1a. Build the operator Docker image (generates CRD + builds image)
+print_info "[1a] Building operator image ($OPERATOR_IMAGE_REPO:$OPERATOR_IMAGE_TAG)..."
+if IMAGE_REPOSITORY="$OPERATOR_IMAGE_REPO" IMAGE_TAG="$OPERATOR_IMAGE_TAG" \
+       bash "$ROOT_DIR/energy-aware-operator/scripts/build.sh"; then
+    DEPLOY_OPERATOR_BUILD_STATUS="OK"
+    print_info "Operator image built ✓"
+else
+    DEPLOY_OPERATOR_BUILD_STATUS="FAILED"
+    print_error "Operator image build failed — skipping operator deploy"
+fi
+
+# 1b. Deploy the operator via Helm (applies CRD + helm upgrade --install)
+if [ "$DEPLOY_OPERATOR_BUILD_STATUS" = "OK" ]; then
+    print_info "[1b] Deploying operator via Helm..."
+    if NAMESPACE="$NAMESPACE" \
+       IMAGE_REPOSITORY="$OPERATOR_IMAGE_REPO" \
+       IMAGE_TAG="$OPERATOR_IMAGE_TAG" \
+       SKIP_PORT_FORWARD=true \
+           bash "$ROOT_DIR/energy-aware-operator/scripts/deploy.sh"; then
+        DEPLOY_OPERATOR_STATUS="OK"
+        print_info "Energy-Aware Operator deployed successfully ✓"
+    else
+        DEPLOY_OPERATOR_STATUS="FAILED"
+        print_error "Energy-Aware Operator deployment failed"
+    fi
 else
     DEPLOY_OPERATOR_STATUS="FAILED"
-    print_error "Energy-Aware Operator deployment failed"
 fi
 
 # ─── 2. Energy Metric Service (PostgreSQL + FastAPI) ─────────────────────────
@@ -98,7 +213,8 @@ _status_icon() {
 }
 
 echo ""
-printf "  %-42s %s\n" "energy-aware-operator"            "$(_status_icon "$DEPLOY_OPERATOR_STATUS")"
+printf "  %-42s %s\n" "energy-aware-operator (build)"    "$(_status_icon "$DEPLOY_OPERATOR_BUILD_STATUS")"
+printf "  %-42s %s\n" "energy-aware-operator (deploy)"   "$(_status_icon "$DEPLOY_OPERATOR_STATUS")"
 printf "  %-42s %s\n" "energy-metric-service (pg + api)" "$(_status_icon "$DEPLOY_METRIC_STATUS")"
 printf "  %-42s %s\n" "energy-monitoring-helm-stack"     "$(_status_icon "$DEPLOY_MONITORING_STATUS")"
 printf "  %-42s %s\n" "orchestrator-library-ui"          "$(_status_icon "$DEPLOY_UI_STATUS")"
