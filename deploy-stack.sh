@@ -28,12 +28,17 @@ NAMESPACE="${NAMESPACE:-default}"
 OPERATOR_IMAGE_REPO="${OPERATOR_IMAGE_REPO:-energy-aware-operator}"
 OPERATOR_IMAGE_TAG="${OPERATOR_IMAGE_TAG:-latest}"
 
+# Sample testing workload manifests
+SAMPLE_K8S_MANIFEST="$ROOT_DIR/workload/workload_k8s_critical_testing.yaml"
+SAMPLE_EAO_CR="$ROOT_DIR/workload/workload_cr_eao_critical_testing.yaml"
+
 # Deployment status tracking
 DEPLOY_OPERATOR_BUILD_STATUS="PENDING"
 DEPLOY_OPERATOR_STATUS="PENDING"
 DEPLOY_METRIC_STATUS="PENDING"
 DEPLOY_MONITORING_STATUS="PENDING"
 DEPLOY_UI_STATUS="PENDING"
+DEPLOY_SAMPLE_WORKLOAD_STATUS="PENDING"
 
 echo ""
 print_divider
@@ -134,7 +139,7 @@ print_info "All prerequisites satisfied ✓"
 print_divider
 
 # ─── 1. Energy-Aware Operator ────────────────────────────────────────────────
-print_header "▶  [1/4] Energy-Aware Operator"
+print_header "▶  [1/5] Energy-Aware Operator"
 print_divider
 
 # 1a. Build the operator Docker image (generates CRD + builds image)
@@ -167,7 +172,7 @@ else
 fi
 
 # ─── 2. Energy Metric Service (PostgreSQL + FastAPI) ─────────────────────────
-print_header "▶  [2/4] Energy Metric Service (PostgreSQL + API)"
+print_header "▶  [2/5] Energy Metric Service (PostgreSQL + API)"
 print_divider
 if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
        bash "$ROOT_DIR/energy-metric-service/scripts/deploy-all.sh"; then
@@ -179,7 +184,7 @@ else
 fi
 
 # ─── 3. Energy Monitoring Helm Stack (Kepler / Prometheus / Grafana) ─────────
-print_header "▶  [3/4] Energy Monitoring Helm Stack"
+print_header "▶  [3/5] Energy Monitoring Helm Stack"
 print_divider
 if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
        bash "$ROOT_DIR/energy-monitoring-helm-stack/scripts/deploy.sh"; then
@@ -191,7 +196,7 @@ else
 fi
 
 # ─── 4. Orchestrator Library UI ──────────────────────────────────────────────
-print_header "▶  [4/4] Orchestrator Library UI"
+print_header "▶  [4/5] Orchestrator Library UI"
 print_divider
 if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
        bash "$ROOT_DIR/orchestrator-library-ui/scripts/deploy.sh"; then
@@ -202,6 +207,39 @@ else
     print_error "Orchestrator Library UI deployment failed"
 fi
 
+# ─── 5. Sample Testing Workload ──────────────────────────────────────────────
+print_header "▶  [5/5] Sample Testing Workload (Critical EAO)"
+print_divider
+
+if [ "$DEPLOY_OPERATOR_STATUS" = "OK" ]; then
+    # Apply the backing nginx Deployment + Service
+    print_info "Applying backing workload: $(basename "$SAMPLE_K8S_MANIFEST")..."
+    if kubectl apply -f "$SAMPLE_K8S_MANIFEST" -n "$NAMESPACE"; then
+        print_info "Backing workload applied ✓"
+    else
+        print_warn "Failed to apply backing workload — continuing with EAO CR"
+    fi
+
+    # Apply the EAO CR
+    print_info "Applying EAO CR: $(basename "$SAMPLE_EAO_CR")..."
+    if kubectl apply -f "$SAMPLE_EAO_CR" -n "$NAMESPACE"; then
+        DEPLOY_SAMPLE_WORKLOAD_STATUS="OK"
+        print_info "EAO CR applied ✓"
+
+        print_info "Waiting 5s for operator to reconcile..."
+        sleep 5
+        echo ""
+        kubectl get eao -n "$NAMESPACE" 2>/dev/null || true
+    else
+        DEPLOY_SAMPLE_WORKLOAD_STATUS="FAILED"
+        print_error "Failed to apply EAO CR"
+    fi
+else
+    DEPLOY_SAMPLE_WORKLOAD_STATUS="SKIPPED"
+    print_warn "Operator not running — skipping sample workload"
+fi
+print_divider
+
 # ─── DEPLOYMENT SUMMARY ──────────────────────────────────────────────────────
 echo ""
 print_divider
@@ -209,7 +247,11 @@ echo -e "${BOLD}${CYAN}   DEPLOYMENT SUMMARY${NC}"
 print_divider
 
 _status_icon() {
-    if [ "$1" = "OK" ]; then echo -e "${GREEN}✔  OK${NC}"; else echo -e "${RED}✘  FAILED${NC}"; fi
+    case "$1" in
+        OK)      echo -e "${GREEN}✔  OK${NC}" ;;
+        SKIPPED) echo -e "${YELLOW}~  SKIPPED${NC}" ;;
+        *)       echo -e "${RED}✘  FAILED${NC}" ;;
+    esac
 }
 
 echo ""
@@ -218,6 +260,7 @@ printf "  %-42s %s\n" "energy-aware-operator (deploy)"   "$(_status_icon "$DEPLO
 printf "  %-42s %s\n" "energy-metric-service (pg + api)" "$(_status_icon "$DEPLOY_METRIC_STATUS")"
 printf "  %-42s %s\n" "energy-monitoring-helm-stack"     "$(_status_icon "$DEPLOY_MONITORING_STATUS")"
 printf "  %-42s %s\n" "orchestrator-library-ui"          "$(_status_icon "$DEPLOY_UI_STATUS")"
+printf "  %-42s %s\n" "sample workload (critical-testing)" "$(_status_icon "$DEPLOY_SAMPLE_WORKLOAD_STATUS")"
 echo ""
 
 # ─── PORT-FORWARDING INSTRUCTIONS ────────────────────────────────────────────
@@ -225,8 +268,14 @@ print_divider
 echo -e "${BOLD}${CYAN}   PORT-FORWARDING  (run these manually in separate terminals)${NC}"
 print_divider
 echo ""
-echo -e "${YELLOW}  # Step 1 — Kill any existing port-forwards first:${NC}"
-echo    "  pkill -f 'kubectl port-forward' || true"
+echo -e "${YELLOW}  # Step 1 — Kill only this repo's port-forwards:${NC}"
+echo    "  pkill -f 'svc/energy-metric-service'           || true"
+echo    "  pkill -f 'svc/eao-postgres'                    || true"
+echo    "  pkill -f 'svc/energy-metrics-grafana'          || true"
+echo    "  pkill -f 'svc/energy-metrics-prometheus-server'|| true"
+echo    "  pkill -f 'svc/energy-metrics-kepler'           || true"
+echo    "  pkill -f 'svc/aces-orchestrator-library-ui'    || true"
+echo    "  pkill -f 'svc/aces-orchestrator-k8s-proxy'     || true"
 echo ""
 echo -e "${YELLOW}  # Step 2 — Run this block to start all port-forwards in the background at once:${NC}"
 echo ""
