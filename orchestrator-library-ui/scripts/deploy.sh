@@ -37,6 +37,7 @@ NC='\033[0m' # No Color
 RELEASE_NAME="${RELEASE_NAME:-orchestrator-ui}"
 NAMESPACE="${NAMESPACE:-default}"
 BUILD_IMAGE="${BUILD_IMAGE:-true}"
+SKIP_PORT_FORWARD="${SKIP_PORT_FORWARD:-false}"
 COMMAND="deploy"
 
 # Usage function
@@ -301,30 +302,35 @@ wait_for_pods() {
 
 # Setup port forwarding
 setup_port_forwarding() {
+    if [ "${SKIP_PORT_FORWARD}" = "true" ]; then
+        print_status "Skipping port forwarding (SKIP_PORT_FORWARD=true)"
+        return
+    fi
+
     print_status "Setting up port forwarding..."
-    
+
     # Kill existing port forwards
     pkill -f "kubectl port-forward.*orchestrator" || true
-    
+
     # Get service name
     UI_SERVICE=$(kubectl get svc -n "$NAMESPACE" -l app=aces-orchestrator-library-ui -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-    
+
     if [ -n "$UI_SERVICE" ]; then
         kubectl port-forward -n "$NAMESPACE" svc/$UI_SERVICE 4200:80 &
         print_status "UI available at: http://localhost:4200"
     fi
-    
+
     # Port forward k8s-proxy if exists
     PROXY_SERVICE=$(kubectl get svc -n "$NAMESPACE" -l app=aces-orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-    
+
     if [ -n "$PROXY_SERVICE" ]; then
         kubectl port-forward -n "$NAMESPACE" svc/$PROXY_SERVICE 3000:3000 &
         print_status "K8s Proxy available at: http://localhost:3000"
     fi
-    
+
     # Wait a moment for port forwarding to start
     sleep 3
-    
+
     print_success "Port forwarding setup complete"
 }
 
