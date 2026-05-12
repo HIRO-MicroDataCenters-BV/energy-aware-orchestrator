@@ -16,9 +16,6 @@ export const API_ENDPOINTS = {
     USER_PODS: '/k8s_user_pod/',
     POD_PARENT: '/k8s_pod_parent/',
   },
-
-  // Dummy ACES UI
-  DUMMY_ACES_UI: '/dummy_aces_ui/',
 } as const;
 
 // ======================

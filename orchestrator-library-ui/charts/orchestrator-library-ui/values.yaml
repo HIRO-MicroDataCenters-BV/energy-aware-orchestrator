@@ -1,5 +1,5 @@
 app:
-  name: aces-orchestrator-library-ui
+  name: orchestrator-library-ui
   replicaCount: 1
   image:
     repository: orchestrator-library-ui
@@ -12,7 +12,7 @@ app:
   ingress:
     enabled: true
     className: nginx
-    host: dashboard.aces.hiro-develop.nl
+    host: dashboard.hiro-develop.nl
     path: /
     tls: true
     tlsSecretName: orchestrator-ui-tls-secret
@@ -22,9 +22,9 @@ app:
 
   k8sProxy:
     enabled: true
-    name: aces-orchestrator-k8s-proxy
+    name: orchestrator-k8s-proxy
     configMap:
-      name: aces-orchestrator-k8s-proxy-env-config
+      name: orchestrator-k8s-proxy-env-config
     image:
       repository: node
       tag: '20-alpine3.20'
@@ -40,7 +40,7 @@ app:
     ingress:
       enabled: true
       className: nginx
-      host: k8s-proxy.aces.hiro-develop.nl
+      host: k8s-proxy.hiro-develop.nl
       path: /
       tls: true
       tlsSecretName: k8s-proxy-tls-secret

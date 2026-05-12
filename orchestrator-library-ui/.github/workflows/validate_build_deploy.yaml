@@ -476,8 +476,8 @@ jobs:
             echo "orchestrator_ui_env_api_target=http://51.44.28.47:30015" >> $GITHUB_OUTPUT
             echo "orchestrator_ui_env_dashboard_target=http://51.44.28.47:30016" >> $GITHUB_OUTPUT
           else
-            echo "orchestrator_ui_env_api_target=https://orchestration-api.aces.hiro-develop.nl" >> $GITHUB_OUTPUT
-            echo "orchestrator_ui_env_dashboard_target=https://k8s-dashboard.aces.hiro-develop.nl" >> $GITHUB_OUTPUT
+            echo "orchestrator_ui_env_api_target=https://orchestration-api.hiro-develop.nl" >> $GITHUB_OUTPUT
+            echo "orchestrator_ui_env_dashboard_target=https://k8s-dashboard.hiro-develop.nl" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy Orchestrator Library UI Helm chart
@@ -607,9 +607,9 @@ jobs:
           NAMESPACE="${{ vars.ORCHESTRATOR_LIBRARY_UI_NAMESPACE }}"
           KUBECONFIG=~/.kube/${{ matrix.kubeconfig_secret_name }}
 
-          echo "🔍 Looking for K8s proxy pods with label: app=aces-orchestrator-k8s-proxy"
+          echo "🔍 Looking for K8s proxy pods with label: app=orchestrator-k8s-proxy"
 
-          K8S_POD_NAME=$(kubectl get pods -n "${NAMESPACE}" --kubeconfig "${KUBECONFIG}" -l app=aces-orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          K8S_POD_NAME=$(kubectl get pods -n "${NAMESPACE}" --kubeconfig "${KUBECONFIG}" -l app=orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
 
           if [ ! -z "$K8S_POD_NAME" ]; then
             echo "✅ Found K8s proxy pod: ${K8S_POD_NAME}"
@@ -624,7 +624,7 @@ jobs:
             kubectl get events -n "${NAMESPACE}" --kubeconfig "${KUBECONFIG}" --field-selector involvedObject.name="${K8S_POD_NAME}" --sort-by='.lastTimestamp'
 
           else
-            echo "❌ No K8s proxy pod found with label app=aces-orchestrator-k8s-proxy"
+            echo "❌ No K8s proxy pod found with label app=orchestrator-k8s-proxy"
             echo "Available pods in namespace:"
             kubectl get pods -n "${NAMESPACE}" --kubeconfig "${KUBECONFIG}"
           fi
@@ -647,8 +647,8 @@ jobs:
           kubectl get service "${RELEASE_NAME}" --kubeconfig "${KUBECONFIG}" -n "${NAMESPACE}" -o wide || echo "Main service not found"
 
           # Test K8s proxy service
-          echo "🎯 Testing K8s proxy service: aces-orchestrator-k8s-proxy"
-          kubectl get service "aces-orchestrator-k8s-proxy" --kubeconfig "${KUBECONFIG}" -n "${NAMESPACE}" -o wide || echo "K8s proxy service not found"
+          echo "🎯 Testing K8s proxy service: orchestrator-k8s-proxy"
+          kubectl get service "orchestrator-k8s-proxy" --kubeconfig "${KUBECONFIG}" -n "${NAMESPACE}" -o wide || echo "K8s proxy service not found"
 
           # Show all endpoints
           echo "🔗 All endpoints:"

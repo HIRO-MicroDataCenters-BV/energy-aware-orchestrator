@@ -1,5 +1,5 @@
 #!/bin/bash
-RELEASE_NAME="${RELEASE_NAME:-aces-orchestrator-library-ui}"
+RELEASE_NAME="${RELEASE_NAME:-orchestrator-library-ui}"
 yq eval "
   (select(.kind == \"Deployment\" or .kind == \"StatefulSet\" or .kind == \"DaemonSet\" or .kind == \"Job\" or .kind == \"CronJob\")
     .spec.template.metadata.labels) |= (
@@ -8,7 +8,7 @@ yq eval "
         \"app.kubernetes.io/instance\": (.\"app.kubernetes.io/instance\" // \"$RELEASE_NAME\"),
         \"app.kubernetes.io/managed-by\": (.\"app.kubernetes.io/managed-by\" // \"$RELEASE_NAME\"),
         \"app.kubernetes.io/part-of\": (.\"app.kubernetes.io/part-of\" // \"$RELEASE_NAME\"),
-        \"aces-component-name\": (.\"aces-component-name\" // \"$RELEASE_NAME\")
+        \"component-name\": (.\"component-name\" // \"$RELEASE_NAME\")
       }
   )
 " -
