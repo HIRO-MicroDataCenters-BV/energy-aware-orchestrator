@@ -32,8 +32,6 @@ Env loading order:
 Supported env keys (priority order):
 
 - `API_URL`
-- `API_BACKEND_URL`
-- `API_TARGET`
 
 Modes:
 
@@ -54,6 +52,12 @@ Container runtime (nginx) still supports optional proxy mode:
 
 - if `API_URL` is set, nginx proxies `/api` and `/app` to that backend
 - if `API_URL` is not set, nginx serves UI without proxy rules
+
+Important:
+
+- keep `.env.local` minimal for local frontend development (only `API_URL` is required)
+- `scripts/generate-runtime-config.js` is for frontend runtime config generation only
+- k8s-proxy environment values are separate and used only by the optional k8s-proxy service
 
 ## Local Development
 
@@ -148,12 +152,17 @@ UI Helm chart path:
 Main chart files:
 
 - `Chart.yaml`: chart metadata
-- `values.yaml`: deploy-time config (image, service, ingress, proxy settings)
+- `values.yaml`: deploy-time config (image, service, ingress, runtime env)
 - `templates/deployment.yaml`: UI deployment
 - `templates/service.yaml`: UI service
 - `templates/ingress.yaml`: UI ingress
-- `templates/configmap.yaml`: runtime `env.js` generation
 - `templates/k8s-proxy-*`: optional k8s-proxy resources
+
+Production notes:
+
+- UI container runtime proxy is controlled by `app.env.API_URL` in Helm values
+- set `app.env.API_URL` to your backend origin (for example `http://<backend-host>:<port>`)
+- if `app.env.API_URL` is empty, UI will not proxy `/api` and `/app`
 
 ## Testing
 
