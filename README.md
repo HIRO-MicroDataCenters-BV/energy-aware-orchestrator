@@ -125,7 +125,7 @@ An Angular 20 + Nx frontend dashboard.
 | `/emdc/workloads/workload-deployment` | View and manage deployed workloads |
 | `/emdc/workloads/register-workload` | Register a new EAO workload |
 
-The app talks to `energy-metric-service` through an nginx proxy (`aces-orchestrator-k8s-proxy`). In development it reads API endpoints from `.env.local`; in production it proxies via relative paths (`/api`, `/app`).
+The app talks to `energy-metric-service` through an nginx proxy (`orchestrator-k8s-proxy`). In development it reads API endpoints from `.env.local`; in production it proxies via relative paths (`/api`, `/app`).
 
 → [orchestrator-library-ui/README.md](orchestrator-library-ui/README.md)
 
