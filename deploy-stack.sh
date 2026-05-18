@@ -32,6 +32,51 @@ OPERATOR_IMAGE_TAG="${OPERATOR_IMAGE_TAG:-latest}"
 SAMPLE_K8S_MANIFEST="$ROOT_DIR/workload/workload_k8s_critical_testing.yaml"
 SAMPLE_EAO_CR="$ROOT_DIR/workload/workload_cr_eao_critical_testing.yaml"
 
+# ─── Command & flag parsing ───────────────────────────────────────────────────
+COMMAND="${1:-deploy}"
+case "$COMMAND" in
+    deploy|cleanup) shift ;;
+    -h|--help)
+        cat << 'USAGE'
+Usage: ./deploy-stack.sh [deploy|cleanup] [OPTIONS]
+
+Commands:
+  deploy   Deploy all projects (default)
+  cleanup  Remove all deployments in reverse order
+
+Options (both commands):
+  -n, --namespace NS   Kubernetes namespace (default: default)
+
+Options (cleanup only):
+  --delete-crd         Delete the operator CRD (default: keep)
+  --delete-pvc         Delete PostgreSQL PVCs (default: keep)
+
+Examples:
+  ./deploy-stack.sh
+  ./deploy-stack.sh cleanup
+  ./deploy-stack.sh cleanup --delete-crd --delete-pvc
+  NAMESPACE=staging ./deploy-stack.sh deploy
+USAGE
+        exit 0
+        ;;
+    *)
+        echo "Unknown command: $COMMAND  (use: deploy | cleanup)"
+        exit 1
+        ;;
+esac
+
+DELETE_CRD="${DELETE_CRD:-false}"
+DELETE_PVC="${DELETE_PVC:-false}"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -n|--namespace) NAMESPACE="$2"; shift 2 ;;
+        --delete-crd)   DELETE_CRD=true; shift ;;
+        --delete-pvc)   DELETE_PVC=true; shift ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
+
 # Deployment status tracking
 DEPLOY_OPERATOR_BUILD_STATUS="PENDING"
 DEPLOY_OPERATOR_STATUS="PENDING"
@@ -39,6 +84,115 @@ DEPLOY_METRIC_STATUS="PENDING"
 DEPLOY_MONITORING_STATUS="PENDING"
 DEPLOY_UI_STATUS="PENDING"
 DEPLOY_SAMPLE_WORKLOAD_STATUS="PENDING"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  CLEANUP  (runs and exits when COMMAND=cleanup)
+# ═══════════════════════════════════════════════════════════════════════════════
+if [ "$COMMAND" = "cleanup" ]; then
+
+    _cleanup_icon() {
+        case "$1" in
+            OK)      echo -e "${GREEN}✔  OK${NC}" ;;
+            SKIPPED) echo -e "${YELLOW}~  SKIPPED${NC}" ;;
+            *)       echo -e "${RED}✘  FAILED${NC}" ;;
+        esac
+    }
+
+    CLEANUP_WORKLOAD_STATUS="PENDING"
+    CLEANUP_UI_STATUS="PENDING"
+    CLEANUP_MONITORING_STATUS="PENDING"
+    CLEANUP_METRIC_STATUS="PENDING"
+    CLEANUP_OPERATOR_STATUS="PENDING"
+
+    echo ""
+    print_divider
+    echo -e "${BOLD}${CYAN}   Energy-Aware Orchestrator — Full Stack Cleanup${NC}"
+    print_divider
+    echo ""
+    print_info "Namespace:   $NAMESPACE"
+    print_info "Delete CRD:  $DELETE_CRD"
+    print_info "Delete PVCs: $DELETE_PVC"
+    print_info "Order:       LIFO (last deployed → first cleaned)"
+    echo ""
+
+    # Stop all port-forwards before touching the cluster
+    print_header "▶  Stopping port-forwards"
+    print_divider
+    pkill -f 'kubectl port-forward' || true
+    print_info "Port-forwards stopped ✓"
+
+    # LIFO order: 5→4→3→2→1  (reverse of deploy)
+
+    print_header "▶  [1/5] Sample Testing Workload — Cleanup"
+    print_divider
+    if kubectl delete -f "$SAMPLE_EAO_CR"      -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null && \
+       kubectl delete -f "$SAMPLE_K8S_MANIFEST" -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null; then
+        CLEANUP_WORKLOAD_STATUS="OK"
+        print_info "Sample workload cleaned ✓"
+    else
+        CLEANUP_WORKLOAD_STATUS="FAILED"
+        print_error "Sample workload cleanup failed"
+    fi
+
+    print_header "▶  [2/5] Orchestrator Library UI — Cleanup"
+    print_divider
+    if NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/orchestrator-library-ui/scripts/cleanup.sh"; then
+        CLEANUP_UI_STATUS="OK"
+        print_info "Orchestrator Library UI cleaned ✓"
+    else
+        CLEANUP_UI_STATUS="FAILED"
+        print_error "Orchestrator Library UI cleanup failed"
+    fi
+
+    print_header "▶  [3/5] Energy Monitoring Helm Stack — Cleanup"
+    print_divider
+    if NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/energy-monitoring-helm-stack/scripts/cleanup.sh"; then
+        CLEANUP_MONITORING_STATUS="OK"
+        print_info "Energy Monitoring Stack cleaned ✓"
+    else
+        CLEANUP_MONITORING_STATUS="FAILED"
+        print_error "Energy Monitoring Stack cleanup failed"
+    fi
+
+    print_header "▶  [4/5] Energy Metric Service — Cleanup"
+    print_divider
+    DELETE_PVC_ARG=""
+    [ "$DELETE_PVC" = true ] && DELETE_PVC_ARG="--delete-pvc"
+    if NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/energy-metric-service/scripts/cleanup.sh" $DELETE_PVC_ARG; then
+        CLEANUP_METRIC_STATUS="OK"
+        print_info "Energy Metric Service cleaned ✓"
+    else
+        CLEANUP_METRIC_STATUS="FAILED"
+        print_error "Energy Metric Service cleanup failed"
+    fi
+
+    print_header "▶  [5/5] Energy-Aware Operator — Cleanup"
+    print_divider
+    DELETE_CRD_ARG=""
+    [ "$DELETE_CRD" = true ] && DELETE_CRD_ARG="--delete-crd"
+    if NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/energy-aware-operator/scripts/cleanup.sh" $DELETE_CRD_ARG; then
+        CLEANUP_OPERATOR_STATUS="OK"
+        print_info "Energy-Aware Operator cleaned ✓"
+    else
+        CLEANUP_OPERATOR_STATUS="FAILED"
+        print_error "Energy-Aware Operator cleanup failed"
+    fi
+
+    echo ""
+    print_divider
+    echo -e "${BOLD}${CYAN}   CLEANUP SUMMARY${NC}"
+    print_divider
+    echo ""
+    printf "  %-42s %s\n" "sample workload (critical-testing)"  "$(_cleanup_icon "$CLEANUP_WORKLOAD_STATUS")"
+    printf "  %-42s %s\n" "orchestrator-library-ui"             "$(_cleanup_icon "$CLEANUP_UI_STATUS")"
+    printf "  %-42s %s\n" "energy-monitoring-helm-stack"        "$(_cleanup_icon "$CLEANUP_MONITORING_STATUS")"
+    printf "  %-42s %s\n" "energy-metric-service (pg + api)"    "$(_cleanup_icon "$CLEANUP_METRIC_STATUS")"
+    printf "  %-42s %s\n" "energy-aware-operator"               "$(_cleanup_icon "$CLEANUP_OPERATOR_STATUS")"
+    echo ""
+    print_divider
+    echo ""
+    exit 0
+fi
 
 echo ""
 print_divider
