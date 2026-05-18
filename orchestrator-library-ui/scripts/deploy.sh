@@ -285,14 +285,14 @@ wait_for_pods() {
     
     # Wait for UI pods
     kubectl wait --for=condition=ready pod \
-        -l app=aces-orchestrator-library-ui \
+        -l app=orchestrator-library-ui \
         -n "$NAMESPACE" \
         --timeout=300s || print_warning "UI pods not ready yet"
     
     # Wait for k8s-proxy pods if enabled
-    if kubectl get deployment -n "$NAMESPACE" -l app=aces-orchestrator-k8s-proxy &> /dev/null; then
+    if kubectl get deployment -n "$NAMESPACE" -l app=orchestrator-k8s-proxy &> /dev/null; then
         kubectl wait --for=condition=ready pod \
-            -l app=aces-orchestrator-k8s-proxy \
+            -l app=orchestrator-k8s-proxy \
             -n "$NAMESPACE" \
             --timeout=300s || print_warning "K8s proxy pods not ready yet"
     fi
@@ -313,7 +313,7 @@ setup_port_forwarding() {
     pkill -f "kubectl port-forward.*orchestrator" || true
 
     # Get service name
-    UI_SERVICE=$(kubectl get svc -n "$NAMESPACE" -l app=aces-orchestrator-library-ui -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+    UI_SERVICE=$(kubectl get svc -n "$NAMESPACE" -l app=orchestrator-library-ui -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
 
     if [ -n "$UI_SERVICE" ]; then
         kubectl port-forward -n "$NAMESPACE" svc/$UI_SERVICE 4200:80 &
@@ -321,7 +321,7 @@ setup_port_forwarding() {
     fi
 
     # Port forward k8s-proxy if exists
-    PROXY_SERVICE=$(kubectl get svc -n "$NAMESPACE" -l app=aces-orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+    PROXY_SERVICE=$(kubectl get svc -n "$NAMESPACE" -l app=orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
 
     if [ -n "$PROXY_SERVICE" ]; then
         kubectl port-forward -n "$NAMESPACE" svc/$PROXY_SERVICE 3000:3000 &
@@ -350,8 +350,8 @@ display_access_info() {
     echo ""
     echo "Useful Commands:"
     echo "  kubectl get pods -n $NAMESPACE"
-    echo "  kubectl logs -n $NAMESPACE -l app=aces-orchestrator-library-ui"
-    echo "  kubectl logs -n $NAMESPACE -l app=aces-orchestrator-k8s-proxy"
+    echo "  kubectl logs -n $NAMESPACE -l app=orchestrator-library-ui"
+    echo "  kubectl logs -n $NAMESPACE -l app=orchestrator-k8s-proxy"
     echo ""
     echo "For more information, see README.md"
     echo ""
@@ -361,7 +361,7 @@ display_access_info() {
 show_logs() {
     print_status "Showing application logs..."
     
-    UI_POD=$(kubectl get pods -n "$NAMESPACE" -l app=aces-orchestrator-library-ui -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+    UI_POD=$(kubectl get pods -n "$NAMESPACE" -l app=orchestrator-library-ui -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
     
     if [ -n "$UI_POD" ]; then
         print_status "UI Application logs:"
@@ -370,7 +370,7 @@ show_logs() {
         print_warning "No UI pods found in namespace $NAMESPACE"
     fi
     
-    PROXY_POD=$(kubectl get pods -n "$NAMESPACE" -l app=aces-orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+    PROXY_POD=$(kubectl get pods -n "$NAMESPACE" -l app=orchestrator-k8s-proxy -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
     
     if [ -n "$PROXY_POD" ]; then
         echo ""
@@ -390,10 +390,10 @@ cleanup() {
     helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" || true
     
     # Delete resources
-    kubectl delete all -l app=aces-orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
-    kubectl delete all -l app=aces-orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
-    kubectl delete configmap -l app=aces-orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
-    kubectl delete configmap -l app=aces-orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
+    kubectl delete all -l app=orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
+    kubectl delete all -l app=orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
+    kubectl delete configmap -l app=orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
+    kubectl delete configmap -l app=orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
     
     # Only delete namespace if it's not default
     if [ "$NAMESPACE" != "default" ]; then
@@ -416,13 +416,13 @@ show_status() {
     echo ""
     
     echo "Pods:"
-    kubectl get pods -n "$NAMESPACE" -l app=aces-orchestrator-library-ui 2>/dev/null || echo "  No UI pods found"
-    kubectl get pods -n "$NAMESPACE" -l app=aces-orchestrator-k8s-proxy 2>/dev/null || echo "  No proxy pods found"
+    kubectl get pods -n "$NAMESPACE" -l app=orchestrator-library-ui 2>/dev/null || echo "  No UI pods found"
+    kubectl get pods -n "$NAMESPACE" -l app=orchestrator-k8s-proxy 2>/dev/null || echo "  No proxy pods found"
     echo ""
     
     echo "Services:"
-    kubectl get svc -n "$NAMESPACE" -l app=aces-orchestrator-library-ui 2>/dev/null || echo "  No UI services found"
-    kubectl get svc -n "$NAMESPACE" -l app=aces-orchestrator-k8s-proxy 2>/dev/null || echo "  No proxy services found"
+    kubectl get svc -n "$NAMESPACE" -l app=orchestrator-library-ui 2>/dev/null || echo "  No UI services found"
+    kubectl get svc -n "$NAMESPACE" -l app=orchestrator-k8s-proxy 2>/dev/null || echo "  No proxy services found"
 }
 
 # Main execution

@@ -181,8 +181,8 @@ kubectl port-forward -n default svc/eao-postgres 5432:5432 &
 kubectl port-forward -n default svc/energy-metrics-grafana 3000:80 &
 kubectl port-forward -n default svc/energy-metrics-prometheus-server 9090:80 &
 kubectl port-forward -n default svc/energy-metrics-kepler 9102:9102 &
-kubectl port-forward -n default svc/aces-orchestrator-library-ui 4200:80 &
-kubectl port-forward -n default svc/aces-orchestrator-k8s-proxy 3001:3000 &
+kubectl port-forward -n default svc/orchestrator-library-ui 4200:80 &
+kubectl port-forward -n default svc/orchestrator-k8s-proxy 3001:3000 &
 ```
 
 > K8s Proxy uses local port `3001` (not `3000`) to avoid conflict with Grafana.

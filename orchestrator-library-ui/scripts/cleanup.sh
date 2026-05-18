@@ -67,16 +67,16 @@ helm uninstall "$RELEASE_NAME" --namespace "$NAMESPACE" 2>/dev/null || true
 
 # 3. Delete all UI resources
 print_info "Deleting UI resources..."
-kubectl delete all -l app=aces-orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
-kubectl delete configmap -l app=aces-orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
-kubectl delete secret -l app=aces-orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
-kubectl delete ingress -l app=aces-orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete all -l app=orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete configmap -l app=orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete secret -l app=orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete ingress -l app=orchestrator-library-ui -n "$NAMESPACE" 2>/dev/null || true
 
 # 4. Delete k8s-proxy resources
 print_info "Deleting k8s-proxy resources..."
-kubectl delete all -l app=aces-orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
-kubectl delete configmap -l app=aces-orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
-kubectl delete ingress -l app=aces-orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete all -l app=orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete configmap -l app=orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
+kubectl delete ingress -l app=orchestrator-k8s-proxy -n "$NAMESPACE" 2>/dev/null || true
 
 # 5. Delete namespace (if not default)
 if [ "$NAMESPACE" != "default" ]; then
