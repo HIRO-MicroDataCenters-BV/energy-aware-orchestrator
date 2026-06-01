@@ -236,8 +236,8 @@ pkill -f 'svc/eao-postgres'                     || true
 pkill -f 'svc/energy-metrics-grafana'           || true
 pkill -f 'svc/energy-metrics-prometheus-server' || true
 pkill -f 'svc/energy-metrics-kepler'            || true
-pkill -f 'svc/aces-orchestrator-library-ui'     || true
-pkill -f 'svc/aces-orchestrator-k8s-proxy'      || true
+pkill -f 'svc/orchestrator-library-ui'     || true
+pkill -f 'svc/orchestrator-k8s-proxy'      || true
 
 # Step 2 — Start all in the background at once
 kubectl port-forward -n default svc/energy-metric-service 8000:8000 &
@@ -245,8 +245,8 @@ kubectl port-forward -n default svc/eao-postgres 5432:5432 &
 kubectl port-forward -n default svc/energy-metrics-grafana 3000:80 &
 kubectl port-forward -n default svc/energy-metrics-prometheus-server 9090:80 &
 kubectl port-forward -n default svc/energy-metrics-kepler 9102:9102 &
-kubectl port-forward -n default svc/aces-orchestrator-library-ui 4200:80 &
-kubectl port-forward -n default svc/aces-orchestrator-k8s-proxy 3001:3000 &
+kubectl port-forward -n default svc/orchestrator-library-ui 4200:80 &
+kubectl port-forward -n default svc/orchestrator-k8s-proxy 3001:3000 &
 ```
 
 > K8s Proxy uses local port `3001` (not `3000`) to avoid conflict with Grafana.
