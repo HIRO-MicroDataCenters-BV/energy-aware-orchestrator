@@ -2,7 +2,7 @@
 
 ## Overview
 
-`deploy-stack.sh` is the single entry-point to deploy and tear down the entire
+`deploy-full-stack.sh` is the single entry-point to deploy and tear down the entire
 Energy-Aware Orchestrator platform. It supports two commands:
 
 | Command | What it does |
@@ -84,21 +84,21 @@ It exits early with a clear error if anything is missing.
 
 ```bash
 # Deploy everything (default namespace)
-./deploy-stack.sh
+./deploy-full-stack.sh
 
 # Deploy to a custom namespace
-./deploy-stack.sh deploy -n my-namespace
+./deploy-full-stack.sh deploy -n my-namespace
 
 # Override operator image
 OPERATOR_IMAGE_REPO=myregistry.io/energy-operator \
 OPERATOR_IMAGE_TAG=v1.2.0 \
-  ./deploy-stack.sh
+  ./deploy-full-stack.sh
 
 # Tear down everything
-./deploy-stack.sh cleanup
+./deploy-full-stack.sh cleanup
 
 # Full teardown including CRD and Postgres PVCs
-./deploy-stack.sh cleanup --delete-crd --delete-pvc
+./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
 ```
 
 ### Options
@@ -314,5 +314,5 @@ kubectl logs <pod-name> -n default
 Use the extended cleanup flags for a full teardown:
 
 ```bash
-./deploy-stack.sh cleanup --delete-crd --delete-pvc
+./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
 ```

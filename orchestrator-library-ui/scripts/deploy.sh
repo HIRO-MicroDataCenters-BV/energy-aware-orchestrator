@@ -254,9 +254,10 @@ build_image() {
 
 # Load the Docker image into the cluster (for kind)
 load_image_into_kind() {
-    if command -v kind &> /dev/null && kind get clusters &> /dev/null 2>&1; then
-        print_status "Loading image into kind cluster..."
-        kind load docker-image orchestrator-library-ui:latest --name "$(kind get clusters | head -n 1)" || true 
+    if kubectl config current-context 2>/dev/null | grep -q "^kind-"; then
+        KIND_CLUSTER=$(kubectl config current-context | sed 's/^kind-//')
+        print_status "Loading image into kind cluster: $KIND_CLUSTER..."
+        kind load docker-image orchestrator-library-ui:latest --name "$KIND_CLUSTER" || true
     fi
 }
 

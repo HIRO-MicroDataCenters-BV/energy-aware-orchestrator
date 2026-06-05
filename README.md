@@ -161,7 +161,7 @@ See **[DEPLOY.md](DEPLOY.md)** for the full deployment guide.
 
 ```bash
 # Deploy the entire stack in one command
-./deploy-stack.sh
+./deploy-full-stack.sh
 ```
 
 The script will:
@@ -178,7 +178,7 @@ The script will:
 
 ```
 energy-aware-orchestrator/
-├── deploy-stack.sh                  # One-command full-stack deployment
+├── deploy-full-stack.sh                  # One-command full-stack deployment
 ├── DEPLOY.md                        # Deployment guide (prerequisites, steps, troubleshooting)
 ├── README.md                        # This file
 │
