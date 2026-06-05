@@ -2,16 +2,16 @@
 set -e
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  deploy-stack.sh — Energy-Aware Orchestrator full-stack manager
+#  deploy-full-stack.sh — Energy-Aware Orchestrator full-stack manager
 #
 #  Commands:
 #    deploy   Build and deploy all 5 components (default)
 #    cleanup  Tear down all components in LIFO order
 #
 #  Usage:
-#    ./deploy-stack.sh [deploy|cleanup] [OPTIONS]
-#    ./deploy-stack.sh cleanup --delete-crd --delete-pvc
-#    NAMESPACE=staging ./deploy-stack.sh deploy
+#    ./deploy-full-stack.sh [deploy|cleanup] [OPTIONS]
+#    ./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
+#    NAMESPACE=staging ./deploy-full-stack.sh deploy
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Colours ──────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ DELETE_PVC="${DELETE_PVC:-false}"
 # ─────────────────────────────────────────────────────────────────────────────
 usage() {
     cat << 'EOF'
-Usage: ./deploy-stack.sh [deploy|cleanup] [OPTIONS]
+Usage: ./deploy-full-stack.sh [deploy|cleanup] [OPTIONS]
 
 Commands:
   deploy   Build and deploy all projects (default)
@@ -76,11 +76,11 @@ Environment overrides:
   OPERATOR_IMAGE_TAG   Operator Docker image tag   (default: latest)
 
 Examples:
-  ./deploy-stack.sh
-  ./deploy-stack.sh deploy
-  ./deploy-stack.sh cleanup
-  ./deploy-stack.sh cleanup --delete-crd --delete-pvc
-  NAMESPACE=staging ./deploy-stack.sh deploy
+  ./deploy-full-stack.sh
+  ./deploy-full-stack.sh deploy
+  ./deploy-full-stack.sh cleanup
+  ./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
+  NAMESPACE=staging ./deploy-full-stack.sh deploy
 EOF
     exit 0
 }
