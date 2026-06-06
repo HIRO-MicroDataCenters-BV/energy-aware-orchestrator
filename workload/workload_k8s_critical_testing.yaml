@@ -3,19 +3,19 @@ kind: Deployment
 metadata:
   name: nginx-deployment-1
   labels:
-    app: nginx
+    app: nginx-1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: nginx-1
   template:
     metadata:
       labels:
-        app: nginx
+        app: nginx-1
     spec:
       containers:
-        - name: nginx
+        - name: nginx-1
           image: nginx:latest
           ports:
             - containerPort: 80
@@ -32,10 +32,10 @@ kind: Service
 metadata:
   name: nginx-service-1
   labels:
-    app: nginx
+    app: nginx-1
 spec:
   selector:
-    app: nginx
+    app: nginx-1
   ports:
     - protocol: TCP
       port: 80
