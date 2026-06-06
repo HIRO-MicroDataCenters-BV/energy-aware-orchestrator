@@ -289,19 +289,25 @@ deploy_workload() {
         return
     fi
 
+    local manifest_failed=0
     for manifest in "${SAMPLE_K8S_MANIFESTS[@]}"; do
         info "Applying backing workload: $(basename "$manifest")..."
         if kubectl apply -f "$manifest" -n "$NAMESPACE"; then
             info "Backing workload applied ✓"
         else
             warn "Failed to apply backing workload — continuing with EAO CR"
+            manifest_failed=1
         fi
     done
 
     for cr in "${SAMPLE_EAO_CRS[@]}"; do
         info "Applying EAO CR: $(basename "$cr")..."
         if kubectl apply -f "$cr" -n "$NAMESPACE"; then
-            DEPLOY_SAMPLE_WORKLOAD_STATUS="OK"
+            if [ "$manifest_failed" -eq 0 ]; then
+                DEPLOY_SAMPLE_WORKLOAD_STATUS="OK"
+            else
+                DEPLOY_SAMPLE_WORKLOAD_STATUS="FAILED"
+            fi
             info "EAO CR applied ✓"
             info "Waiting 5s for operator to reconcile..."
             sleep 5
