@@ -2,14 +2,14 @@
 apiVersion: eas.hiro.io/v1
 kind: EnergyAwareOrchestration
 metadata:
-  name: eaoprofile-critical
+  name: eaoprofile-optional
   namespace: default
 spec:
-  energyConsumption: 100
-  forecastWindowDays: 14
-  priority: Critical
+  energyConsumption: 200
+  forecastWindowDays: 3
+  priority: Optional
   applicationRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: nginx-deployment-1
+    name: nginx-deployment-2
     namespace: default

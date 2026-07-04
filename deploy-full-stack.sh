@@ -46,8 +46,14 @@ NAMESPACE="${NAMESPACE:-default}"
 OPERATOR_IMAGE_REPO="${OPERATOR_IMAGE_REPO:-energy-aware-operator}"
 OPERATOR_IMAGE_TAG="${OPERATOR_IMAGE_TAG:-latest}"
 
-SAMPLE_K8S_MANIFEST="$ROOT_DIR/workload/workload_k8s_critical_testing.yaml"
-SAMPLE_EAO_CR="$ROOT_DIR/workload/workload_cr_eao_critical_testing.yaml"
+SAMPLE_K8S_MANIFESTS=(
+    "$ROOT_DIR/workload/workload_k8s_critical_testing.yaml"
+    "$ROOT_DIR/workload/workload_k8s_optional_testing.yaml"
+)
+SAMPLE_EAO_CRS=(
+    "$ROOT_DIR/workload/workload_cr_eao_critical_testing.yaml"
+    "$ROOT_DIR/workload/workload_cr_eao_optional_testing.yaml"
+)
 
 DELETE_CRD="${DELETE_CRD:-false}"
 DELETE_PVC="${DELETE_PVC:-false}"
@@ -283,25 +289,35 @@ deploy_workload() {
         return
     fi
 
-    info "Applying backing workload: $(basename "$SAMPLE_K8S_MANIFEST")..."
-    if kubectl apply -f "$SAMPLE_K8S_MANIFEST" -n "$NAMESPACE"; then
-        info "Backing workload applied ✓"
-    else
-        warn "Failed to apply backing workload — continuing with EAO CR"
-    fi
+    local manifest_failed=0
+    for manifest in "${SAMPLE_K8S_MANIFESTS[@]}"; do
+        info "Applying backing workload: $(basename "$manifest")..."
+        if kubectl apply -f "$manifest" -n "$NAMESPACE"; then
+            info "Backing workload applied ✓"
+        else
+            warn "Failed to apply backing workload — continuing with EAO CR"
+            manifest_failed=1
+        fi
+    done
 
-    info "Applying EAO CR: $(basename "$SAMPLE_EAO_CR")..."
-    if kubectl apply -f "$SAMPLE_EAO_CR" -n "$NAMESPACE"; then
-        DEPLOY_SAMPLE_WORKLOAD_STATUS="OK"
-        info "EAO CR applied ✓"
-        info "Waiting 5s for operator to reconcile..."
-        sleep 5
-        echo ""
-        kubectl get eao -n "$NAMESPACE" 2>/dev/null || true
-    else
-        DEPLOY_SAMPLE_WORKLOAD_STATUS="FAILED"
-        error "Failed to apply EAO CR"
-    fi
+    for cr in "${SAMPLE_EAO_CRS[@]}"; do
+        info "Applying EAO CR: $(basename "$cr")..."
+        if kubectl apply -f "$cr" -n "$NAMESPACE"; then
+            if [ "$manifest_failed" -eq 0 ]; then
+                DEPLOY_SAMPLE_WORKLOAD_STATUS="OK"
+            else
+                DEPLOY_SAMPLE_WORKLOAD_STATUS="FAILED"
+            fi
+            info "EAO CR applied ✓"
+            info "Waiting 5s for operator to reconcile..."
+            sleep 5
+            echo ""
+            kubectl get eao -n "$NAMESPACE" 2>/dev/null || true
+        else
+            DEPLOY_SAMPLE_WORKLOAD_STATUS="FAILED"
+            error "Failed to apply EAO CR"
+        fi
+    done
     divider
 }
 
@@ -312,8 +328,15 @@ cleanup_workload() {
     header "▶  [1/5] Sample Testing Workload — Cleanup"
     divider
 
-    if kubectl delete -f "$SAMPLE_EAO_CR"      -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null && \
-       kubectl delete -f "$SAMPLE_K8S_MANIFEST" -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null; then
+    local failed=0
+    for cr in "${SAMPLE_EAO_CRS[@]}"; do
+        kubectl delete -f "$cr" -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null || failed=1
+    done
+    for manifest in "${SAMPLE_K8S_MANIFESTS[@]}"; do
+        kubectl delete -f "$manifest" -n "$NAMESPACE" --ignore-not-found=true 2>/dev/null || failed=1
+    done
+
+    if [ "$failed" -eq 0 ]; then
         CLEANUP_WORKLOAD_STATUS="OK"
         info "Sample workload cleaned ✓"
     else

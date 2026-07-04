@@ -1,24 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment-1
+  name: nginx-deployment-2
   labels:
-    app: nginx-1
+    app: nginx-2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-1
+      app: nginx-2
   template:
     metadata:
       labels:
-        app: nginx-1
+        app: nginx-2
     spec:
       containers:
-        - name: nginx-1
-          image: nginx:latest
-          ports:
-            - containerPort: 80
+        - name: nginx-2
+          image: nginx:1.25
           resources:
             requests:
               cpu: "50m"
@@ -26,16 +24,18 @@ spec:
             limits:
               cpu: "100m"
               memory: "128Mi"
+          ports:
+            - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-service-1
+  name: nginx-service-2
   labels:
-    app: nginx-1
+    app: nginx-2
 spec:
   selector:
-    app: nginx-1
+    app: nginx-2
   ports:
     - protocol: TCP
       port: 80
