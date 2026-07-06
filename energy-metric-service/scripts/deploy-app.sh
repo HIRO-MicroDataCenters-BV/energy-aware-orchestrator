@@ -19,6 +19,23 @@ RELEASE_NAME="${RELEASE_NAME:-energy-metric}"
 NAMESPACE="${NAMESPACE:-default}"
 BUILD_IMAGE="${BUILD_IMAGE:-true}"
 
+# When rebuilding, tag the image from git content so the Deployment spec
+# actually changes and Kubernetes rolls the pod on its own -- a mutable
+# "latest" tag makes `helm upgrade` a no-op even after the image content
+# changes, leaving the old pod running the stale build. When skipping the
+# build (--no-build), fall back to "latest" since no new tag was produced.
+if [ "$BUILD_IMAGE" = true ]; then
+    _GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+    _GIT_DIRTY_HASH="$(git -C "$PROJECT_ROOT" diff HEAD 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+    if [ -n "$_GIT_DIRTY_HASH" ]; then
+        IMAGE_TAG="${IMAGE_TAG:-${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}}"
+    else
+        IMAGE_TAG="${IMAGE_TAG:-$_GIT_SHA}"
+    fi
+else
+    IMAGE_TAG="${IMAGE_TAG:-latest}"
+fi
+
 usage() {
     cat << EOF
 Deploy Energy Metric Service Application
@@ -78,8 +95,8 @@ if [ "$BUILD_IMAGE" = true ]; then
         eval $(minikube docker-env)
     fi
     
-    docker build -t energy-metric-service:latest .
-    
+    docker build -t energy-metric-service:$IMAGE_TAG -t energy-metric-service:latest .
+
     # Load into minikube if needed
     if command -v minikube &> /dev/null && minikube status &> /dev/null 2>&1; then
         print_info "Image built in minikube environment"
@@ -89,14 +106,15 @@ if [ "$BUILD_IMAGE" = true ]; then
     if kubectl config current-context 2>/dev/null | grep -q "^kind-"; then
         KIND_CLUSTER=$(kubectl config current-context | sed 's/^kind-//')
         print_info "Loading image into kind cluster: $KIND_CLUSTER..."
-        kind load docker-image energy-metric-service:latest --name "$KIND_CLUSTER" || true
+        kind load docker-image energy-metric-service:$IMAGE_TAG --name "$KIND_CLUSTER" || true
     fi
 fi
 
 # Deploy application
-print_info "Deploying application..."
+print_info "Deploying application (image tag: $IMAGE_TAG)..."
 helm upgrade --install "$RELEASE_NAME" "$PROJECT_ROOT/charts/app" \
     --namespace "$NAMESPACE" \
+    --set app.image.tag=$IMAGE_TAG \
     --wait \
     --timeout 5m
 

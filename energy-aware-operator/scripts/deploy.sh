@@ -19,7 +19,18 @@ CHART_PATH="${PROJECT_ROOT}/charts/energy-aware-operator"
 RELEASE_NAME="${RELEASE_NAME:-energy-operator}"
 NAMESPACE="${NAMESPACE:-default}"
 IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-energy-aware-operator}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
+
+# Default to the same content-derived tag build.sh computes, so a separate
+# build.sh + deploy.sh invocation (as deploy-full-stack.sh does) still agree
+# on which image to deploy without passing IMAGE_TAG explicitly.
+_GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+_GIT_DIRTY_HASH="$(git -C "$PROJECT_ROOT" diff HEAD 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+if [ -n "$_GIT_DIRTY_HASH" ]; then
+    _DEFAULT_IMAGE_TAG="${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}"
+else
+    _DEFAULT_IMAGE_TAG="$_GIT_SHA"
+fi
+IMAGE_TAG="${IMAGE_TAG:-$_DEFAULT_IMAGE_TAG}"
 IMAGE_PULL_POLICY="${IMAGE_PULL_POLICY:-IfNotPresent}"
 BUILD_IMAGE="${BUILD_IMAGE:-false}"
 APPLY_CRD="${APPLY_CRD:-true}"
