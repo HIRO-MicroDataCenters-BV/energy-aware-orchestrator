@@ -24,7 +24,7 @@ IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-energy-aware-operator}"
 # build.sh + deploy.sh invocation (as deploy-full-stack.sh does) still agree
 # on which image to deploy without passing IMAGE_TAG explicitly.
 _GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
-_GIT_DIRTY_HASH="$(git -C "$PROJECT_ROOT" diff HEAD 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+_GIT_DIRTY_HASH="$( { git -C "$PROJECT_ROOT" diff HEAD; git -C "$PROJECT_ROOT" status --porcelain; } 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
 if [ -n "$_GIT_DIRTY_HASH" ]; then
     _DEFAULT_IMAGE_TAG="${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}"
 else

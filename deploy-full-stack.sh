@@ -53,7 +53,7 @@ OPERATOR_IMAGE_REPO="${OPERATOR_IMAGE_REPO:-energy-aware-operator}"
 # makes the Deployment spec genuinely different, so Kubernetes rolls pods
 # on its own -- and stays a no-op (no unnecessary restart) when nothing changed.
 _GIT_SHA="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)"
-_GIT_DIRTY_HASH="$(git -C "$ROOT_DIR" diff HEAD 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+_GIT_DIRTY_HASH="$( { git -C "$ROOT_DIR" diff HEAD; git -C "$ROOT_DIR" status --porcelain; } 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
 if [ -n "$_GIT_DIRTY_HASH" ]; then
     _DEFAULT_IMAGE_TAG="${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}"
 else

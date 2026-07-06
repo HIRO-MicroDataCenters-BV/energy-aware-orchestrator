@@ -46,7 +46,7 @@ BUILD_IMAGE="${BUILD_IMAGE:-true}"
 # tag was produced.
 if [ "$BUILD_IMAGE" = true ]; then
     _GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
-    _GIT_DIRTY_HASH="$(git -C "$PROJECT_ROOT" diff HEAD 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+    _GIT_DIRTY_HASH="$( { git -C "$PROJECT_ROOT" diff HEAD; git -C "$PROJECT_ROOT" status --porcelain; } 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
     if [ -n "$_GIT_DIRTY_HASH" ]; then
         IMAGE_TAG="${IMAGE_TAG:-${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}}"
     else
