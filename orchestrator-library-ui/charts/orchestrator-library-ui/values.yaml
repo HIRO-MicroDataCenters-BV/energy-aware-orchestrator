@@ -17,7 +17,7 @@ app:
     tls: true
     tlsSecretName: orchestrator-ui-tls-secret
   env:
-    API_URL: ''
+    API_URL: 'http://energy-metric-service:8000'
   
 
   k8sProxy:

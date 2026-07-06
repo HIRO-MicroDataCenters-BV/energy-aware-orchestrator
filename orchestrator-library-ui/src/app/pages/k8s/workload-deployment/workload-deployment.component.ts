@@ -409,6 +409,7 @@ export class WorkloadDeploymentComponent implements OnInit, OnDestroy {
 
   refreshAllData(): void {
     this.isRefreshing = true;
+    this.checkK8sConnection();
 
     // Create observables for all API calls
     const energyData$ = this.energyService.getEnergyAvailability(100, true, undefined, undefined, undefined, 48).pipe(
