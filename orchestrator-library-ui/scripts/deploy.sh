@@ -37,6 +37,24 @@ NC='\033[0m' # No Color
 RELEASE_NAME="${RELEASE_NAME:-orchestrator-ui}"
 NAMESPACE="${NAMESPACE:-default}"
 BUILD_IMAGE="${BUILD_IMAGE:-true}"
+
+# When rebuilding, tag the image from git content so the Deployment spec
+# actually changes and Kubernetes rolls the pod on its own -- a mutable
+# "latest" tag makes `helm upgrade` a no-op even after the image content
+# changes, leaving the old pod running the stale build (this bit us twice).
+# When skipping the build (--no-build), fall back to "latest" since no new
+# tag was produced.
+if [ "$BUILD_IMAGE" = true ]; then
+    _GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+    _GIT_DIRTY_HASH="$( { git -C "$PROJECT_ROOT" diff HEAD; git -C "$PROJECT_ROOT" status --porcelain; } 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+    if [ -n "$_GIT_DIRTY_HASH" ]; then
+        IMAGE_TAG="${IMAGE_TAG:-${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}}"
+    else
+        IMAGE_TAG="${IMAGE_TAG:-$_GIT_SHA}"
+    fi
+else
+    IMAGE_TAG="${IMAGE_TAG:-latest}"
+fi
 SKIP_PORT_FORWARD="${SKIP_PORT_FORWARD:-false}"
 COMMAND="deploy"
 
@@ -215,7 +233,7 @@ build_image() {
         echo ""
 
         # Build with local Docker first
-        docker build -f Dockerfile.prebuilt -t orchestrator-library-ui:latest .
+        docker build -f Dockerfile.prebuilt -t orchestrator-library-ui:$IMAGE_TAG -t orchestrator-library-ui:latest .
 
         if [ $? -ne 0 ]; then
             print_error "Docker image build failed"
@@ -225,7 +243,7 @@ build_image() {
         # Load into minikube if using minikube
         if [ "$USING_MINIKUBE" = true ]; then
             print_status "Loading image into minikube..."
-            minikube image load orchestrator-library-ui:latest
+            minikube image load orchestrator-library-ui:$IMAGE_TAG
         fi
     else
         echo ""
@@ -241,7 +259,7 @@ build_image() {
             eval $(minikube docker-env)
         fi
 
-        docker build -t orchestrator-library-ui:latest .
+        docker build -t orchestrator-library-ui:$IMAGE_TAG -t orchestrator-library-ui:latest .
 
         if [ $? -ne 0 ]; then
             print_error "Docker image build failed"
@@ -257,7 +275,7 @@ load_image_into_kind() {
     if kubectl config current-context 2>/dev/null | grep -q "^kind-"; then
         KIND_CLUSTER=$(kubectl config current-context | sed 's/^kind-//')
         print_status "Loading image into kind cluster: $KIND_CLUSTER..."
-        kind load docker-image orchestrator-library-ui:latest --name "$KIND_CLUSTER" || true
+        kind load docker-image orchestrator-library-ui:$IMAGE_TAG --name "$KIND_CLUSTER" || true
     fi
 }
 
@@ -272,7 +290,7 @@ deploy_chart() {
     helm upgrade --install "$RELEASE_NAME" . \
         --namespace "$NAMESPACE" \
         --create-namespace \
-        --set app.image.tag=latest \
+        --set app.image.tag=$IMAGE_TAG \
         --set app.image.pullPolicy=IfNotPresent \
         --wait \
         --timeout 10m

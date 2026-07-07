@@ -44,7 +44,22 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 NAMESPACE="${NAMESPACE:-default}"
 OPERATOR_IMAGE_REPO="${OPERATOR_IMAGE_REPO:-energy-aware-operator}"
-OPERATOR_IMAGE_TAG="${OPERATOR_IMAGE_TAG:-latest}"
+
+# Default to a content-derived tag (git commit, plus a hash of any uncommitted
+# diff) instead of "latest". A mutable "latest" tag makes `helm upgrade` a
+# no-op from Kubernetes' point of view even after rebuilding the image, so
+# already-running pods never pick up the new content without a manual
+# `kubectl rollout restart`. A tag that changes whenever the source changes
+# makes the Deployment spec genuinely different, so Kubernetes rolls pods
+# on its own -- and stays a no-op (no unnecessary restart) when nothing changed.
+_GIT_SHA="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+_GIT_DIRTY_HASH="$( { git -C "$ROOT_DIR" diff HEAD; git -C "$ROOT_DIR" status --porcelain; } 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+if [ -n "$_GIT_DIRTY_HASH" ]; then
+    _DEFAULT_IMAGE_TAG="${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}"
+else
+    _DEFAULT_IMAGE_TAG="$_GIT_SHA"
+fi
+OPERATOR_IMAGE_TAG="${OPERATOR_IMAGE_TAG:-$_DEFAULT_IMAGE_TAG}"
 
 SAMPLE_K8S_MANIFESTS=(
     "$ROOT_DIR/workload/workload_k8s_critical_testing.yaml"

@@ -16,7 +16,18 @@ print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-energy-aware-operator}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
+
+# Default to a content-derived tag so rebuilding always produces a tag that
+# changes when the source changes (and stays the same otherwise) -- see
+# deploy-full-stack.sh for the full rationale.
+_GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+_GIT_DIRTY_HASH="$( { git -C "$PROJECT_ROOT" diff HEAD; git -C "$PROJECT_ROOT" status --porcelain; } 2>/dev/null | shasum -a 256 2>/dev/null | cut -c1-8 || true)"
+if [ -n "$_GIT_DIRTY_HASH" ]; then
+    _DEFAULT_IMAGE_TAG="${_GIT_SHA}-dirty-${_GIT_DIRTY_HASH}"
+else
+    _DEFAULT_IMAGE_TAG="$_GIT_SHA"
+fi
+IMAGE_TAG="${IMAGE_TAG:-$_DEFAULT_IMAGE_TAG}"
 USE_MINIKUBE="${USE_MINIKUBE:-auto}"
 GENERATE_CRD="${GENERATE_CRD:-true}"
 PUSH_IMAGE="${PUSH_IMAGE:-false}"
