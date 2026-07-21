@@ -301,6 +301,26 @@ class SimpleSchedulerService:
         )
 
         current_available = current_slot_data["availableEnergyWatts"] if current_slot_data else None
+        is_sufficient = current_available is not None and current_available >= required_energy_watts
+
+        # If the current slot already has sufficient energy, deploy immediately.
+        # (Previously the current slot was always skipped, so Optional workloads
+        # could never reach DeployImmediately even when energy was available now.)
+        if is_sufficient:
+            return {
+                "phase": "Scheduled",
+                "decision": {
+                    "action": "DeployImmediately",
+                    "reason": f"Optional priority - current slot has sufficient energy ({current_available:.0f}W >= {required_energy_watts:.0f}W)",
+                },
+                "energyMetrics": {
+                    "currentSlotAvailableWatts": current_available,
+                    "currentSlotConsumedWatts": None,
+                    "requiredWatts": required_energy_watts,
+                    "sufficient": True,
+                },
+                "lastUpdated": now.isoformat(),
+            }
 
         # Find first future slot with sufficient energy (skip current slot for Optional)
         for slot in energy_slots:
