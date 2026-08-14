@@ -3,7 +3,7 @@ Repository for energy availability data access operations.
 """
 
 from typing import List, Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from sqlalchemy import and_, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -116,26 +116,31 @@ class EnergyAvailabilityRepository:
     async def get_current_availability(
         self,
         provider_name: Optional[str] = None,
-        limit: int = 100
+        limit: int = 100,
+        record_type: str = "supply"
     ) -> List[EnergyAvailability]:
         """
         Get current energy availability (records where current time falls within slot time range).
-        
+
         Args:
             provider_name: Filter by provider name
             limit: Maximum number of records
-            
+            record_type: 'supply' (default) or 'demand'. Defaulting to 'supply' keeps this
+                capacity-sufficiency query from ever summing demand rows in as if they were
+                available capacity.
+
         Returns:
             List of current availability records
         """
         try:
-            now = datetime.utcnow()
-            
+            now = datetime.now(timezone.utc)
+
             query = select(EnergyAvailability).where(
                 and_(
                     EnergyAvailability.slot_start_time <= now,
                     EnergyAvailability.slot_end_time >= now,
-                    EnergyAvailability.is_active == True
+                    EnergyAvailability.is_active == True,
+                    EnergyAvailability.record_type == record_type
                 )
             )
             
@@ -155,29 +160,34 @@ class EnergyAvailabilityRepository:
         self,
         hours_ahead: int = 24,
         provider_name: Optional[str] = None,
-        limit: int = 100
+        limit: int = 100,
+        record_type: str = "supply"
     ) -> List[EnergyAvailability]:
         """
         Get future energy availability within specified hours.
-        
+
         Args:
             hours_ahead: Number of hours to look ahead
             provider_name: Filter by provider name
             limit: Maximum number of records
-            
+            record_type: 'supply' (default) or 'demand'. Defaulting to 'supply' keeps the
+                operator's forecast fetch from ever being handed demand rows as if they were
+                available capacity.
+
         Returns:
             List of future availability records
         """
         try:
-            now = datetime.utcnow()
-            future_time = datetime.utcnow().replace(microsecond=0) + \
+            now = datetime.now(timezone.utc)
+            future_time = now.replace(microsecond=0) + \
                          timedelta(hours=hours_ahead)
-            
+
             query = select(EnergyAvailability).where(
                 and_(
                     EnergyAvailability.slot_start_time >= now,
                     EnergyAvailability.slot_start_time <= future_time,
-                    EnergyAvailability.is_active == True
+                    EnergyAvailability.is_active == True,
+                    EnergyAvailability.record_type == record_type
                 )
             )
             
