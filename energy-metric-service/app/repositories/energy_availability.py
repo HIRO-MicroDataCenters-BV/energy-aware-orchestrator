@@ -4,7 +4,8 @@ Repository for energy availability data access operations.
 
 from typing import List, Optional
 from datetime import datetime, date, timedelta, timezone
-from sqlalchemy import and_, desc, asc
+from sqlalchemy import and_, desc, asc, text, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.energy_availability import EnergyAvailability
@@ -302,11 +303,103 @@ class EnergyAvailabilityRepository:
             availability = await self.get_by_id(availability_id)
             if not availability:
                 return False
-                
+
             availability.is_active = False
             await self.db.commit()
             return True
         except Exception as e:
             logger.error(f"Error deleting energy availability record {availability_id}: {e}")
+            await self.db.rollback()
+            raise
+
+    async def upsert_demand(
+        self,
+        identifier: str,
+        slot_start_time: datetime,
+        slot_end_time: datetime,
+        required_watts: float,
+        forecast_date: date,
+    ) -> EnergyAvailability:
+        """
+        Create or replace the single current demand row for a CR.
+
+        `identifier` is '<namespace>/<name>' of the EAO CR, stored in
+        provider_name. One demand row per identifier - a fresh call always
+        replaces the previous one via the partial unique index on
+        provider_name WHERE record_type = 'demand', matching how the
+        operator only ever reports its single current decision per CR, not
+        an accumulating history. A real upsert (single statement) rather
+        than delete-then-insert, so an unchanged report costs one indexed
+        write instead of two.
+        """
+        try:
+            stmt = pg_insert(EnergyAvailability).values(
+                provider_name=identifier,
+                slot_start_time=slot_start_time,
+                slot_end_time=slot_end_time,
+                available_watts=required_watts,
+                forecast_date=forecast_date,
+                is_active=True,
+                record_type="demand",
+                data_source="real",
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["provider_name"],
+                index_where=text("record_type = 'demand'"),
+                set_={
+                    "slot_start_time": stmt.excluded.slot_start_time,
+                    "slot_end_time": stmt.excluded.slot_end_time,
+                    "available_watts": stmt.excluded.available_watts,
+                    "forecast_date": stmt.excluded.forecast_date,
+                    "is_active": True,
+                },
+            )
+            await self.db.execute(stmt)
+            await self.db.commit()
+
+            # populate_existing forces a fresh read of any already-loaded
+            # instance for this row in the session's identity map. Without
+            # it, a caller reusing this session across multiple upserts for
+            # the same identifier would get back the pre-update object,
+            # since the ON CONFLICT UPDATE above runs as a Core statement
+            # and doesn't go through the ORM's usual expire-on-write path.
+            result = await self.db.execute(
+                select(EnergyAvailability)
+                .where(
+                    EnergyAvailability.provider_name == identifier,
+                    EnergyAvailability.record_type == "demand",
+                )
+                .execution_options(populate_existing=True)
+            )
+            return result.scalar_one()
+        except Exception as e:
+            logger.error(f"Error upserting demand record for {identifier}: {e}")
+            await self.db.rollback()
+            raise
+
+    async def delete_demand(self, identifier: str) -> bool:
+        """Deactivate the demand row for a CR (soft delete, matching delete()).
+
+        Filters on is_active == True too, not just provider_name/record_type -
+        an UPDATE ... SET is_active = False counts a row as affected even when
+        it's already False, since Postgres matches on the WHERE clause alone.
+        Without this, calling delete twice would report success both times
+        instead of the second call correctly finding nothing left to delete.
+        """
+        try:
+            stmt = (
+                update(EnergyAvailability)
+                .where(
+                    EnergyAvailability.provider_name == identifier,
+                    EnergyAvailability.record_type == "demand",
+                    EnergyAvailability.is_active == True,
+                )
+                .values(is_active=False)
+            )
+            result = await self.db.execute(stmt)
+            await self.db.commit()
+            return result.rowcount > 0
+        except Exception as e:
+            logger.error(f"Error deleting demand record for {identifier}: {e}")
             await self.db.rollback()
             raise

@@ -52,6 +52,85 @@ energy_api_client = EnergyAPIClient(api_url=ENERGY_API_URL) if ENERGY_API_URL el
 scheduler_service: SimpleSchedulerService = SimpleSchedulerService(energy_api_client=energy_api_client)
 
 
+async def _report_demand_if_needed(
+    name: str,
+    namespace: str,
+    old_status: Dict[str, Any],
+    schedule_result: Dict[str, Any],
+    patch: kopf.Patch,
+) -> None:
+    """
+    Report the CR's current demand to energy-metric-service, skipping the
+    call when nothing has changed since the last successfully reported
+    demand (see the demandReported field's docstring in app/crd/models.py
+    for why plain content comparison against `status` isn't enough on its
+    own).
+
+    Never raises - a problem here must not prevent the CR's own scheduling
+    decision (already applied to `patch` by the caller) from being
+    persisted.
+    """
+    if not energy_api_client:
+        return
+
+    try:
+        decision = schedule_result.get("decision", {}) or {}
+        action = decision.get("action")
+        energy_metrics = schedule_result.get("energyMetrics", {}) or {}
+        required_watts = energy_metrics.get("requiredWatts")
+        identifier = f"{namespace}/{name}"
+
+        if required_watts is None:
+            return
+
+        if action == "DeployImmediately":
+            # No scheduledSlot for this action, so there's nothing to
+            # compare against - always report, using the current slot
+            # boundary as the window. Bounded, small cost per reconcile;
+            # avoids reinventing window-staleness tracking for the case
+            # most likely to already have sufficient energy right now.
+            slot_start, slot_end = scheduler_service.get_current_slot_window()
+            success = await energy_api_client.report_demand(
+                identifier=identifier,
+                slot_start_time=slot_start.isoformat(),
+                slot_end_time=slot_end.isoformat(),
+                required_watts=float(required_watts),
+            )
+            patch.status["demandReported"] = success
+            return
+
+        scheduled_slot = decision.get("scheduledSlot")
+        if action != "Scheduled" or not scheduled_slot:
+            # Delayed/Waiting/unknown - nothing concrete to report yet
+            return
+
+        old_decision = old_status.get("decision") or {}
+        old_scheduled_slot = old_decision.get("scheduledSlot") or {}
+        old_energy_metrics = old_status.get("energyMetrics") or {}
+
+        unchanged = (
+            old_decision.get("action") == action
+            and old_scheduled_slot.get("slotStart") == scheduled_slot.get("slotStart")
+            and old_scheduled_slot.get("slotEnd") == scheduled_slot.get("slotEnd")
+            and old_energy_metrics.get("requiredWatts") == required_watts
+            and old_status.get("demandReported") is True
+        )
+        if unchanged:
+            logger.debug(f"Demand unchanged for '{identifier}', skipping report")
+            return
+
+        success = await energy_api_client.report_demand(
+            identifier=identifier,
+            slot_start_time=scheduled_slot["slotStart"],
+            slot_end_time=scheduled_slot["slotEnd"],
+            required_watts=float(required_watts),
+        )
+        patch.status["demandReported"] = success
+
+    except Exception as e:
+        logger.warning(f"Demand reporting skipped for '{namespace}/{name}' due to an error: {e}")
+
+
 def _load_kube_config() -> None:
     """
     Load Kubernetes configuration.
@@ -202,6 +281,10 @@ async def reconcile_handler(
             logger.info("Status patch applied")
             logger.info("-" * 80)
 
+            # Report demand to energy-metric-service (best-effort, skips
+            # when unchanged - see _report_demand_if_needed)
+            await _report_demand_if_needed(name, namespace, status, schedule_result, patch)
+
             # Log decision
             logger.info("")
             logger.info("STEP 5: Schedule Decision")
@@ -266,7 +349,7 @@ async def reconcile_handler(
 
 
 @kopf.on.delete(API_GROUP, API_VERSION, PLURAL, optional=True)
-def deletion_handler(
+async def deletion_handler(
     name: str, namespace: str, body: Dict[str, Any], logger: kopf.Logger, **_: Any
 ) -> None:
     """
@@ -296,11 +379,17 @@ def deletion_handler(
     logger.info("Event posted: Deleting")
     logger.info("-" * 80)
 
-    # Add any cleanup logic here (e.g., delete associated deployments)
+    # Deactivate this CR's demand record, if any
     logger.info("")
     logger.info("Performing cleanup")
     logger.info("-" * 80)
-    # TODO: Add cleanup logic here
+    if energy_api_client:
+        identifier = f"{namespace}/{name}"
+        try:
+            await energy_api_client.delete_demand(identifier)
+            logger.info(f"   Demand record cleared for '{identifier}'")
+        except Exception as e:
+            logger.warning(f"   Failed to clear demand record for '{identifier}': {e}")
     logger.info("Cleanup completed")
     logger.info("-" * 80)
 
@@ -382,6 +471,10 @@ async def periodic_reconcile(
             status_handler.apply_status_patch(patch, status_update)
             logger.info("Status updated")
             logger.info("-" * 80)
+
+            # Report demand to energy-metric-service (best-effort, skips
+            # when unchanged - see _report_demand_if_needed)
+            await _report_demand_if_needed(name, namespace, status, schedule_result, patch)
 
             logger.info("")
             logger.info("=" * 80)

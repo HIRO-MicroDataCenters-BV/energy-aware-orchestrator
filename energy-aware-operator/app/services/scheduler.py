@@ -354,6 +354,18 @@ class SimpleSchedulerService:
         logger.warning(f"No slots with sufficient energy found, falling back to time-based scheduling")
         return self._build_optional_result(now, required_energy_watts)
 
+    def get_current_slot_window(self, now: Optional[datetime] = None) -> tuple[datetime, datetime]:
+        """
+        Public helper: start/end of the 6-hour slot `now` currently falls
+        within. Used for demand reporting on DeployImmediately decisions,
+        which - unlike Scheduled - have no scheduledSlot of their own to
+        derive a window from.
+        """
+        if now is None:
+            now = datetime.now(timezone.utc)
+        slot_number = self._get_current_slot_number(now)
+        return self._get_slot_boundaries(now, slot_number)
+
     def _get_current_slot_number(self, dt: datetime) -> int:
         """
         Get the current 6-hour slot number (1-4) for a given datetime.
