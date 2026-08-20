@@ -188,6 +188,9 @@ The script will:
 |---|---|
 | `--grid-stub` / `--no-grid-stub` | Deploy the dev/test mock grid server. Defaults **on** when `--grid-url` isn't given, off when it is |
 | `--grid-url URL` | Point grid polling at a real grid endpoint instead of the mock server |
+| `--disable-metrics-scheduler` | Don't collect Kepler/cAdvisor metrics into `node_metrics`/`container_power_metrics`. Defaults **on** (feeds demand resolution tiers 1-2 — see [energy-metric-service/README.md](energy-metric-service/README.md#-container-metrics-collection)) |
+| `--prometheus-url URL` | Override where metrics collection reads from Prometheus (default: auto-derived from `--monitoring-release`) |
+| `--monitoring-release NAME` | Helm release name for the monitoring stack (default: `energy-metrics`) |
 | `-n, --namespace NS` | Kubernetes namespace (default: `default`) |
 
 ```bash

@@ -38,8 +38,8 @@ energy-metric-service/
 
 ## 🚀 Features
 
-- **Energy Metrics Collection:** Fetches energy data from Kepler via Prometheus
-- **Resource Monitoring:** Tracks CPU and memory utilization
+- **Energy Metrics Collection:** Fetches per-node and per-container energy data from Kepler + cAdvisor via Prometheus (see [Container Metrics Collection](#-container-metrics-collection))
+- **Resource Monitoring:** Tracks CPU and memory utilization, per node and per container
 - **Grid Capacity Polling:** Periodically polls an external grid API for live supply data (see [Grid Integration](#-grid-integration))
 - **Supply Forecasting:** Predicts future supply for slots beyond what live polling has reached (see [Supply Forecasting](#-supply-forecasting-predictions)) — currently a dummy averaging model, not yet a trained ML model (see [Known Limitations](#-known-limitations--next-steps))
 - **Demand Reporting:** Tracks each workload's currently required watts, reported by `energy-aware-operator` (see [Demand Reporting](#-demand-reporting))
@@ -111,6 +111,9 @@ From the `energy-metric-service/` directory:
   - `--no-build` — skip Docker image build
   - `--grid-stub` — also deploy the dev/test mock grid server and point `GRID_API_URL` at it (see [Grid Integration](#-grid-integration))
   - `--grid-url URL` — point `GRID_API_URL` at a real grid endpoint instead
+  - `--enable-metrics-scheduler` — turn on Kepler/cAdvisor metrics collection (see [Container Metrics Collection](#-container-metrics-collection)); requires the monitoring stack deployed
+  - `--prometheus-url URL` — override `PROMETHEUS_BASE_URL` (default: auto-derived)
+  - `--monitoring-release NAME` — Helm release name the monitoring stack was installed under (default: `energy-metrics`)
 
 ---
 
@@ -178,7 +181,8 @@ Environment variables under `app.env`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ENABLE_METRICS_SCHEDULER` | `false` | Periodic Prometheus/Kepler metrics collection |
+| `ENABLE_METRICS_SCHEDULER` | `false` | Periodic Kepler/cAdvisor metrics collection into `node_metrics` and `container_power_metrics` (see [Container Metrics Collection](#-container-metrics-collection)). Defaults **on** in `deploy-full-stack.sh`'s `deploy` command (`--disable-metrics-scheduler` to opt out); this chart-level default stays `false` for direct/manual installs |
+| `PROMETHEUS_BASE_URL` | `""` | Where `ENABLE_METRICS_SCHEDULER` reads from. Empty = auto-derive `http://<monitoring.releaseName>-prometheus-server:80/api/v1` |
 | `ENABLE_DEPLOYMENT_SCHEDULER` | `true` | Legacy deployment-request processor (largely superseded by `energy-aware-operator`) |
 | `ENABLE_GRID_POLLING` | `true` | Whether `GridPollingScheduler` runs at all |
 | `GRID_API_URL` | `""` | Where to poll for grid capacity. Empty = poller stays dormant, unless `gridStub.enabled=true` auto-points it at the dev stub |
@@ -194,6 +198,7 @@ Top-level chart values:
 | Value | Default | Purpose |
 |---|---|---|
 | `gridStub.enabled` | `false` | Deploy the dev/test mock grid server (see [Grid Integration](#-grid-integration)) |
+| `monitoring.releaseName` | `energy-metrics` | Helm release name `energy-monitoring-helm-stack` was installed under - only used to auto-derive `PROMETHEUS_BASE_URL` |
 
 ---
 
@@ -284,6 +289,21 @@ This is **dev/test only** — never intended for production use.
 
 ---
 
+## 📊 Container Metrics Collection
+
+When `ENABLE_METRICS_SCHEDULER=true`, `MetricCollectorScheduler` (`app/scheduler/metric_collector_scheduler.py`) runs two independent, isolated collectors on every cycle (default 30s):
+
+- **Node-level** (`PrometheusMetricsService`) — Kepler + node-exporter data per cluster node, stored in `node_metrics`. Powers the `/api/metrics/nodes/` dashboard endpoint.
+- **Container-level** (`PrometheusContainerMetricsService`, `app/servicesv2/prometheus_container_metrics_service.py`) — Kepler + cAdvisor data per `(pod_name, namespace, container_name)`, stored in `container_power_metrics`. This is what feeds demand resolution tiers 1-2 (see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated) below).
+
+**Both query through Prometheus's PromQL API, not the Kepler/cAdvisor DaemonSets directly.** Scraping a DaemonSet's own `:9102`/`:8080` endpoint via its Kubernetes Service only ever reaches one arbitrarily-chosen node's pod - fine for cluster-wide aggregates, useless for correlating a specific pod to its own energy use. Prometheus already scrapes every DaemonSet pod on every node, so querying it gives full cluster coverage in one call.
+
+cAdvisor utilization specifically reads `job="kubernetes-nodes-cadvisor"` (the built-in kubelet-proxied scrape, via the API server), **not** the custom `job="cadvisor"` in `energy-monitoring-helm-stack`'s scrape config. The kubelet proxy enriches results with clean `pod`/`namespace`/`container` labels; the DaemonSet's own `:8080/metrics` only exposes raw cgroup paths (e.g. `/kubelet.slice/.../pod<uid>.slice/...`), which would need manual pod-UID correlation to be useful.
+
+**Utilization convention** (matches the existing node-level query in `PrometheusMetricsService`, and what `energy_forecasting_model.pkl` was trained on): `cpu_utilization_percent` is *cores actively used × 100*, not normalized to a CPU limit - a container fully using 2 cores reports `200`, not a limit-relative percentage. `memory_utilization_percent` **is** normalized, `usage_bytes / container_spec_memory_limit_bytes × 100`.
+
+---
+
 ## 📨 Demand Reporting
 
 `energy-aware-operator` reports each EAO custom resource's currently-decided energy demand here, once per reconcile:
@@ -303,7 +323,7 @@ This mirrors the real-over-predicted precedence already used for supply (see [Su
 
 The resolved value round-trips back to the operator, which surfaces it on the CR as `status.energyMetrics.measuredWatts` (informational only — `status.energyMetrics.requiredWatts` remains the number the scheduling decision was actually based on).
 
-**Note:** tiers 1–2 depend on `container_power_metrics` actually being populated, which requires `ENABLE_METRICS_SCHEDULER=true` (defaults to `false` in this chart). With it off, every demand report resolves to the fallback tier — confirmed working, but tiers 1–2 are not yet live-verified against real Kepler data (see [Known Limitations](#-known-limitations--next-steps)).
+**All three tiers are live-verified** against a real cluster (Kepler + cAdvisor via Prometheus, see [Container Metrics Collection](#-container-metrics-collection)). Tiers 1-2 require `ENABLE_METRICS_SCHEDULER=true` and the monitoring stack deployed; with it off, every demand report resolves to the fallback tier (tier 3) instead - still correct, just less precise. `0W` is a legitimate measured value for an idle container, not a sign anything is broken.
 
 ---
 
@@ -413,8 +433,8 @@ kubectl delete pvc -n <namespace> -l app=eao-postgres
 ## ⚠️ Known Limitations & Next Steps
 
 - **Supply forecasting uses a dummy model, not real ML.** `PredictionService` currently just averages historical real supply per slot-of-day bucket — it's a deliberate placeholder with a clean swap interface (see [How to Swap in a Real ML Model](#how-to-swap-in-a-real-ml-model)), not a trained model. **Making this a real model is the next planned step.**
-- **Demand resolution tiers 1–2 (measured/predicted) are not yet live-verified.** They depend on `container_power_metrics` being populated, which needs `ENABLE_METRICS_SCHEDULER=true` (default `false`). Only the fallback tier has been confirmed against a real deployment so far — measured and ML-predicted tiers are implemented but still pending a live test with metrics collection turned on.
 - **Single-replica migrations.** See [Database Migrations](#-database-migrations) — needs a Helm hook Job if `replicaCount` is ever raised.
+- **The custom `cadvisor` scrape job in `energy-monitoring-helm-stack` is unused.** Container metrics collection reads cAdvisor data via the built-in `job="kubernetes-nodes-cadvisor"` instead (see [Container Metrics Collection](#-container-metrics-collection)) since it carries clean pod/namespace/container labels the DaemonSet's own raw scrape doesn't. The custom job is otherwise harmless but redundant - a candidate for removal.
 
 ---
 

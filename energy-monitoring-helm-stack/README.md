@@ -64,11 +64,13 @@ cd energy-monitoring-helm-stack
 # 2. Update dependencies
 helm dependency update
 
-# 3. Install the chart
-helm upgrade --install energy-metrics . --namespace energy-metrics --create-namespace
+# 3. Install the chart - "energy-metrics" below is the Helm RELEASE name,
+#    not the namespace. Deploy into the same namespace as the rest of this
+#    repo's stack (default: "default") - see the note under Configuration.
+helm upgrade --install energy-metrics . --namespace default
 
 # 4. Wait for all pods to be ready
-kubectl get pods -n energy-metrics
+kubectl get pods -n default
 ```
 Alternatively, you can use the provided scripts for cleanup and deployment:
 
@@ -189,12 +191,14 @@ kepler:
     tag: "release-0.8.0"
   resources:
     requests:
-      memory: "64Mi"
+      memory: "128Mi"
       cpu: "250m"
     limits:
-      memory: "128Mi"
+      memory: "512Mi"
       cpu: "500m"
 ```
+
+> **Namespace gotcha:** `prometheus.extraScrapeConfigs` in `values.yaml` hardcodes the namespace its `kepler`/`cadvisor`/`node-exporter` scrape jobs look for pods in (currently `default`, matching this repo's deploy convention). This is the **Kubernetes namespace**, not the Helm release/chart name (`energy-metrics`) — confusing the two silently breaks all three scrape jobs (zero targets discovered, no error). If you deploy this chart into a different namespace, update `prometheus.extraScrapeConfigs` to match.
 
 ## 🔧 Troubleshooting
 
@@ -202,14 +206,17 @@ kepler:
 
 #### 1. **No Metrics in Grafana**
 ```bash
-# Check if Prometheus is scraping Kepler
-kubectl get service energy-metrics-kepler -n energy-metrics -o yaml | grep prometheus.io
+# Check Prometheus actually has kepler/cadvisor/node-exporter as active,
+# healthy scrape targets - this is the most direct check and will catch a
+# namespace mismatch in extraScrapeConfigs (see Configuration note above),
+# which fails silently otherwise (no error, just zero targets)
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.scrapePool | test("kepler|cadvisor|node-exporter")) | {scrapePool, health}'
 
 # Verify Kepler is running
-kubectl get pods -n energy-metrics -l app.kubernetes.io/name=kepler
+kubectl get pods -n default -l app.kubernetes.io/name=kepler
 
 # Check Kepler logs
-kubectl logs -n energy-metrics -l app.kubernetes.io/name=kepler
+kubectl logs -n default -l app.kubernetes.io/name=kepler
 ```
 
 #### 2. **Port Forwarding Issues**
@@ -218,8 +225,8 @@ kubectl logs -n energy-metrics -l app.kubernetes.io/name=kepler
 pkill -f "kubectl port-forward"
 
 # Restart port forwarding
-kubectl port-forward -n energy-metrics svc/energy-metrics-grafana 3000:80 &
-kubectl port-forward -n energy-metrics svc/energy-metrics-prometheus-server 9090:80 &
+kubectl port-forward -n default svc/energy-metrics-grafana 3000:80 &
+kubectl port-forward -n default svc/energy-metrics-prometheus-server 9090:80 &
 ```
 
 #### 3. **Kepler Image Pull Issues**
@@ -233,7 +240,7 @@ docker manifest inspect quay.io/sustainable_computing_io/kepler:release-0.8.0
 ### Health Checks
 ```bash
 # Check all components
-kubectl get pods -n energy-metrics
+kubectl get pods -n default
 
 # Test Kepler metrics
 curl -s http://localhost:9102/metrics | grep kepler_container_joules_total
@@ -269,22 +276,24 @@ The main dashboard includes:
 
 ## 🔄 Updating the Deployment
 
+> **If your change only touched a ConfigMap-backed value** (e.g. `prometheus.extraScrapeConfigs`, Grafana dashboards/datasources), `helm upgrade` updates the ConfigMap but does **not** restart the pod that mounts it - this chart has no checksum annotation to trigger that automatically. Follow up with a manual restart of the affected deployment, e.g. `kubectl rollout restart deployment/energy-metrics-prometheus-server -n default`, or the old config keeps running until the pod restarts for some other reason.
+
 ```bash
 # Update dependencies
 helm dependency update
 
 # Upgrade deployment
-helm upgrade energy-metrics . -n energy-metrics
+helm upgrade energy-metrics . -n default
 
 # Rollback if needed
-helm rollback energy-metrics -n energy-metrics
+helm rollback energy-metrics -n default
 ```
 
 ## 🗑️ Cleanup
 
 ```bash
 # Uninstall the chart
-helm uninstall energy-metrics -n energy-metrics
+helm uninstall energy-metrics -n default
 
 # Delete namespace
 kubectl delete namespace energy-metrics
