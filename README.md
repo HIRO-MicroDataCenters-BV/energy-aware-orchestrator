@@ -34,31 +34,77 @@ A Kubernetes platform that schedules workloads based on real-time and forecasted
 
 ### Data flow
 
+The full loop, from raw hardware counters to a scheduling decision and back, in four stages: **generate → collect/store → predict → decide/report**.
+
+Split into five small, mostly-linear diagrams — one per stage — so no edge has to cross behind an unrelated box. Each stage's output feeds the next.
+
+**① Generate → Collect (energy-monitoring-helm-stack → energy-metric-service, every 30s)**
+
+```mermaid
+flowchart TD
+    Kepler["Kepler DaemonSet<br/>power / joules"] --> Prom
+    CAdvisor["cAdvisor (kubelet-proxied)<br/>cpu / mem usage"] --> Prom
+    NodeExp["node-exporter DaemonSet"] --> Prom
+    Prom[("Prometheus TSDB<br/>scrapes every node")] --> MCS
+    MCS["MetricCollectorScheduler<br/>PromQL · every 30s"] --> NodeMetrics[("node_metrics<br/>node-level")]
+    MCS --> ContainerMetrics[("container_power_metrics<br/>per pod / container / namespace")]
 ```
-Node hardware                    External grid API
-    │  (eBPF / RAPL / ACPI)          │  (or dev/test mock server)
-    ▼                                ▼
-Kepler ──▶ Prometheus         GridPollingScheduler (real supply)
-    │                                │
-    ▼                                ▼
-energy-metric-service  ──────▶  energy_availability  ◀──  ForecastingScheduler
-    │                          (real + predicted supply,     (fills gaps beyond
-    │                           demand, in one table)          real polling)
-    │                                │
-    │  measured/predicted            ▼
-    │  demand resolution   energy-aware-operator
-    │  (Kepler ▸ ML ▸ spec       (scheduling decisions;
-    │   estimate, most           real supply always preferred
-    │   accurate first)          over predicted, per slot)
-    │                                │
-    │                                ▼
-    │                    EAO CR status updated
-    │                    (DeployImmediately / Scheduled)
-    │                                │
-    │                                ▼
-    └──────────────────  demand reported back
-                          (POST /api/energy-availability/demand)
+
+**② Supply: real + predicted (feeds `energy_availability`)**
+
+```mermaid
+flowchart TD
+    Grid["External grid API<br/>(or dev/test mock)"] --> GridSched["GridPollingScheduler<br/>real supply · every 5 min"]
+    GridSched --> EA[("energy_availability<br/>supply: real + predicted<br/>demand: 1 row per workload")]
+    EA -->|14d real history| ForecastSched["ForecastingScheduler<br/>predicted supply · every 30 min<br/>(PredictionService)"]
+    ForecastSched -->|predicted rows,<br/>never overwrites real| EA
 ```
+
+**③ Resolve demand: measured ▸ predicted ▸ fallback (uses `container_power_metrics` from stage ①)**
+
+```mermaid
+flowchart TD
+    ContainerMetrics[("container_power_metrics")] -->|tier 1: measured watts| Resolve{{"resolve_demand_watts()"}}
+    ContainerMetrics -->|tier 2 input:<br/>live utilization| EFS["EnergyForecastingService<br/>.pkl model"]
+    EFS -->|tier 2: predicted watts| Resolve
+    DemandReport["tier 3 input:<br/>POST /demand's required_watts"] -->|tier 3: fallback watts| Resolve
+```
+
+**④ Decide & report (energy-aware-operator, reads/writes `energy_availability` from stage ②)**
+
+```mermaid
+flowchart TD
+    EA[("energy_availability")] -->|GET /future/forecast| Reconcile["Reconcile EAO CR:<br/>required vs available watts"]
+    Reconcile --> CRStatus["CR status updated<br/>phase / action / requiredWatts"]
+    Reconcile --> DemandReport["POST /demand<br/>identifier, required_watts"]
+    DemandReport -->|resolved via stage ③| Resolve["resolve_demand_watts()"]
+    Resolve -->|demand row upserted| EA
+    EA -->|measuredWatts| CRStatus
+```
+
+**⑤ Retention (energy-metric-service, hourly — trims the append-only tables from stage ①)**
+
+```mermaid
+flowchart LR
+    Retention["MetricsRetentionScheduler<br/>hourly · deletes rows > 30d"] -->|trims| NodeMetrics[("node_metrics")]
+    Retention -->|trims| ContainerMetrics[("container_power_metrics")]
+```
+
+**Components involved, generation to decision:**
+
+- **Kepler / cAdvisor / node-exporter** — DaemonSets in `energy-monitoring-helm-stack`; the only place raw power (joules) and CPU/memory usage are actually generated. Never scraped directly by `energy-metric-service` — always through Prometheus, since a DaemonSet's own Service only ever reaches one arbitrary node's pod.
+- **Prometheus** — central TSDB scraping all three sources on every node. `energy-metric-service` is a PromQL *client* of it, not a scrape target itself.
+- **`MetricCollectorScheduler`** (every 30s, `ENABLE_METRICS_SCHEDULER`) — runs two independent collectors each cycle: `PrometheusMetricsService` (node-level → `node_metrics`) and `PrometheusContainerMetricsService` (per pod/container, every namespace → `container_power_metrics`).
+- **`node_metrics`** — node-level power + utilization time series. Feeds the node dashboard endpoint and was the training data for `energy_forecasting_model.pkl`.
+- **`container_power_metrics`** — per-`(pod, namespace, container)` power + utilization time series, collected cluster-wide (not namespace-scoped) so any EAO CR's `applicationRef` can be matched at query time. The only input to demand tiers 1-2.
+- **`GridPollingScheduler`** (every 5 min) — polls the real external grid API (or the dev/test mock) for live capacity, writes it as *real* supply rows.
+- **`ForecastingScheduler`** (every 30 min) — fills future slots beyond what real polling has reached, via `PredictionService` (today: a simple 6-hour-bucket historical average; the real-ML swap point is a single function and is documented but not yet implemented). Writes *predicted* supply rows, never overwriting a real one for the same slot.
+- **`energy_availability`** — single table holding both supply (`record_type=supply`, `data_source=real|predicted`) and demand (`record_type=demand`, one upserted row per workload identifier). Real supply always wins over predicted for the same slot at query time.
+- **`energy-aware-operator`** — separate repo/process. On every `EnergyAwareOrchestration` CR reconcile: fetches the supply forecast, compares `required_watts` against `available_watts` to decide `Scheduled`/`DeployImmediately`/deferred, writes the CR's status, then reports the workload's resolved demand back.
+- **`resolve_demand_watts()`** — resolves what actually gets stored/reported for demand, most accurate first: measured (real Kepler wattage) → predicted (`EnergyForecastingService`'s trained model from live utilization) → fallback (the CR's static estimate, used pre-deployment or on a total data gap). Never raises — always falls through to a safe value.
+- **`MetricsRetentionScheduler`** (hourly) — the only piece that deletes anything; trims `node_metrics`/`container_power_metrics` past `METRICS_RETENTION_DAYS` (30d default) so Postgres storage doesn't grow unbounded. `energy_availability` doesn't need it since rows are upserted, not appended per cycle.
+
+The loop closes because each operator reconcile both *reads* `energy_availability` (kept fresh by the four schedulers above) and *writes* back into it (the demand report) — the next reconcile sees the workload's own prior report as part of current state.
 
 ---
 
