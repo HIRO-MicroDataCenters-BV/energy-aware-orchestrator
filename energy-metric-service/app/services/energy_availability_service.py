@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.energy_availability import EnergyAvailabilityRepository
-from app.servicesv2.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
+from app.services.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
 
 logger = logging.getLogger(__name__)
 

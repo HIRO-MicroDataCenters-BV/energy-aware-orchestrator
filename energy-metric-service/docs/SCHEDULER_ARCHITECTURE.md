@@ -1,5 +1,13 @@
 # Energy-Aware Orchestration Scheduler Architecture
 
+> ⚠️ **Outdated.** This document describes an earlier architecture where the
+> Kopf operator and scheduling logic lived inside `energy-metric-service`
+> itself (`app/crd/operator.py`, `app/servicesv2/eao_scheduler_service.py`
+> below). Both have since moved to their own repo, `energy-aware-operator`
+> (see its README) - `eao_scheduler_service.py` no longer exists in this
+> repo. Kept here for historical context, not as a guide to the current
+> system.
+
 ## Overview
 
 The Energy-Aware Orchestration (EAO) system provides intelligent workload scheduling based on energy availability and workload priority. 

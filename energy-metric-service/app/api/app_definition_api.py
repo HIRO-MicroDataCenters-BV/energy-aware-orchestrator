@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.db.database import get_async_db
-from app.servicesv2.workload_definition_service import ApplicationDefinitionService
+from app.services.workload_definition_service import ApplicationDefinitionService
 from app.models.ApplicationDeployment import WorkloadType, DeploymentType
 from app.models.app_definition_models import (
     AppDefinitionCreate,

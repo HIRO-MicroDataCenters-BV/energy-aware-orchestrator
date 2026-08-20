@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime
 
 from app.models.ApplicationDeployment import ApplicationDeployment
-from app.servicesv2.deployment.deployment_service import DeploymentStatus
+from app.services.deployment.deployment_service import DeploymentStatus
 
 
 class ApplicationDeploymentRepository:

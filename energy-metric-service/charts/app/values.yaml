@@ -56,6 +56,14 @@ app:
     ENABLE_FORECASTING: "true"
     FORECASTING_INTERVAL_SECONDS: "1800"
 
+    # Deletes rows older than METRICS_RETENTION_DAYS from node_metrics and
+    # container_power_metrics - both grow unbounded otherwise (a fresh row
+    # every metrics-collection cycle, nothing else ever removes one). On by
+    # default - this is a safety/hygiene concern, not an optional feature.
+    ENABLE_METRICS_RETENTION: "true"
+    METRICS_RETENTION_DAYS: "30"
+    METRICS_RETENTION_INTERVAL_SECONDS: "3600"
+
   # Resource limits
   resources:
     limits:

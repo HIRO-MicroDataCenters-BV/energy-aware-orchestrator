@@ -4,7 +4,7 @@ Repository for node metrics data operations.
 
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy import desc, func
+from sqlalchemy import delete, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.node_metrics import NodeMetrics
@@ -41,6 +41,13 @@ class NodeMetricsRepository:
         await self.session.refresh(db_metric)
         return db_metric
     
+    async def delete_older_than(self, cutoff_timestamp: int) -> int:
+        """Delete rows with timestamp (Unix epoch seconds) older than cutoff_timestamp."""
+        stmt = delete(NodeMetrics).where(NodeMetrics.timestamp < cutoff_timestamp)
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.rowcount
+
     async def get_all(
         self,
         node_name: Optional[str] = None,

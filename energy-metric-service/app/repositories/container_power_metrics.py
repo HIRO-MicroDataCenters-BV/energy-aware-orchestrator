@@ -103,6 +103,13 @@ class ContainerPowerMetricsRepository:
         await self.db.commit()
         return result.rowcount > 0
 
+    async def delete_older_than(self, cutoff: datetime) -> int:
+        """Delete rows with timestamp (naive UTC) older than cutoff."""
+        stmt = delete(ContainerPowerMetrics).where(ContainerPowerMetrics.timestamp < cutoff)
+        result = await self.db.execute(stmt)
+        await self.db.commit()
+        return result.rowcount
+
     async def get_by_container_name(self, container_name: str, skip: int = 0, limit: int = 100) -> List[ContainerPowerMetrics]:
         query = (
             select(ContainerPowerMetrics)

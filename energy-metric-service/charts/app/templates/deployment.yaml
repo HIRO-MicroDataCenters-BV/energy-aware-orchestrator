@@ -63,6 +63,14 @@ spec:
             - name: FORECASTING_INTERVAL_SECONDS
               value: "{{ .Values.app.env.FORECASTING_INTERVAL_SECONDS }}"
 
+            # Metrics retention cleanup.
+            - name: ENABLE_METRICS_RETENTION
+              value: "{{ .Values.app.env.ENABLE_METRICS_RETENTION }}"
+            - name: METRICS_RETENTION_DAYS
+              value: "{{ .Values.app.env.METRICS_RETENTION_DAYS }}"
+            - name: METRICS_RETENTION_INTERVAL_SECONDS
+              value: "{{ .Values.app.env.METRICS_RETENTION_INTERVAL_SECONDS }}"
+
             - name: LOG_LEVEL
               value: "{{ .Values.app.env.LOG_LEVEL }}"
             - name: USE_KUBECTL_PROXY

@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_async_db
 from app.repositories.node_power_metrics import NodePowerMetricsRepository
-from app.servicesv2.prometheus_metrics_service import PrometheusMetricsService
-from app.servicesv2.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
+from app.services.prometheus_metrics_service import PrometheusMetricsService
+from app.services.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
 from app.services.energy_forecasting_service import EnergyForecastingService
 from app.utils.constants import PROMETHEUS_METRICS_URL
 import logging

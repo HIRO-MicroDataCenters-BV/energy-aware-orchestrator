@@ -1,6 +1,6 @@
 import asyncio
-from app.servicesv2.prometheus_metrics_service import PrometheusMetricsService
-from app.servicesv2.prometheus_container_metrics_service import PrometheusContainerMetricsService
+from app.services.prometheus_metrics_service import PrometheusMetricsService
+from app.services.prometheus_container_metrics_service import PrometheusContainerMetricsService
 import logging
 
 

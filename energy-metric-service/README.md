@@ -15,8 +15,7 @@ energy-metric-service/
 │   ├── repositories/       # Data access logic
 │   ├── scheduler/          # Background schedulers (metrics, deployment, grid polling, forecasting)
 │   ├── schemas/            # Pydantic schemas
-│   ├── services/           # Metrics, prediction, and integration logic (grid client, prediction service)
-│   ├── servicesv2/         # Newer service implementations
+│   ├── services/           # Metrics, prediction, deployment, and integration logic
 │   └── utils/               # Utilities and helpers
 ├── charts/
 │   ├── app/                # Helm chart for FastAPI app (incl. dev/test grid stub)
@@ -189,6 +188,9 @@ Environment variables under `app.env`:
 | `GRID_POLL_INTERVAL_SECONDS` | `300` | Grid polling interval |
 | `ENABLE_FORECASTING` | `true` | Whether `ForecastingScheduler` runs at all (in-process, no URL needed) |
 | `FORECASTING_INTERVAL_SECONDS` | `1800` | Supply prediction refresh interval |
+| `ENABLE_METRICS_RETENTION` | `true` | Whether `MetricsRetentionScheduler` deletes old `node_metrics`/`container_power_metrics` rows (see [Metrics Retention](#-metrics-retention)) |
+| `METRICS_RETENTION_DAYS` | `30` | How old a row must be before it's deleted |
+| `METRICS_RETENTION_INTERVAL_SECONDS` | `3600` | How often the cleanup runs |
 | `LOG_LEVEL` | `INFO` | App log level |
 | `KUBERNETES_NAMESPACE` | *(release namespace)* | Namespace the app operates against |
 | `USE_KUBECTL_PROXY` | `false` | Use `kubectl proxy` instead of in-cluster ServiceAccount auth |
@@ -294,13 +296,29 @@ This is **dev/test only** — never intended for production use.
 When `ENABLE_METRICS_SCHEDULER=true`, `MetricCollectorScheduler` (`app/scheduler/metric_collector_scheduler.py`) runs two independent, isolated collectors on every cycle (default 30s):
 
 - **Node-level** (`PrometheusMetricsService`) — Kepler + node-exporter data per cluster node, stored in `node_metrics`. Powers the `/api/metrics/nodes/` dashboard endpoint.
-- **Container-level** (`PrometheusContainerMetricsService`, `app/servicesv2/prometheus_container_metrics_service.py`) — Kepler + cAdvisor data per `(pod_name, namespace, container_name)`, stored in `container_power_metrics`. This is what feeds demand resolution tiers 1-2 (see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated) below).
+- **Container-level** (`PrometheusContainerMetricsService`, `app/services/prometheus_container_metrics_service.py`) — Kepler + cAdvisor data per `(pod_name, namespace, container_name)`, stored in `container_power_metrics`. This is what feeds demand resolution tiers 1-2 (see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated) below).
 
 **Both query through Prometheus's PromQL API, not the Kepler/cAdvisor DaemonSets directly.** Scraping a DaemonSet's own `:9102`/`:8080` endpoint via its Kubernetes Service only ever reaches one arbitrarily-chosen node's pod - fine for cluster-wide aggregates, useless for correlating a specific pod to its own energy use. Prometheus already scrapes every DaemonSet pod on every node, so querying it gives full cluster coverage in one call.
 
 cAdvisor utilization specifically reads `job="kubernetes-nodes-cadvisor"` (the built-in kubelet-proxied scrape, via the API server), **not** the custom `job="cadvisor"` in `energy-monitoring-helm-stack`'s scrape config. The kubelet proxy enriches results with clean `pod`/`namespace`/`container` labels; the DaemonSet's own `:8080/metrics` only exposes raw cgroup paths (e.g. `/kubelet.slice/.../pod<uid>.slice/...`), which would need manual pod-UID correlation to be useful.
 
 **Utilization convention** (matches the existing node-level query in `PrometheusMetricsService`, and what `energy_forecasting_model.pkl` was trained on): `cpu_utilization_percent` is *cores actively used × 100*, not normalized to a CPU limit - a container fully using 2 cores reports `200`, not a limit-relative percentage. `memory_utilization_percent` **is** normalized, `usage_bytes / container_spec_memory_limit_bytes × 100`.
+
+**Collects across every namespace, not just where this app runs.** None of the PromQL queries filter by namespace - it's a `by (...)` grouping key, not a filter - so `container_power_metrics` ends up with rows for every pod on the cluster. This is intentional: an EAO CR's `applicationRef` can point at any namespace, and `resolve_demand_watts()` filters by `(application_name, namespace)` at query time, per CR. Collection has to be namespace-agnostic upfront for that per-CR filtering to have anything to find.
+
+---
+
+## 🧹 Metrics Retention
+
+`node_metrics` and `container_power_metrics` both accumulate a fresh row every `MetricCollectorScheduler` cycle (30s default) with no upsert - nothing else ever removes a row. Confirmed live: `container_power_metrics` alone reaches roughly **141K rows/day** at default settings. `MetricsRetentionScheduler` (`app/scheduler/metrics_retention_scheduler.py`) runs on its own interval and deletes rows older than `METRICS_RETENTION_DAYS`, on by default since it's a hygiene concern rather than an optional feature.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ENABLE_METRICS_RETENTION` | `true` | Whether the cleanup loop runs at all |
+| `METRICS_RETENTION_DAYS` | `30` | How old a row must be before it's deleted |
+| `METRICS_RETENTION_INTERVAL_SECONDS` | `3600` | How often the cleanup runs |
+
+Only these two tables are covered - `energy_availability` (supply/demand) doesn't need it: demand rows are upserted in place (one row per identifier, see [Demand Reporting](#-demand-reporting)) and supply rows are upserted per `(provider, slot, data_source)`, so neither accumulates unboundedly the way a per-cycle metrics scrape does.
 
 ---
 

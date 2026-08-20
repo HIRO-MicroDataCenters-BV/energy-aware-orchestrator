@@ -17,7 +17,7 @@ from app.models.app_deployment_models import (
     ApplicationDeploymentResponse,
     build_deployment_response
 )
-from app.servicesv2.deployment.deployment_service import DeploymentHelperService
+from app.services.deployment.deployment_service import DeploymentHelperService
 from app.repositories.application_deployment_repository import ApplicationDeploymentRepository
 from app.repositories.application_definition_repository import ApplicationDefinitionRepository
 from app.db.database import get_async_db

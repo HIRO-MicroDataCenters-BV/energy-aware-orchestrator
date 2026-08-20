@@ -20,6 +20,7 @@ from app.scheduler.metric_collector_scheduler import MetricCollectorScheduler
 from app.scheduler.deployment_scheduler import DeploymentScheduler
 from app.scheduler.grid_polling_scheduler import GridPollingScheduler
 from app.scheduler.forecasting_scheduler import ForecastingScheduler
+from app.scheduler.metrics_retention_scheduler import MetricsRetentionScheduler
 from app.services.energy_forecasting_service import EnergyForecastingService
 
 from app.utils.exception_handlers import init_exception_handlers
@@ -61,6 +62,17 @@ if os.environ.get("ENABLE_FORECASTING", "true").lower() == "true":
         interval_seconds=int(os.environ.get("FORECASTING_INTERVAL_SECONDS", "1800")),
     )
 
+# Deletes old rows from node_metrics/container_power_metrics - both grow
+# unbounded otherwise, a fresh row every metrics-collection cycle with
+# nothing to ever remove one. Defaults on since it's a safety/hygiene
+# concern, not an optional feature.
+metrics_retention_scheduler = None
+if os.environ.get("ENABLE_METRICS_RETENTION", "true").lower() == "true":
+    metrics_retention_scheduler = MetricsRetentionScheduler(
+        retention_days=int(os.environ.get("METRICS_RETENTION_DAYS", "30")),
+        interval_seconds=int(os.environ.get("METRICS_RETENTION_INTERVAL_SECONDS", "3600")),
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -79,6 +91,10 @@ async def lifespan(app: FastAPI):
     if forecasting_scheduler:
         forecasting_scheduler.start()
         logging.info("Forecasting scheduler started")
+
+    if metrics_retention_scheduler:
+        metrics_retention_scheduler.start()
+        logging.info("Metrics retention scheduler started")
 
     # Singleton consumption-prediction model (CPU/memory -> watts), used as
     # the fallback tier in demand resolution when direct Kepler measurement
@@ -108,6 +124,10 @@ async def lifespan(app: FastAPI):
     if forecasting_scheduler:
         forecasting_scheduler.stop()
         logging.info("Forecasting scheduler stopped")
+
+    if metrics_retention_scheduler:
+        metrics_retention_scheduler.stop()
+        logging.info("Metrics retention scheduler stopped")
 
 
 app = FastAPI(lifespan=lifespan)
