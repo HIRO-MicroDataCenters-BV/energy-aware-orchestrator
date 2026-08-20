@@ -230,8 +230,10 @@ class EnergyAPIClient:
                 # Aggregate energy
                 aggregated[key]["total_watts"] += watts
 
-                # Track confidence
-                if "confidence_percentage" in api_slot:
+                # Track confidence - key presence alone isn't enough, the
+                # field is present but null on every real/predicted supply
+                # row today since nothing populates it yet.
+                if api_slot.get("confidence_percentage") is not None:
                     aggregated[key]["confidence_sum"] += api_slot["confidence_percentage"]
                     aggregated[key]["confidence_count"] += 1
 

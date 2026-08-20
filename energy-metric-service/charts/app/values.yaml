@@ -28,11 +28,21 @@ app:
 
   # Environment variables
   env:
+    # Scrapes Kepler power/utilization data via Prometheus into
+    # container_power_metrics - feeds demand resolution tiers 1-2
+    # (measured/ML-predicted). See PROMETHEUS_BASE_URL below for where it
+    # reads from.
     ENABLE_METRICS_SCHEDULER: "false"
     ENABLE_DEPLOYMENT_SCHEDULER: "true"
     LOG_LEVEL: "INFO"
     KUBERNETES_NAMESPACE: ""  # Leave empty to use release namespace
     USE_KUBECTL_PROXY: "false"  # Use in-cluster authentication (ServiceAccount)
+
+    # Where ENABLE_METRICS_SCHEDULER reads Kepler data from. Leave empty to
+    # auto-point at the monitoring stack's Prometheus service (see
+    # monitoring.releaseName below) - only set this if Prometheus lives
+    # somewhere non-standard.
+    PROMETHEUS_BASE_URL: ""
 
     # Grid capacity polling. Poller stays dormant until GRID_API_URL is set
     # to a real grid endpoint - no URL means nothing to poll. Leave empty to
@@ -61,4 +71,11 @@ app:
 # GRID_API_URL is auto-set to this stub's address.
 gridStub:
   enabled: false
+
+# Helm release name the energy-monitoring-helm-stack chart was installed
+# under (see energy-monitoring-helm-stack/scripts/deploy.sh's own
+# RELEASE_NAME default). Used only to auto-derive PROMETHEUS_BASE_URL above
+# - change this if the monitoring stack was deployed under a different name.
+monitoring:
+  releaseName: energy-metrics
 

@@ -415,7 +415,6 @@ kubectl delete pvc -n <namespace> -l app=eao-postgres
 - **Supply forecasting uses a dummy model, not real ML.** `PredictionService` currently just averages historical real supply per slot-of-day bucket — it's a deliberate placeholder with a clean swap interface (see [How to Swap in a Real ML Model](#how-to-swap-in-a-real-ml-model)), not a trained model. **Making this a real model is the next planned step.**
 - **Demand resolution tiers 1–2 (measured/predicted) are not yet live-verified.** They depend on `container_power_metrics` being populated, which needs `ENABLE_METRICS_SCHEDULER=true` (default `false`). Only the fallback tier has been confirmed against a real deployment so far — measured and ML-predicted tiers are implemented but still pending a live test with metrics collection turned on.
 - **Single-replica migrations.** See [Database Migrations](#-database-migrations) — needs a Helm hook Job if `replicaCount` is ever raised.
-- **Pre-existing drift** between some ORM models and the actual DB schema (constraint names, `NUMERIC` vs `Float`, tz-aware vs naive timestamps in a few older tables) — documented inline in the `6df62fb22abe` migration, deliberately left unactioned as out of scope.
 
 ---
 

@@ -1,5 +1,6 @@
 import asyncio
 from app.servicesv2.prometheus_metrics_service import PrometheusMetricsService
+from app.servicesv2.prometheus_container_metrics_service import PrometheusContainerMetricsService
 import logging
 
 
@@ -7,6 +8,7 @@ class MetricCollectorScheduler:
     def __init__(self, interval_seconds: int = 10):
         self.interval_seconds = interval_seconds
         self.prometheus_service = PrometheusMetricsService()
+        self.container_metrics_service = PrometheusContainerMetricsService()
         self._task = None
         self._running = False
 
@@ -17,17 +19,24 @@ class MetricCollectorScheduler:
             try:
                 logging.info("MetricCollectorScheduler: Starting Prometheus metrics collection cycle...")
 
-                # Collect Prometheus metrics (includes both container and energy metrics)
+                # Collect node-level metrics (node_metrics table)
                 prometheus_count = await self.prometheus_service.collect_and_store_metrics()
-
-                # Handle potential exceptions
                 if isinstance(prometheus_count, Exception):
                     logging.error(f"Failed to collect Prometheus metrics: {prometheus_count}")
                     prometheus_count = 0
-
                 logging.info(f"MetricCollectorScheduler: Stored {prometheus_count} node metrics with energy data from Prometheus")
             except Exception as e:
-                logging.exception(f"Error in MetricCollectorScheduler: {e}")
+                logging.exception(f"Error in MetricCollectorScheduler (node metrics): {e}")
+
+            try:
+                # Collect per-container metrics (container_power_metrics table) -
+                # isolated in its own try/except so a failure here never blocks
+                # node-level collection above, or vice versa.
+                container_count = await self.container_metrics_service.collect_and_store_metrics()
+                logging.info(f"MetricCollectorScheduler: Stored {container_count} container metrics with energy/utilization data from Prometheus")
+            except Exception as e:
+                logging.exception(f"Error in MetricCollectorScheduler (container metrics): {e}")
+
             await asyncio.sleep(self.interval_seconds)
 
     def start(self):

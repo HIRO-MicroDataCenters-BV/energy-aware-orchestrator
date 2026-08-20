@@ -22,8 +22,10 @@ def upgrade() -> None:
     energy_availability. server_default backfills every existing row as
     supply/real, matching what the table has only ever held until now.
 
-    Unrelated pre-existing model/DB drift (again surfaced by autogenerate,
-    same as in the baseline migration) is left un-actioned here.
+    Unrelated pre-existing model/DB drift (surfaced by autogenerate, same as
+    in the baseline migration) was left un-actioned here; it was later fixed
+    by aligning the ORM models to the DB directly (no DDL change needed -
+    see `alembic check` in the README's Database Migrations section).
     """
     op.add_column('energy_availability', sa.Column('record_type', sa.String(length=10), server_default='supply', nullable=False))
     op.add_column('energy_availability', sa.Column('data_source', sa.String(length=10), server_default='real', nullable=False))

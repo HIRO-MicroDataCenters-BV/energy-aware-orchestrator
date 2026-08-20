@@ -153,13 +153,15 @@ prometheus:
         - ReadWriteOnce
       size: 50Gi
     retention: "45d"
+  # names below must match NAMESPACE in the deploy scripts, not the chart's
+  # release name ("energy-metrics").
   extraScrapeConfigs: |
     - job_name: 'kepler'
       kubernetes_sd_configs:
         - role: endpoints
           namespaces:
             names:
-              - energy-metrics
+              - default
       relabel_configs:
         - source_labels: [__meta_kubernetes_service_name]
           action: keep
@@ -167,13 +169,13 @@ prometheus:
         - source_labels: [__meta_kubernetes_endpoint_port_name]
           action: keep
           regex: http
-    
+
     - job_name: 'cadvisor'
       kubernetes_sd_configs:
         - role: endpoints
           namespaces:
             names:
-              - energy-metrics
+              - default
       relabel_configs:
         - source_labels: [__meta_kubernetes_service_name]
           action: keep
@@ -184,13 +186,13 @@ prometheus:
       scrape_interval: 15s
       scrape_timeout: 10s
       metrics_path: /metrics
-    
+
     - job_name: 'node-exporter'
       kubernetes_sd_configs:
         - role: endpoints
           namespaces:
             names:
-              - energy-metrics
+              - default
       relabel_configs:
         - source_labels: [__meta_kubernetes_service_name]
           action: keep
@@ -284,12 +286,15 @@ kepler:
   # Add tolerations if needed
   tolerations: []
   # Configure to work with ARM64 emulation
+  # Memory limit was 128Mi - pods sat pinned at ~125-127Mi and got OOMKilled
+  # roughly every 7-8 minutes (confirmed via `kubectl top` and `describe pod`
+  # showing Reason: OOMKilled, Exit Code: 137). Bumped with real headroom.
   resources:
     requests:
-      memory: "64Mi"
+      memory: "128Mi"
       cpu: "250m"
     limits:
-      memory: "128Mi"
+      memory: "512Mi"
       cpu: "500m"
 
 prometheus-node-exporter:

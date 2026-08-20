@@ -33,6 +33,12 @@ spec:
             # Application settings
             - name: ENABLE_METRICS_SCHEDULER
               value: "{{ .Values.app.env.ENABLE_METRICS_SCHEDULER }}"
+            {{- $prometheusUrl := .Values.app.env.PROMETHEUS_BASE_URL }}
+            {{- if not $prometheusUrl }}
+            {{- $prometheusUrl = printf "http://%s-prometheus-server:80/api/v1" .Values.monitoring.releaseName }}
+            {{- end }}
+            - name: PROMETHEUS_BASE_URL
+              value: "{{ $prometheusUrl }}"
             - name: ENABLE_DEPLOYMENT_SCHEDULER
               value: "{{ .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}"
 
