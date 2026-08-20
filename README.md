@@ -35,20 +35,29 @@ A Kubernetes platform that schedules workloads based on real-time and forecasted
 ### Data flow
 
 ```
-Node hardware
-    │  (eBPF / RAPL / ACPI)
-    ▼
-Kepler  ──▶  Prometheus  ──▶  energy-metric-service  ──▶  PostgreSQL
-                                       │
-                         ML forecasting model (.pkl)
-                                       │
-                                       ▼
-                          energy-aware-operator
-                          (scheduling decisions)
-                                       │
-                                       ▼
-                         EAO CR status updated
-                         (DeployImmediately / Scheduled)
+Node hardware                    External grid API
+    │  (eBPF / RAPL / ACPI)          │  (or dev/test mock server)
+    ▼                                ▼
+Kepler ──▶ Prometheus         GridPollingScheduler (real supply)
+    │                                │
+    ▼                                ▼
+energy-metric-service  ──────▶  energy_availability  ◀──  ForecastingScheduler
+    │                          (real + predicted supply,     (fills gaps beyond
+    │                           demand, in one table)          real polling)
+    │                                │
+    │  measured/predicted            ▼
+    │  demand resolution   energy-aware-operator
+    │  (Kepler ▸ ML ▸ spec       (scheduling decisions;
+    │   estimate, most           real supply always preferred
+    │   accurate first)          over predicted, per slot)
+    │                                │
+    │                                ▼
+    │                    EAO CR status updated
+    │                    (DeployImmediately / Scheduled)
+    │                                │
+    │                                ▼
+    └──────────────────  demand reported back
+                          (POST /api/energy-availability/demand)
 ```
 
 ---
@@ -75,12 +84,13 @@ The operator re-evaluates every 10 minutes (configurable) and updates the CR sta
 
 ### 2 · `energy-metric-service`
 
-A FastAPI service that acts as the energy data backend for the operator and the UI.
+A FastAPI service that acts as the energy data backend for the operator and the UI. `energy_availability` holds both supply (grid capacity) and demand (workload requirements) in one table, tagged `record_type`/`data_source` (`real` vs `predicted`).
 
-- Scrapes Kepler energy metrics from Prometheus on a schedule and persists them in PostgreSQL.
-- Exposes a REST API including `/api/energy-availability/future/forecast` which the operator calls.
-- Contains a pre-trained **Linear Regression** model (`energy_forecasting_linear_regression.pkl`) trained on node CPU/memory metrics to predict energy consumption in Watts.
-- Includes a Jupyter notebook (`energy_forecasting_model.ipynb`) and training script (`train_model.py`) for retraining the model.
+- Scrapes Kepler energy metrics from Prometheus on a schedule and persists them in PostgreSQL (`container_power_metrics`).
+- Polls an external grid API (or a dev/test mock server) for live supply data, and predicts supply for future slots beyond what polling has reached — real always wins over predicted at query time.
+- Exposes a REST API including `/api/energy-availability/future/forecast` which the operator calls, and `/api/energy-availability/demand` which the operator reports to.
+- Resolves each workload's actual demand through a trained **Random Forest** consumption model (`app/energy_forecasting_model.pkl`, r²≈0.97, predicts watts from CPU/memory utilization) — used as a fallback tier when direct Kepler measurement isn't available, itself falling back to the operator's static estimate before deployment. (`energy_forecasting_linear_regression.pkl`/`energy_forecasting_scaler.pkl` at the repo root are earlier, unused artifacts — the model actually loaded lives under `app/`.)
+- Includes a Jupyter notebook (`energy_forecasting_model.ipynb`) and training script (`train_model.py`) for retraining.
 
 **Helm charts included:**
 
@@ -171,6 +181,20 @@ The script will:
 4. Deploy the Kepler / Prometheus / Grafana monitoring stack
 5. Build and deploy the Angular UI
 6. Print port-forwarding commands and access URLs
+
+**Options:**
+
+| Flag | Purpose |
+|---|---|
+| `--grid-stub` / `--no-grid-stub` | Deploy the dev/test mock grid server. Defaults **on** when `--grid-url` isn't given, off when it is |
+| `--grid-url URL` | Point grid polling at a real grid endpoint instead of the mock server |
+| `-n, --namespace NS` | Kubernetes namespace (default: `default`) |
+
+```bash
+./deploy-full-stack.sh deploy --grid-url http://real-grid.example.com/capacity
+```
+
+See `./deploy-full-stack.sh --help` for the full list, including `cleanup`-only flags.
 
 ---
 

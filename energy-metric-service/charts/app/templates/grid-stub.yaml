@@ -1,0 +1,52 @@
+{{- if .Values.gridStub.enabled }}
+# Dev/test-only mock grid server. Stands in for the real external grid API,
+# which doesn't exist yet - accepts POST /capacity to set the data it will
+# return, and GET /capacity for the app's poller to consume. Only deployed
+# when gridStub.enabled=true; never intended for production use.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grid-stub-app
+data:
+  stub.py: |
+{{ .Files.Get "files/grid_stub.py" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grid-stub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grid-stub
+  template:
+    metadata:
+      labels:
+        app: grid-stub
+    spec:
+      containers:
+        - name: grid-stub
+          image: python:3.11-slim
+          command: ["python", "/app/stub.py"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: app
+              mountPath: /app
+      volumes:
+        - name: app
+          configMap:
+            name: grid-stub-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grid-stub
+spec:
+  selector:
+    app: grid-stub
+  ports:
+    - port: 80
+      targetPort: 8080
+{{- end }}

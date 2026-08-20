@@ -13,7 +13,7 @@ Scheduling Logic:
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import kopf
 from kubernetes import config
@@ -52,9 +52,25 @@ energy_api_client = EnergyAPIClient(api_url=ENERGY_API_URL) if ENERGY_API_URL el
 scheduler_service: SimpleSchedulerService = SimpleSchedulerService(energy_api_client=energy_api_client)
 
 
+def _apply_demand_report_result(patch: kopf.Patch, resolved_watts: Optional[float]) -> None:
+    """Record the outcome of a report_demand() call on the patch.
+
+    measuredWatts is informational only (see its docstring in
+    app/crd/models.py) - merged into the existing energyMetrics dict rather
+    than replacing it, since apply_status_patch() already populated
+    requiredWatts/sufficient/etc. there earlier in the same reconcile.
+    """
+    patch.status["demandReported"] = resolved_watts is not None
+    patch.status["energyMetrics"] = {
+        **(patch.status.get("energyMetrics") or {}),
+        "measuredWatts": resolved_watts,
+    }
+
+
 async def _report_demand_if_needed(
     name: str,
     namespace: str,
+    spec: Dict[str, Any],
     old_status: Dict[str, Any],
     schedule_result: Dict[str, Any],
     patch: kopf.Patch,
@@ -79,6 +95,7 @@ async def _report_demand_if_needed(
         energy_metrics = schedule_result.get("energyMetrics", {}) or {}
         required_watts = energy_metrics.get("requiredWatts")
         identifier = f"{namespace}/{name}"
+        application_name = (spec.get("applicationRef") or {}).get("name")
 
         if required_watts is None:
             return
@@ -90,13 +107,14 @@ async def _report_demand_if_needed(
             # avoids reinventing window-staleness tracking for the case
             # most likely to already have sufficient energy right now.
             slot_start, slot_end = scheduler_service.get_current_slot_window()
-            success = await energy_api_client.report_demand(
+            resolved_watts = await energy_api_client.report_demand(
                 identifier=identifier,
                 slot_start_time=slot_start.isoformat(),
                 slot_end_time=slot_end.isoformat(),
                 required_watts=float(required_watts),
+                application_name=application_name,
             )
-            patch.status["demandReported"] = success
+            _apply_demand_report_result(patch, resolved_watts)
             return
 
         scheduled_slot = decision.get("scheduledSlot")
@@ -119,13 +137,14 @@ async def _report_demand_if_needed(
             logger.debug(f"Demand unchanged for '{identifier}', skipping report")
             return
 
-        success = await energy_api_client.report_demand(
+        resolved_watts = await energy_api_client.report_demand(
             identifier=identifier,
             slot_start_time=scheduled_slot["slotStart"],
             slot_end_time=scheduled_slot["slotEnd"],
             required_watts=float(required_watts),
+            application_name=application_name,
         )
-        patch.status["demandReported"] = success
+        _apply_demand_report_result(patch, resolved_watts)
 
     except Exception as e:
         logger.warning(f"Demand reporting skipped for '{namespace}/{name}' due to an error: {e}")
@@ -283,7 +302,7 @@ async def reconcile_handler(
 
             # Report demand to energy-metric-service (best-effort, skips
             # when unchanged - see _report_demand_if_needed)
-            await _report_demand_if_needed(name, namespace, status, schedule_result, patch)
+            await _report_demand_if_needed(name, namespace, spec, status, schedule_result, patch)
 
             # Log decision
             logger.info("")
@@ -474,7 +493,7 @@ async def periodic_reconcile(
 
             # Report demand to energy-metric-service (best-effort, skips
             # when unchanged - see _report_demand_if_needed)
-            await _report_demand_if_needed(name, namespace, status, schedule_result, patch)
+            await _report_demand_if_needed(name, namespace, spec, status, schedule_result, patch)
 
             logger.info("")
             logger.info("=" * 80)

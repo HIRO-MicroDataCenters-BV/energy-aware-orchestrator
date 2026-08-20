@@ -93,26 +93,33 @@ class EnergyAPIClient:
         slot_start_time: str,
         slot_end_time: str,
         required_watts: float,
-    ) -> bool:
+        application_name: Optional[str] = None,
+    ) -> Optional[float]:
         """
         Report a CR's current demand to energy-metric-service.
 
         Best-effort like fetch_energy_forecast(): failures are logged and
-        return False rather than raising, so a demand-reporting problem
+        return None rather than raising, so a demand-reporting problem
         never blocks the CR's own scheduling decision from being persisted.
 
         Args:
             identifier: '<namespace>/<name>' of the EAO CR
             slot_start_time: ISO 8601 start of the currently decided slot
             slot_end_time: ISO 8601 end of the currently decided slot
-            required_watts: spec.energyConsumption, verbatim
+            required_watts: spec.energyConsumption - the fallback estimate,
+                used verbatim only until real measurement/prediction exists
+            application_name: spec.applicationRef.name, used server-side to
+                correlate with Kepler-measured pods for demand resolution.
+                Omit to always store required_watts verbatim.
 
         Returns:
-            True if the report was accepted, False otherwise
+            The resolved watts actually stored (may differ from
+            required_watts - see resolve_demand_watts() server-side), or
+            None if the report failed.
         """
         if not self.api_url:
             logger.debug("No API URL configured, skipping demand report")
-            return False
+            return None
 
         url = f"{self.api_url}/api/energy-availability/demand"
         payload = {
@@ -120,23 +127,25 @@ class EnergyAPIClient:
             "slot_start_time": slot_start_time,
             "slot_end_time": slot_end_time,
             "required_watts": required_watts,
+            "application_name": application_name,
         }
 
         try:
             response = await self.http_client.post(url, json=payload)
             response.raise_for_status()
-            logger.info(f"Reported demand for '{identifier}': {required_watts}W ({slot_start_time} - {slot_end_time})")
-            return True
+            resolved_watts = response.json()["demand"]["available_watts"]
+            logger.info(f"Reported demand for '{identifier}': {required_watts}W requested, {resolved_watts}W resolved ({slot_start_time} - {slot_end_time})")
+            return float(resolved_watts)
 
         except (httpx.TimeoutException, httpx.ConnectError) as e:
             logger.warning(f"Energy API unavailable, could not report demand for '{identifier}': {e.__class__.__name__}")
-            return False
+            return None
         except httpx.HTTPStatusError as e:
             logger.error(f"Energy API error reporting demand for '{identifier}': {e.response.status_code}")
-            return False
+            return None
         except Exception as e:
             logger.error(f"Unexpected error reporting demand for '{identifier}': {e}")
-            return False
+            return None
 
     async def delete_demand(self, identifier: str) -> bool:
         """
