@@ -3,10 +3,8 @@ Energy availability model for storing energy forecast and availability data.
 """
 
 from sqlalchemy import Column, Integer, String, DateTime, Numeric, Boolean, Date, func
-from sqlalchemy.ext.declarative import declarative_base
+from app.db.database import Base
 from app.models.base_dict_mixin import BaseDictMixin
-
-Base = declarative_base()
 
 class EnergyAvailability(Base, BaseDictMixin):
     """
@@ -40,6 +38,10 @@ class EnergyAvailability(Base, BaseDictMixin):
     is_active = Column(Boolean, default=True, doc="Whether this availability record is active")
     created_at = Column(DateTime(timezone=True), default=func.now(), doc="Record creation timestamp")
 
+    # Supply vs demand, real vs predicted
+    record_type = Column(String(10), nullable=False, server_default='supply', doc="'supply' or 'demand'")
+    data_source = Column(String(10), nullable=False, server_default='real', doc="'real' or 'predicted'")
+
     def __repr__(self):
         return (f"<EnergyAvailability(id={self.id}, provider='{self.provider_name}', "
                 f"available_watts={self.available_watts}, slot_start='{self.slot_start_time}')>")
@@ -60,5 +62,7 @@ class EnergyAvailability(Base, BaseDictMixin):
             'weather_dependency': self.weather_dependency,
             'forecast_date': self.forecast_date.isoformat() if self.forecast_date else None,
             'is_active': self.is_active,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'record_type': self.record_type,
+            'data_source': self.data_source
         }

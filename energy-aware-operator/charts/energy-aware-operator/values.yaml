@@ -61,8 +61,8 @@ configuration:
   # Re-evaluation interval in seconds
   reconcile_interval_seconds: 600
   
-  # Energy API configuration (optional)
-  # energy_api_url: "http://energy-metric-service:8000"
+  # Energy API configuration
+  energy_api_url: "http://energy-metric-service:8000"
   
   # CRD configuration
   api_group: "eas.hiro.io"

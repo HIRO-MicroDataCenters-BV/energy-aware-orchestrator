@@ -122,6 +122,18 @@ class EnergyMetrics(BaseModel):
     currentSlotConsumedWatts: Optional[float] = Field(None, description="Energy currently being consumed")
     requiredWatts: float = Field(..., description="Energy required by the workload")
     sufficient: bool = Field(..., description="Whether current energy is sufficient")
+    measuredWatts: Optional[float] = Field(
+        None,
+        description=(
+            "The resolved demand energy-metric-service actually stored, if "
+            "different from requiredWatts: real Kepler measurement if "
+            "available, else an ML prediction from live utilization, else "
+            "the same value as requiredWatts. Null until the workload is "
+            "deployed and generating metrics, or if demand reporting itself "
+            "failed. Informational only - requiredWatts above remains the "
+            "number this scheduling decision was actually based on."
+        ),
+    )
 
 
 # Legacy models for backward compatibility
@@ -161,6 +173,16 @@ class EnergyAwareOrchestrationStatus(BaseModel):
     lastUpdated: Optional[str] = Field(
         None,
         description="Timestamp of last status update (ISO 8601)"
+    )
+    demandReported: bool = Field(
+        default=False,
+        description=(
+            "Whether the current decision (action, scheduledSlot, "
+            "energyMetrics.requiredWatts) has been successfully reported as "
+            "demand to energy-metric-service. Reset to false whenever the "
+            "decision changes or a report attempt fails; used to skip "
+            "redundant demand reports on reconciles where nothing changed."
+        )
     )
     # Legacy field for backward compatibility
     executionSchedule: Optional[ExecutionSchedule] = Field(

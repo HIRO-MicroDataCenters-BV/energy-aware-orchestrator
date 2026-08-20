@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 from app.db.database import get_async_db
 from app.repositories.energy_availability import EnergyAvailabilityRepository
+from app.services.demand_resolution_service import resolve_demand_watts
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,29 @@ class EnergyAvailabilityCreate(BaseModel):
     weather_dependency: bool = Field(False, description="Whether availability depends on weather conditions")
     forecast_date: date = Field(..., description="Date when this forecast was made")
     is_active: bool = Field(True, description="Whether this availability record is active")
+
+
+class DemandReport(BaseModel):
+    """
+    Schema for reporting a workload's current energy demand.
+
+    Written by energy-aware-operator once per EAO CR reconcile - one row per
+    identifier, replacing whatever was reported for that CR last time.
+    """
+    identifier: str = Field(..., description="'<namespace>/<name>' of the EAO CR", max_length=100)
+    slot_start_time: datetime = Field(..., description="Start of the CR's currently decided slot")
+    slot_end_time: datetime = Field(..., description="End of the CR's currently decided slot")
+    required_watts: float = Field(..., description="Fallback estimate in watts (spec.energyConsumption), used verbatim until real measurement/prediction is available", ge=0)
+    application_name: Optional[str] = Field(
+        None,
+        max_length=100,
+        description=(
+            "spec.applicationRef.name - the Deployment this CR targets. "
+            "Used to correlate with Kepler-measured pods (pod names are "
+            "prefixed by their owning Deployment's name) for demand "
+            "resolution. Omit to always use required_watts verbatim."
+        ),
+    )
 
 
 class EnergyAvailabilityUpdate(BaseModel):
@@ -239,3 +263,71 @@ async def get_future_availability(
     except Exception as e:
         logger.error(f"Error retrieving future energy availability: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve future energy availability: {str(e)}")
+
+
+@router.post("/demand", summary="Report a workload's current energy demand")
+async def report_demand(
+    demand: DemandReport,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Create or replace the current demand record for a workload.
+
+    One record per `identifier` - calling this again for the same
+    identifier replaces its previous slot/wattage rather than accumulating
+    a new row, since a workload only ever has one currently-decided slot.
+
+    The stored wattage is resolved rather than used verbatim: measured
+    Kepler wattage wins if available, an ML prediction from live
+    utilization is used if measurement is momentarily missing, and
+    `required_watts` is the fallback when neither exists yet (e.g. before
+    the workload is deployed). See resolve_demand_watts().
+    """
+    try:
+        namespace = demand.identifier.split("/", 1)[0]
+        resolved_watts = await resolve_demand_watts(
+            db=db,
+            application_name=demand.application_name,
+            namespace=namespace,
+            fallback_watts=demand.required_watts,
+        )
+
+        repository = EnergyAvailabilityRepository(db)
+        record = await repository.upsert_demand(
+            identifier=demand.identifier,
+            slot_start_time=demand.slot_start_time,
+            slot_end_time=demand.slot_end_time,
+            required_watts=resolved_watts,
+            forecast_date=demand.slot_start_time.date(),
+        )
+        return {
+            "status": "success",
+            "demand": record.to_dict()
+        }
+    except Exception as e:
+        logger.error(f"Error reporting demand for {demand.identifier}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to report demand: {str(e)}")
+
+
+@router.delete("/demand/{identifier:path}", summary="Deactivate a workload's demand record")
+async def delete_demand(
+    identifier: str,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Deactivate the demand record for a workload (soft delete).
+
+    `identifier` is '<namespace>/<name>' and may itself contain a slash,
+    hence the `:path` converter.
+    """
+    try:
+        repository = EnergyAvailabilityRepository(db)
+        deleted = await repository.delete_demand(identifier)
+        if not deleted:
+            raise HTTPException(status_code=404, detail=f"No demand record found for '{identifier}'")
+        return {"status": "success", "identifier": identifier}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting demand for {identifier}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete demand: {str(e)}")

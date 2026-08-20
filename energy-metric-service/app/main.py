@@ -18,9 +18,17 @@ from app.api import app_definition_api
 from app.api import energy_availability_api
 from app.scheduler.metric_collector_scheduler import MetricCollectorScheduler
 from app.scheduler.deployment_scheduler import DeploymentScheduler
+from app.scheduler.grid_polling_scheduler import GridPollingScheduler
+from app.scheduler.forecasting_scheduler import ForecastingScheduler
 from app.services.energy_forecasting_service import EnergyForecastingService
 
 from app.utils.exception_handlers import init_exception_handlers
+
+# Configured before any module-level logging calls below (e.g. the grid
+# polling dormant-state notice) - logging.info() before basicConfig() runs
+# is silently dropped by Python's default "handler of last resort", which
+# only emits WARNING and above.
+logging.basicConfig(level=logging.DEBUG)
 
 metrics_scheduler = None
 if os.environ.get("ENABLE_METRICS_SCHEDULER", "false").lower() == "true":
@@ -29,6 +37,29 @@ if os.environ.get("ENABLE_METRICS_SCHEDULER", "false").lower() == "true":
 deployment_scheduler = None
 if os.environ.get("ENABLE_DEPLOYMENT_SCHEDULER", "true").lower() == "true":
     deployment_scheduler = DeploymentScheduler(interval_seconds=30)  # Runs every 1 minute
+
+# Grid capacity polling. Off unless both the toggle is on and a URL is set -
+# without a real grid endpoint there is nothing to poll, so it stays dormant
+# rather than logging a connection error every interval.
+grid_polling_scheduler = None
+if os.environ.get("ENABLE_GRID_POLLING", "true").lower() == "true":
+    _grid_api_url = os.environ.get("GRID_API_URL")
+    if _grid_api_url:
+        grid_polling_scheduler = GridPollingScheduler(
+            api_url=_grid_api_url,
+            interval_seconds=int(os.environ.get("GRID_POLL_INTERVAL_SECONDS", "300")),
+        )
+    else:
+        logging.info("Grid polling enabled but GRID_API_URL is not set - poller not started")
+
+# Supply forecasting. Runs entirely in-process (no external service) - a
+# cold start with zero real supply history is a harmless no-op cycle, so
+# this defaults on rather than needing a URL like grid polling does.
+forecasting_scheduler = None
+if os.environ.get("ENABLE_FORECASTING", "true").lower() == "true":
+    forecasting_scheduler = ForecastingScheduler(
+        interval_seconds=int(os.environ.get("FORECASTING_INTERVAL_SECONDS", "1800")),
+    )
 
 
 @asynccontextmanager
@@ -41,11 +72,21 @@ async def lifespan(app: FastAPI):
         deployment_scheduler.start()
         logging.info("Deployment scheduler started - will check pending deployments every 1 minute")
 
-    # Initialize singleton forecasting service
-    # Temporarily disable to isolate async issues
+    if grid_polling_scheduler:
+        grid_polling_scheduler.start()
+        logging.info("Grid polling scheduler started")
+
+    if forecasting_scheduler:
+        forecasting_scheduler.start()
+        logging.info("Forecasting scheduler started")
+
+    # Singleton consumption-prediction model (CPU/memory -> watts), used as
+    # the fallback tier in demand resolution when direct Kepler measurement
+    # isn't available. Loading the ~600KB model file blocks briefly, but
+    # only once at startup before the app serves any traffic.
     try:
-        # EnergyForecastingService.get_instance()
-        logging.info("Energy forecasting service initialization skipped temporarily")
+        EnergyForecastingService.get_instance()
+        logging.info("Energy forecasting service initialized")
     except Exception as e:
         logging.warning(f"Failed to initialize energy forecasting service: {e}")
 
@@ -59,6 +100,15 @@ async def lifespan(app: FastAPI):
         deployment_scheduler.stop()
         logging.info("Deployment scheduler stopped")
 
+    if grid_polling_scheduler:
+        grid_polling_scheduler.stop()
+        await grid_polling_scheduler.grid_client.close()
+        logging.info("Grid polling scheduler stopped")
+
+    if forecasting_scheduler:
+        forecasting_scheduler.stop()
+        logging.info("Forecasting scheduler stopped")
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -69,8 +119,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(level=logging.DEBUG)
 
 app.include_router(metrics_api.router)
 app.include_router(energy_forecast_api.router)

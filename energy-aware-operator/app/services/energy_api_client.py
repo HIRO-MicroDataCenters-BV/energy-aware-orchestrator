@@ -87,6 +87,106 @@ class EnergyAPIClient:
             logger.error(f"Unexpected error fetching energy data: {e}")
             return None
 
+    async def report_demand(
+        self,
+        identifier: str,
+        slot_start_time: str,
+        slot_end_time: str,
+        required_watts: float,
+        application_name: Optional[str] = None,
+    ) -> Optional[float]:
+        """
+        Report a CR's current demand to energy-metric-service.
+
+        Best-effort like fetch_energy_forecast(): failures are logged and
+        return None rather than raising, so a demand-reporting problem
+        never blocks the CR's own scheduling decision from being persisted.
+
+        Args:
+            identifier: '<namespace>/<name>' of the EAO CR
+            slot_start_time: ISO 8601 start of the currently decided slot
+            slot_end_time: ISO 8601 end of the currently decided slot
+            required_watts: spec.energyConsumption - the fallback estimate,
+                used verbatim only until real measurement/prediction exists
+            application_name: spec.applicationRef.name, used server-side to
+                correlate with Kepler-measured pods for demand resolution.
+                Omit to always store required_watts verbatim.
+
+        Returns:
+            The resolved watts actually stored (may differ from
+            required_watts - see resolve_demand_watts() server-side), or
+            None if the report failed.
+        """
+        if not self.api_url:
+            logger.debug("No API URL configured, skipping demand report")
+            return None
+
+        url = f"{self.api_url}/api/energy-availability/demand"
+        payload = {
+            "identifier": identifier,
+            "slot_start_time": slot_start_time,
+            "slot_end_time": slot_end_time,
+            "required_watts": required_watts,
+            "application_name": application_name,
+        }
+
+        try:
+            response = await self.http_client.post(url, json=payload)
+            response.raise_for_status()
+            resolved_watts = response.json()["demand"]["available_watts"]
+            logger.info(f"Reported demand for '{identifier}': {required_watts}W requested, {resolved_watts}W resolved ({slot_start_time} - {slot_end_time})")
+            return float(resolved_watts)
+
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            logger.warning(f"Energy API unavailable, could not report demand for '{identifier}': {e.__class__.__name__}")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Energy API error reporting demand for '{identifier}': {e.response.status_code}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error reporting demand for '{identifier}': {e}")
+            return None
+
+    async def delete_demand(self, identifier: str) -> bool:
+        """
+        Deactivate a CR's demand record (called on CR deletion).
+
+        Best-effort, same as report_demand() - a failure here is logged and
+        does not block the rest of CR deletion cleanup. A 404 (nothing to
+        delete) counts as success, since the end state - no active demand
+        record for this identifier - is what we wanted either way.
+
+        Args:
+            identifier: '<namespace>/<name>' of the EAO CR
+
+        Returns:
+            True if the record was deleted or already absent, False on error
+        """
+        if not self.api_url:
+            logger.debug("No API URL configured, skipping demand deletion")
+            return False
+
+        url = f"{self.api_url}/api/energy-availability/demand/{identifier}"
+
+        try:
+            response = await self.http_client.delete(url)
+            if response.status_code == 404:
+                logger.debug(f"No demand record to delete for '{identifier}'")
+                return True
+            response.raise_for_status()
+            logger.info(f"Deleted demand record for '{identifier}'")
+            return True
+
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            logger.warning(f"Energy API unavailable, could not delete demand for '{identifier}': {e.__class__.__name__}")
+            return False
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Energy API error deleting demand for '{identifier}': {e.response.status_code}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error deleting demand for '{identifier}': {e}")
+            return False
+
     def map_api_slots_to_scheduler_slots(
         self,
         api_slots: List[Dict[str, Any]],

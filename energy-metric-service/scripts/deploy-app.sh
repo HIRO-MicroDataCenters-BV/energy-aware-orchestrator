@@ -18,6 +18,12 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RELEASE_NAME="${RELEASE_NAME:-energy-metric}"
 NAMESPACE="${NAMESPACE:-default}"
 BUILD_IMAGE="${BUILD_IMAGE:-true}"
+# Dev/test-only mock grid server (see charts/app/templates/grid-stub.yaml).
+# Off by default - never enabled in a normal deploy.
+ENABLE_GRID_STUB="${ENABLE_GRID_STUB:-false}"
+# A real grid endpoint, if provided. Takes priority over the mock server
+# (see deployment.yaml's GRID_API_URL derivation).
+GRID_API_URL="${GRID_API_URL:-}"
 
 # When rebuilding, tag the image from git content so the Deployment spec
 # actually changes and Kubernetes rolls the pod on its own -- a mutable
@@ -46,10 +52,14 @@ Options:
     -h, --help          Show this help
     -n, --namespace NS  Kubernetes namespace (default: default)
     --no-build          Skip Docker image build
+    --grid-stub         Deploy the dev/test mock grid server and point
+                         GRID_API_URL at it (see grid_stub.py)
+    --grid-url URL      Point GRID_API_URL at a real grid endpoint instead
 
 Examples:
     $0                  # Build and deploy
     $0 --no-build       # Deploy only (use existing image)
+    $0 --grid-stub      # Deploy with the mock grid server for testing
 
 EOF
     exit 0
@@ -60,6 +70,8 @@ while [[ $# -gt 0 ]]; do
         -h|--help) usage ;;
         -n|--namespace) NAMESPACE="$2"; shift 2 ;;
         --no-build) BUILD_IMAGE=false; shift ;;
+        --grid-stub) ENABLE_GRID_STUB=true; shift ;;
+        --grid-url) GRID_API_URL="$2"; shift 2 ;;
         *) print_error "Unknown option: $1"; usage ;;
     esac
 done
@@ -73,6 +85,8 @@ print_info "Configuration:"
 echo "  Release: $RELEASE_NAME"
 echo "  Namespace: $NAMESPACE"
 echo "  Build Image: $BUILD_IMAGE"
+echo "  Grid Stub: $ENABLE_GRID_STUB"
+echo "  Grid API URL: ${GRID_API_URL:-<none>}"
 echo ""
 
 # Check if PostgreSQL is running
@@ -112,11 +126,18 @@ fi
 
 # Deploy application
 print_info "Deploying application (image tag: $IMAGE_TAG)..."
-helm upgrade --install "$RELEASE_NAME" "$PROJECT_ROOT/charts/app" \
-    --namespace "$NAMESPACE" \
-    --set app.image.tag=$IMAGE_TAG \
-    --wait \
+HELM_ARGS=(
+    --namespace "$NAMESPACE"
+    --set "app.image.tag=$IMAGE_TAG"
+    --set "gridStub.enabled=$ENABLE_GRID_STUB"
+    --wait
     --timeout 5m
+)
+if [ -n "$GRID_API_URL" ]; then
+    HELM_ARGS+=(--set "app.env.GRID_API_URL=$GRID_API_URL")
+fi
+
+helm upgrade --install "$RELEASE_NAME" "$PROJECT_ROOT/charts/app" "${HELM_ARGS[@]}"
 
 # Wait for app to be ready
 print_info "Waiting for application to be ready..."

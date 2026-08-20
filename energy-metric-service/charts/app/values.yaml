@@ -34,6 +34,18 @@ app:
     KUBERNETES_NAMESPACE: ""  # Leave empty to use release namespace
     USE_KUBECTL_PROXY: "false"  # Use in-cluster authentication (ServiceAccount)
 
+    # Grid capacity polling. Poller stays dormant until GRID_API_URL is set
+    # to a real grid endpoint - no URL means nothing to poll. Leave empty to
+    # auto-point at the dev stub below when gridStub.enabled is true.
+    ENABLE_GRID_POLLING: "true"
+    GRID_API_URL: ""
+    GRID_POLL_INTERVAL_SECONDS: "300"
+
+    # Supply forecasting. Runs in-process (no external service/URL needed) -
+    # a harmless no-op cycle when there's no real supply history yet.
+    ENABLE_FORECASTING: "true"
+    FORECASTING_INTERVAL_SECONDS: "1800"
+
   # Resource limits
   resources:
     limits:
@@ -43,4 +55,10 @@ app:
       cpu: 500m
       memory: 512Mi
 
+# Dev/test-only mock grid server (see templates/grid-stub.yaml). Not for
+# production - stands in for the real external grid API so grid polling can
+# be exercised without one. When enabled and app.env.GRID_API_URL is empty,
+# GRID_API_URL is auto-set to this stub's address.
+gridStub:
+  enabled: false
 

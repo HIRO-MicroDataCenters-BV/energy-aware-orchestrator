@@ -73,6 +73,17 @@ SAMPLE_EAO_CRS=(
 DELETE_CRD="${DELETE_CRD:-false}"
 DELETE_PVC="${DELETE_PVC:-false}"
 
+# GRID_API_URL: a real grid endpoint, if you have one. ENABLE_GRID_STUB
+# defaults based on whether that's set (resolved after arg parsing, since
+# --grid-url/--grid-stub may arrive as flags rather than env vars) - a real
+# URL means the dev/test mock grid server
+# (energy-metric-service/charts/app/templates/grid-stub.yaml) has nothing to
+# add, so it defaults off; no URL means there's nothing to poll otherwise,
+# so the stub defaults on. Either can still be set explicitly to override
+# this default (e.g. both a real URL and the stub, for comparison).
+GRID_API_URL="${GRID_API_URL:-}"
+ENABLE_GRID_STUB="${ENABLE_GRID_STUB:-}"
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  ARGUMENT PARSING
 # ─────────────────────────────────────────────────────────────────────────────
@@ -87,6 +98,15 @@ Commands:
 Options (both commands):
   -n, --namespace NS   Kubernetes namespace  (default: default)
 
+Options (deploy only):
+  --grid-stub           Deploy the dev/test mock grid server
+                         (energy-metric-service). Defaults on when no
+                         --grid-url is given, off when one is.
+  --no-grid-stub        Force the mock grid server off
+  --grid-url URL        Point GRID_API_URL at a real grid endpoint instead
+                         of the mock server (implies --no-grid-stub unless
+                         --grid-stub is also passed)
+
 Options (cleanup only):
   --delete-crd         Also delete the operator CRD   (default: keep)
   --delete-pvc         Also delete PostgreSQL PVCs     (default: keep)
@@ -95,10 +115,13 @@ Environment overrides:
   NAMESPACE            Same as -n
   OPERATOR_IMAGE_REPO  Operator Docker image repo  (default: energy-aware-operator)
   OPERATOR_IMAGE_TAG   Operator Docker image tag   (default: latest)
+  ENABLE_GRID_STUB     Same as --grid-stub
+  GRID_API_URL         Same as --grid-url
 
 Examples:
-  ./deploy-full-stack.sh
-  ./deploy-full-stack.sh deploy
+  ./deploy-full-stack.sh                       # deploy, mock grid server on by default
+  ./deploy-full-stack.sh deploy --no-grid-stub
+  ./deploy-full-stack.sh deploy --grid-url http://real-grid.example.com/capacity
   ./deploy-full-stack.sh cleanup
   ./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
   NAMESPACE=staging ./deploy-full-stack.sh deploy
@@ -120,6 +143,9 @@ parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             -n|--namespace) NAMESPACE="$2"; shift 2 ;;
+            --grid-stub)    ENABLE_GRID_STUB=true; shift ;;
+            --no-grid-stub) ENABLE_GRID_STUB=false; shift ;;
+            --grid-url)     GRID_API_URL="$2"; shift 2 ;;
             --delete-crd)   DELETE_CRD=true; shift ;;
             --delete-pvc)   DELETE_PVC=true; shift ;;
             -h|--help)      usage ;;
@@ -129,6 +155,16 @@ parse_args() {
                 ;;
         esac
     done
+
+    # Resolve ENABLE_GRID_STUB's default now that --grid-url/--grid-stub
+    # have both had a chance to be set, from either flags or env vars.
+    if [ -z "$ENABLE_GRID_STUB" ]; then
+        if [ -n "$GRID_API_URL" ]; then
+            ENABLE_GRID_STUB=false
+        else
+            ENABLE_GRID_STUB=true
+        fi
+    fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -256,6 +292,7 @@ deploy_metric_service() {
     divider
 
     if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
+           ENABLE_GRID_STUB="$ENABLE_GRID_STUB" GRID_API_URL="$GRID_API_URL" \
            bash "$ROOT_DIR/energy-metric-service/scripts/deploy-all.sh"; then
         DEPLOY_METRIC_STATUS="OK"
         info "Energy Metric Service deployed ✓"
@@ -461,6 +498,9 @@ print_port_forward_guide() {
     echo    "  pkill -f 'svc/energy-metrics-kepler'            || true"
     echo    "  pkill -f 'svc/orchestrator-library-ui'     || true"
     echo    "  pkill -f 'svc/orchestrator-k8s-proxy'      || true"
+    if [ "$ENABLE_GRID_STUB" = true ]; then
+        echo    "  pkill -f 'svc/grid-stub'                   || true"
+    fi
     echo ""
     echo -e "${YELLOW}  # Step 2 — Start all port-forwards in the background:${NC}"
     echo ""
@@ -471,6 +511,9 @@ print_port_forward_guide() {
     echo    "  kubectl port-forward -n ${NAMESPACE} svc/energy-metrics-kepler 9102:9102 &"
     echo    "  kubectl port-forward -n ${NAMESPACE} svc/orchestrator-library-ui 4200:80 &"
     echo    "  kubectl port-forward -n ${NAMESPACE} svc/orchestrator-k8s-proxy 3001:3000 &"
+    if [ "$ENABLE_GRID_STUB" = true ]; then
+        echo    "  kubectl port-forward -n ${NAMESPACE} svc/grid-stub 8090:80 &"
+    fi
     echo ""
     echo -e "${YELLOW}  # Note: K8s Proxy uses port 3001 to avoid conflict with Grafana on 3000.${NC}"
     echo ""
@@ -489,6 +532,9 @@ print_access_urls() {
     printf "  %-36s %s\n" "Kepler Metrics"              "http://localhost:9102/metrics"
     printf "  %-36s %s\n" "Orchestrator Library UI"     "http://localhost:4200"
     printf "  %-36s %s\n" "K8s Proxy"                   "http://localhost:3001"
+    if [ "$ENABLE_GRID_STUB" = true ]; then
+        printf "  %-36s %s\n" "Grid Stub (dev/test only)"   "http://localhost:8090/capacity  (GET/POST)"
+    fi
     echo ""
     divider
     echo ""

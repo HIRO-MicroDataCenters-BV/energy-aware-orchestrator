@@ -57,6 +57,16 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            # app/config.py only ever reads these via os.getenv() - the
+            # mounted config.yaml below is not consumed by the app at all.
+            {{- if .Values.configuration.energy_api_url }}
+            - name: ENERGY_API_URL
+              value: {{ .Values.configuration.energy_api_url | quote }}
+            {{- end }}
+            - name: KOPF_RECONCILE_INTERVAL_SECONDS
+              value: {{ .Values.configuration.reconcile_interval_seconds | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.configuration.log_level | quote }}
       volumes:
         - name: configuration
           configMap:

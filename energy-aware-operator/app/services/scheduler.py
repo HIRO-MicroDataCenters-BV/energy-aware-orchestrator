@@ -301,6 +301,26 @@ class SimpleSchedulerService:
         )
 
         current_available = current_slot_data["availableEnergyWatts"] if current_slot_data else None
+        is_sufficient = current_available is not None and current_available >= required_energy_watts
+
+        # If the current slot already has sufficient energy, deploy immediately.
+        # (Previously the current slot was always skipped, so Optional workloads
+        # could never reach DeployImmediately even when energy was available now.)
+        if is_sufficient:
+            return {
+                "phase": "Scheduled",
+                "decision": {
+                    "action": "DeployImmediately",
+                    "reason": f"Optional priority - current slot has sufficient energy ({current_available:.0f}W >= {required_energy_watts:.0f}W)",
+                },
+                "energyMetrics": {
+                    "currentSlotAvailableWatts": current_available,
+                    "currentSlotConsumedWatts": None,
+                    "requiredWatts": required_energy_watts,
+                    "sufficient": True,
+                },
+                "lastUpdated": now.isoformat(),
+            }
 
         # Find first future slot with sufficient energy (skip current slot for Optional)
         for slot in energy_slots:
@@ -333,6 +353,18 @@ class SimpleSchedulerService:
         # No sufficient slot found - fall back to time-based scheduling
         logger.warning(f"No slots with sufficient energy found, falling back to time-based scheduling")
         return self._build_optional_result(now, required_energy_watts)
+
+    def get_current_slot_window(self, now: Optional[datetime] = None) -> tuple[datetime, datetime]:
+        """
+        Public helper: start/end of the 6-hour slot `now` currently falls
+        within. Used for demand reporting on DeployImmediately decisions,
+        which - unlike Scheduled - have no scheduledSlot of their own to
+        derive a window from.
+        """
+        if now is None:
+            now = datetime.now(timezone.utc)
+        slot_number = self._get_current_slot_number(now)
+        return self._get_slot_boundaries(now, slot_number)
 
     def _get_current_slot_number(self, dt: datetime) -> int:
         """

@@ -35,6 +35,28 @@ spec:
               value: "{{ .Values.app.env.ENABLE_METRICS_SCHEDULER }}"
             - name: ENABLE_DEPLOYMENT_SCHEDULER
               value: "{{ .Values.app.env.ENABLE_DEPLOYMENT_SCHEDULER }}"
+
+            # Grid capacity polling. The poller only starts when both this is
+            # "true" and GRID_API_URL below is non-empty (see app/main.py).
+            - name: ENABLE_GRID_POLLING
+              value: "{{ .Values.app.env.ENABLE_GRID_POLLING }}"
+            {{- $gridUrl := .Values.app.env.GRID_API_URL }}
+            {{- if and (not $gridUrl) .Values.gridStub.enabled }}
+            {{- $gridUrl = "http://grid-stub/capacity" }}
+            {{- end }}
+            {{- if $gridUrl }}
+            - name: GRID_API_URL
+              value: "{{ $gridUrl }}"
+            {{- end }}
+            - name: GRID_POLL_INTERVAL_SECONDS
+              value: "{{ .Values.app.env.GRID_POLL_INTERVAL_SECONDS }}"
+
+            # Supply forecasting. Runs in-process, no URL needed.
+            - name: ENABLE_FORECASTING
+              value: "{{ .Values.app.env.ENABLE_FORECASTING }}"
+            - name: FORECASTING_INTERVAL_SECONDS
+              value: "{{ .Values.app.env.FORECASTING_INTERVAL_SECONDS }}"
+
             - name: LOG_LEVEL
               value: "{{ .Values.app.env.LOG_LEVEL }}"
             - name: USE_KUBECTL_PROXY
