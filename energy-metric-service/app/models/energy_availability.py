@@ -2,18 +2,38 @@
 Energy availability model for storing energy forecast and availability data.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Numeric, Boolean, Date, func
+from sqlalchemy import Column, Index, Integer, String, DateTime, Numeric, Boolean, Date, func, text
 from app.db.database import Base
 from app.models.base_dict_mixin import BaseDictMixin
 
 class EnergyAvailability(Base, BaseDictMixin):
     """
     Model for energy availability predictions and forecasts.
-    
+
     Stores information about available energy capacity from different providers,
     including renewable sources, weather dependencies, and forecast confidence.
     """
     __tablename__ = 'energy_availability'
+    __table_args__ = (
+        # One demand row per identifier (provider_name holds '<namespace>/<name>').
+        Index(
+            "ix_energy_availability_demand_provider_name",
+            "provider_name",
+            unique=True,
+            postgresql_where=text("record_type = 'demand'"),
+        ),
+        # One supply row per (provider_name, slot_start_time, slot_end_time, data_source)
+        # so real and predicted rows can coexist without overwriting each other.
+        Index(
+            "ix_energy_availability_supply_provider_slot_source",
+            "provider_name",
+            "slot_start_time",
+            "slot_end_time",
+            "data_source",
+            unique=True,
+            postgresql_where=text("record_type = 'supply'"),
+        ),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     provider_name = Column(String(100), nullable=False, doc="Name of the energy provider")

@@ -98,6 +98,52 @@ if ! kubectl get pod -l app=eao-postgres -n "$NAMESPACE" --no-headers 2>/dev/nul
 fi
 print_info "PostgreSQL is running ✓"
 
+# Apply migrations and check for ORM/DB schema drift before rolling a new
+# pod. entrypoint.sh also runs `alembic upgrade head` on pod start (belt
+# and suspenders for crash-restarts), but doing it here too means a broken
+# migration or a model that's drifted from the DB fails the deploy loudly,
+# instead of surfacing later as a CrashLoopBackOff.
+print_info "Applying migrations and checking for schema drift..."
+DB_SVC_NAME=$(kubectl get svc -n "$NAMESPACE" -l app=eao-postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ -z "$DB_SVC_NAME" ]; then
+    print_error "Could not find the PostgreSQL service in namespace $NAMESPACE"
+    exit 1
+fi
+
+DB_NAME="${POSTGRES_DB:-orchestration_db}"
+DB_USER="${POSTGRES_USER:-postgres}"
+DB_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
+ALEMBIC_CHECK_PORT=15432
+
+kubectl port-forward -n "$NAMESPACE" "svc/$DB_SVC_NAME" "${ALEMBIC_CHECK_PORT}:5432" > /tmp/alembic-check-pf.log 2>&1 &
+PF_PID=$!
+trap 'kill $PF_PID 2>/dev/null || true' EXIT
+
+PF_READY=false
+for _ in $(seq 1 15); do
+    if nc -z localhost "$ALEMBIC_CHECK_PORT" 2>/dev/null; then
+        PF_READY=true
+        break
+    fi
+    sleep 1
+done
+if [ "$PF_READY" != true ]; then
+    print_error "Could not reach PostgreSQL via port-forward to run migrations"
+    exit 1
+fi
+
+MIGRATION_DB_URL="postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@localhost:${ALEMBIC_CHECK_PORT}/${DB_NAME}"
+if ! (cd "$PROJECT_ROOT" && DATABASE_URL="$MIGRATION_DB_URL" uv run alembic upgrade head); then
+    print_error "Migration failed - aborting deploy"
+    exit 1
+fi
+if ! (cd "$PROJECT_ROOT" && DATABASE_URL="$MIGRATION_DB_URL" uv run alembic check); then
+    print_error "ORM models have drifted from the DB schema - fix before deploying (see diff above)"
+    exit 1
+fi
+print_info "Migrations applied, no schema drift ✓"
+kill $PF_PID 2>/dev/null || true
+
 # Build Docker image
 if [ "$BUILD_IMAGE" = true ]; then
     print_info "Building Docker image..."

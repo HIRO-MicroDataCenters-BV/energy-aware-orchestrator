@@ -43,7 +43,7 @@ energy-metric-service/
 - **Grid Capacity Polling:** Periodically polls an external grid API for live supply data (see [Grid Integration](#-grid-integration))
 - **Supply Forecasting:** Predicts future supply for slots beyond what live polling has reached (see [Supply Forecasting](#-supply-forecasting-predictions)) — currently a dummy averaging model, not yet a trained ML model (see [Known Limitations](#-known-limitations--next-steps))
 - **Demand Reporting:** Tracks each workload's currently required watts, reported by `energy-aware-operator` (see [Demand Reporting](#-demand-reporting))
-- **Automatic Database Migrations:** Alembic migrations run on every container start (see [Database Migrations](#-database-migrations))
+- **Automatic Database Migrations:** Alembic migrations run at deploy time and on every container start, with a drift check gating the deploy (see [Database Migrations](#-database-migrations))
 - **Kubernetes Integration:** Pod and namespace management APIs
 - **Time Series Analysis:** Historical data and trend monitoring
 - **Custom PostgreSQL Helm Chart:** Easy, persistent storage setup
@@ -199,10 +199,18 @@ Top-level chart values:
 
 ## 🔄 Database Migrations
 
-Schema changes are managed with **Alembic** (`migrations/`).
+Schema changes are managed with **Alembic** (`migrations/`), applied at two points:
 
-- **On every container start**, `entrypoint.sh` runs `alembic upgrade head` before starting the app — no manual migration step needed for a normal deploy, fresh install or existing DB alike.
+1. **Deploy time** — `scripts/deploy-app.sh` opens a temporary port-forward to Postgres, runs `alembic upgrade head`, then `alembic check` (drift detection — see below), and **aborts the deploy** if either fails. This means a broken migration or a model that's drifted from the DB fails loudly on the host before a pod ever rolls, instead of surfacing later as a `CrashLoopBackOff`. `deploy-all.sh`/`deploy-full-stack.sh` inherit this for free since they call `deploy-app.sh`.
+2. **Pod start** — `entrypoint.sh` also runs `alembic upgrade head` before starting the app, every container start. This is what actually matters for crash-restarts or node reschedules, where deploy-app.sh never runs again; the deploy-time run above is a fail-fast check, not a replacement for it.
 - **Single-replica assumption:** Alembic has no built-in locking. If `app.replicaCount` is ever raised above 1, migrations should move to a Helm pre-upgrade hook Job instead of running from every replica's `entrypoint.sh`.
+
+**Drift detection:** `alembic check` compares the live DB schema directly against the current ORM models (not against migration history), so it only produces meaningful results *after* `alembic upgrade head` has run against that DB — running it first would flag a legitimately-pending migration as if it were drift. If a model and the DB disagree (a forgotten index, a type mismatch, a missing `server_default`), `alembic check` exits non-zero and `deploy-app.sh` stops before deploying. Run it manually anytime with:
+
+```bash
+cd energy-metric-service
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/orchestration_db uv run alembic check
+```
 
 To add a new migration:
 
@@ -211,6 +219,7 @@ cd energy-metric-service
 uv run alembic revision -m "describe the change"
 # edit the generated file in migrations/versions/
 uv run alembic upgrade head   # test it locally against DATABASE_URL
+uv run alembic check          # confirm the model changes you made match what the migration produced
 ```
 
 Always verify a new migration against **both** a fresh/empty database and an existing one before merging — the baseline migration (`512771aab2f7`) exists specifically to make fresh installs and upgrades follow the same path.

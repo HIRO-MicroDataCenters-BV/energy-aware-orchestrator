@@ -9,8 +9,8 @@ from app.db.database import Base
 class ApplicationDefinition(Base):
     __tablename__ = "app_definitions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    name = Column(String(255), unique=True, nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), unique=True, nullable=False)
     namespace = Column(String(255), nullable=False, default="default")
     description = Column(Text, nullable=True)
     manifest = Column(Text, nullable=False)

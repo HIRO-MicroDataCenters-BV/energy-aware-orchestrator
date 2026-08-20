@@ -2,7 +2,7 @@
 Node metrics model - updated to match new database schema.
 """
 
-from sqlalchemy import Column, String, Float, BigInteger, Integer, PrimaryKeyConstraint, DateTime
+from sqlalchemy import Column, String, Float, BigInteger, Integer, PrimaryKeyConstraint, DateTime, func
 from app.db.database import Base
 
 class NodeMetrics(Base):
@@ -33,7 +33,7 @@ class NodeMetrics(Base):
     energy_watts = Column(Float)
     
     # Auto-generated timestamp
-    created_at = Column(DateTime)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         PrimaryKeyConstraint('timestamp', 'node_name'),
