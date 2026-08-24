@@ -170,23 +170,6 @@ prometheus:
           action: keep
           regex: http
 
-    - job_name: 'cadvisor'
-      kubernetes_sd_configs:
-        - role: endpoints
-          namespaces:
-            names:
-              - default
-      relabel_configs:
-        - source_labels: [__meta_kubernetes_service_name]
-          action: keep
-          regex: energy-metrics-cadvisor
-        - source_labels: [__meta_kubernetes_endpoint_port_name]
-          action: keep
-          regex: http
-      scrape_interval: 15s
-      scrape_timeout: 10s
-      metrics_path: /metrics
-
     - job_name: 'node-exporter'
       kubernetes_sd_configs:
         - role: endpoints

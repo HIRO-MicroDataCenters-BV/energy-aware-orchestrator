@@ -20,6 +20,8 @@ energy-metric-service/
 ├── charts/
 │   ├── app/                # Helm chart for FastAPI app (incl. dev/test grid stub)
 │   └── postgres/           # Helm chart for PostgreSQL
+├── docs/
+│   └── SCHEDULER_ARCHITECTURE.md  # Background scheduler internals & data flow
 ├── migrations/            # Alembic database migrations (see "Database Migrations" below)
 │   └── versions/
 ├── scripts/
@@ -452,7 +454,8 @@ kubectl delete pvc -n <namespace> -l app=eao-postgres
 
 - **Supply forecasting uses a dummy model, not real ML.** `PredictionService` currently just averages historical real supply per slot-of-day bucket — it's a deliberate placeholder with a clean swap interface (see [How to Swap in a Real ML Model](#how-to-swap-in-a-real-ml-model)), not a trained model. **Making this a real model is the next planned step.**
 - **Single-replica migrations.** See [Database Migrations](#-database-migrations) — needs a Helm hook Job if `replicaCount` is ever raised.
-- **The custom `cadvisor` scrape job in `energy-monitoring-helm-stack` is unused.** Container metrics collection reads cAdvisor data via the built-in `job="kubernetes-nodes-cadvisor"` instead (see [Container Metrics Collection](#-container-metrics-collection)) since it carries clean pod/namespace/container labels the DaemonSet's own raw scrape doesn't. The custom job is otherwise harmless but redundant - a candidate for removal.
+- **The custom `cadvisor` scrape job in `energy-monitoring-helm-stack` has been removed.** Container metrics collection reads cAdvisor data via the built-in `job="kubernetes-nodes-cadvisor"` instead (see [Container Metrics Collection](#-container-metrics-collection)) since it carries clean pod/namespace/container labels the DaemonSet's own raw scrape doesn't. The standalone `cadvisor` DaemonSet/Service and its two dedicated dashboards are still deployed - removing those needs a live-cluster check first (see [docs/SCHEDULER_ARCHITECTURE.md](docs/SCHEDULER_ARCHITECTURE.md) for related scheduler context).
+- **`DeploymentScheduler` is unused - a removal candidate.** It's not the active scheduling path; `energy-aware-operator` schedules workloads today. See [docs/SCHEDULER_ARCHITECTURE.md](docs/SCHEDULER_ARCHITECTURE.md) for the full picture of what's active vs. dead code among this service's background schedulers.
 
 ---
 

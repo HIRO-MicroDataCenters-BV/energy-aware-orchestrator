@@ -1,416 +1,198 @@
-# Energy-Aware Orchestration Scheduler Architecture
+# Scheduler Architecture
 
-> ⚠️ **Outdated.** This document describes an earlier architecture where the
-> Kopf operator and scheduling logic lived inside `energy-metric-service`
-> itself (`app/crd/operator.py`, `app/servicesv2/eao_scheduler_service.py`
-> below). Both have since moved to their own repo, `energy-aware-operator`
-> (see its README) - `eao_scheduler_service.py` no longer exists in this
-> repo. Kept here for historical context, not as a guide to the current
-> system.
+This document describes the background schedulers that run inside
+`energy-metric-service`. There is no Kopf operator or CRD reconcile loop in
+this repo - that logic lives in the separate `energy-aware-operator` repo
+(see its README). This service exposes a REST API and runs five independent
+`asyncio` background loops, started from `app/main.py`'s FastAPI `lifespan`
+handler and stopped on shutdown.
 
 ## Overview
 
-The Energy-Aware Orchestration (EAO) system provides intelligent workload scheduling based on energy availability and workload priority. 
-It follows the **Kubernetes Operator Pattern** with a separate **Scheduler Service** for business logic.
-
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         EnergyAwareOrchestration System                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   ┌─────────────────┐                      ┌──────────────────────────┐     │
-│   │  User/Admin     │                      │   Energy Availability    │     │
-│   │                 │                      │   Database (PostgreSQL)  │     │
-│   └────────┬────────┘                      └────────────┬─────────────┘     │
-│            │                                            │                   │
-│            │ kubectl apply                              │ Energy Data       │
-│            ▼                                            ▼                   │
-│   ┌─────────────────────────────────────────────────────────────────────┐   │
-│   │                     Kubernetes Cluster                              │   │
-│   │  ┌──────────────────────────────────────────────────────────────┐   │   │
-│   │  │              EnergyAwareOrchestration CRD                    │   │   │
-│   │  │  - spec.priority (Critical/Preferred/Optional)               │   │   │
-│   │  │  - spec.energyConsumption (Watts)                            │   │   │
-│   │  │  - spec.applicationRef                                       │   │   │
-│   │  │  - status.phase                                              │   │   │
-│   │  │  - status.decision                                           │   │   │
-│   │  │  - status.energyMetrics                                      │   │   │
-│   │  └──────────────────────────────────────────────────────────────┘   │   │
-│   │                              │                                      │   │
-│   │                              │ Watch Events                         │   │
-│   │                              ▼                                      │   │
-│   │  ┌──────────────────────────────────────────────────────────────┐   │   │
-│   │  │                    Kopf Operator                             │   │   │
-│   │  │                  (app/crd/operator.py)                       │   │   │
-│   │  │                                                              │   │   │
-│   │  │  • on.create / on.update → Reconcile CR                      │   │   │
-│   │  │  • timer (1hr) → Re-evaluate schedules                       │   │   │
-│   │  │  • on.delete → Cleanup                                       │   │   │
-│   │  │  • Posts Kubernetes Events                                   │   │   │
-│   │  └──────────────────────────────────────────────────────────────┘   │   │
-│   │                              │                                      │   │
-│   │                              │ Calculate Schedule                   │   │
-│   │                              ▼                                      │   │
-│   │  ┌──────────────────────────────────────────────────────────────┐   │   │
-│   │  │              EAO Scheduler Service                           │   │   │
-│   │  │       (app/servicesv2/eao_scheduler_service.py)              │   │   │
-│   │  │                                                              │   │   │
-│   │  │  Priority-Based Scheduling:                                  │   │   │
-│   │  │  ┌─────────────┬────────────────────────────────────────┐    │   │   │
-│   │  │  │ Critical    │ DeployImmediately (24/7 operation)     │    │   │   │
-│   │  │  │ Preferred   │ Delay 6h if energy insufficient        │    │   │   │
-│   │  │  │ Optional    │ Best slot in next 24h                  │    │   │   │
-│   │  │  └─────────────┴────────────────────────────────────────┘    │   │   │
-│   │  └──────────────────────────────────────────────────────────────┘   │   │
-│   │                              │                                      │   │
-│   │                              │ Update Status                        │   │
-│   │                              ▼                                      │   │
-│   │  ┌──────────────────────────────────────────────────────────────┐   │   │
-│   │  │                   CR Status Updated                          │   │   │
-│   │  │  status:                                                     │   │   │
-│   │  │    phase: Scheduled                                          │   │   │
-│   │  │    decision:                                                 │   │   │
-│   │  │      action: DeployImmediately | Scheduled | Delayed         │   │   │
-│   │  │      scheduledSlot: { slotNumber, slotStart, slotEnd }       │   │   │
-│   │  │    energyMetrics: { requiredWatts, sufficient }              │   │   │
-│   │  └──────────────────────────────────────────────────────────────┘   │   │
-│   └─────────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                         FastAPI app (main.py)                         │
+│                                                                       │
+│   lifespan(): start() each enabled scheduler on boot, stop() on       │
+│   shutdown. Each scheduler is a single asyncio task running its own   │
+│   "do work, sleep interval_seconds, repeat" loop - independent of     │
+│   the others and of the request-handling event loop.                 │
+└───────────────────────────────────────────────────────────────────────┘
+        │                │                │                │            │
+        ▼                ▼                ▼                ▼            ▼
+ MetricCollector   GridPolling      Forecasting  MetricsRetention  Deployment
+   Scheduler        Scheduler        Scheduler      Scheduler      Scheduler
+                                                                   (unused, see end)
 ```
 
+| Scheduler | File | Default interval | Enabled by | Default |
+|---|---|---|---|---|
+| `MetricCollectorScheduler` | `app/scheduler/metric_collector_scheduler.py` | 30s | `ENABLE_METRICS_SCHEDULER` | off |
+| `GridPollingScheduler` | `app/scheduler/grid_polling_scheduler.py` | 300s | `ENABLE_GRID_POLLING` + `GRID_API_URL` | on, but dormant without a URL |
+| `ForecastingScheduler` | `app/scheduler/forecasting_scheduler.py` | 1800s | `ENABLE_FORECASTING` | on |
+| `MetricsRetentionScheduler` | `app/scheduler/metrics_retention_scheduler.py` | 3600s | `ENABLE_METRICS_RETENTION` | on |
+| `DeploymentScheduler` (NOT USED - see end of doc) | `app/scheduler/deployment_scheduler.py` | 30s | `ENABLE_DEPLOYMENT_SCHEDULER` | on |
 
-## Time Slot System
-
-The day is divided into **4 time slots** of **6 hours each**:
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                          24-Hour Day                               │
-├────────────┬────────────┬────────────┬────────────────────────────┤
-│   Slot 1   │   Slot 2   │   Slot 3   │          Slot 4            │
-│ 00:00-06:00│ 06:00-12:00│ 12:00-18:00│       18:00-24:00          │
-│  Midnight  │  Morning   │ Afternoon  │         Evening            │
-│   to 6am   │  to Noon   │  to 6pm    │       to Midnight          │
-└────────────┴────────────┴────────────┴────────────────────────────┘
-```
-
-## Scheduling Logic by Priority
-
-### Critical Priority
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     CRITICAL WORKLOADS                              │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  Decision: DeployImmediately                                        │
-│  Behavior: Run 24/7, regardless of energy availability              │
-│                                                                     │
-│  Example Use Cases [e.g of workload type]:                          │
-│  • Production APIs                                                  │
-│  • Real-time data processing                                        │
-│  • Security services                                                │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │  CR Created → Operator → Scheduler                          │    │
-│  │                            │                                │    │
-│  │                            ▼                                │    │
-│  │                  if priority == Critical:                   │    │
-│  │                      return DeployImmediately               │    │
-│  │                                                             │    │
-│  │  Status: phase=Scheduled, action=DeployImmediately          │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Preferred Priority
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                   PREFERRED WORKLOADS                               │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  Decision: Scheduled (now) OR Delayed (6 hours)                     │
-│  Behavior: If energy insufficient → delay to next slot              │
-│                                                                     │
-│  Example Use Cases:                                                 │
-│  • Batch processing jobs                                            │
-│  • Data synchronization                                             │
-│  • Report generation                                                │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │  CR Created → Operator → Scheduler                          │    │
-│  │                            │                                │    │
-│  │                            ▼                                │    │
-│  │         ┌─────────────────────────────────────┐             │    │
-│  │         │ Is energy_available >= required?    │             │    │
-│  │         └──────────────┬──────────────────────┘             │    │
-│  │                        │                                    │    │
-│  │              ┌─────────┴─────────┐                          │    │
-│  │              │                   │                          │    │
-│  │            Yes                  No                          │    │
-│  │              │                   │                          │    │
-│  │              ▼                   ▼                          │    │
-│  │         Scheduled           Delayed                         │    │
-│  │        (current slot)     (next slot +6h)                   │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Optional Priority
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     OPTIONAL WORKLOADS                              │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  Decision: Scheduled (best slot in 24h)                             │
-│  Behavior: Find slot with most available energy in next 24 hours    │
-│                                                                     │
-│  Example Use Cases:                                                 │
-│  • ML model training                                                │
-│  • Analytics jobs                                                   │
-│  • Backup operations                                                │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │  CR Created → Operator → Scheduler                          │    │
-│  │                            │                                │    │
-│  │                            ▼                                │    │
-│  │       ┌────────────────────────────────────────────┐        │    │
-│  │       │ Get all slots in next 24 hours             │        │    │
-│  │       │ [Slot N, Slot N+1, Slot N+2, Slot N+3]     │        │    │
-│  │       └────────────────────┬───────────────────────┘        │    │
-│  │                            │                                │    │
-│  │                            ▼                                │    │
-│  │       ┌────────────────────────────────────────────┐        │    │
-│  │       │ For each slot:                             │        │    │
-│  │       │   - Query energy availability              │        │    │
-│  │       │   - Check if sufficient for workload       │        │    │
-│  │       └────────────────────┬───────────────────────┘        │    │
-│  │                            │                                │    │
-│  │                            ▼                                │    │
-│  │       ┌────────────────────────────────────────────┐        │    │
-│  │       │ Select best slot:                          │        │    │
-│  │       │   1. First with sufficient energy          │        │    │
-│  │       │   2. Or slot with most available energy    │        │    │
-│  │       └────────────────────┬───────────────────────┘        │    │
-│  │                            │                                │    │
-│  │                            ▼                                │    │
-│  │                   Status: Scheduled                         │    │
-│  │                   scheduledSlot: { best slot }              │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-```
+Every loop follows the same shape: try the work, catch and log any
+exception, then `asyncio.sleep(interval_seconds)` and repeat. A failure in
+one cycle (a bad Prometheus response, an unreachable grid API, one
+malformed slot) never stops the loop - it's logged and retried on the next
+interval.
 
 ---
 
-## Component Details
+## 1. MetricCollectorScheduler
 
-### 1. Custom Resource Definition (CRD)
+Polls Prometheus every cycle and stores two kinds of rows:
 
-**File:** `app/crd/energy_aware_orchestration_model.py`
+- **Node-level metrics** (`node_metrics` table) via `PrometheusMetricsService`
+- **Per-container metrics** (`container_power_metrics` table) via `PrometheusContainerMetricsService`
 
-```yaml
-apiVersion: eas.hiro.io/v1
-kind: EnergyAwareOrchestration
-metadata:
-  name: my-workload
-spec:
-  applicationRef:
-    name: my-app
-    namespace: default
-  energyConsumption: 200      # Watts required
-  forecastWindowDays: 7       # Days to forecast
-  priority: Optional          # Critical | Preferred | Optional
-status:
-  phase: Scheduled            # Pending | Scheduled | Running | Completed | Failed
-  decision:
-    action: Scheduled         # DeployImmediately | Scheduled | Delayed | Waiting
-    reason: "Human-readable explanation"
-    scheduledSlot:
-      slotNumber: 2           # 1-4
-      slotStart: "2025-12-09T06:00:00+00:00"
-      slotEnd: "2025-12-09T12:00:00+00:00"
-      availableEnergyWatts: 500.0
-    nextEvaluationTime: "2025-12-09T06:00:00+00:00"
-  energyMetrics:
-    currentSlotAvailableWatts: 300.0
-    currentSlotConsumedWatts: 150.0
-    requiredWatts: 200.0
-    sufficient: true
-  lastUpdated: "2025-12-09T07:16:26+00:00"
-```
+The two collection calls are wrapped in separate `try`/`except` blocks so a
+failure collecting one never blocks the other. This is the scheduler that
+feeds real energy-consumption data into everything downstream (deployment
+energy checks, the demand side of the data-flow diagrams in the root
+README).
 
----
+Off by default (`ENABLE_METRICS_SCHEDULER=false`) - a cluster without Kepler/
+cAdvisor wired up yet shouldn't be spending a cycle every 30s hitting
+Prometheus.
 
-## Data Flow
+## 2. GridPollingScheduler
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                          Scheduling Flow                                 │
-└──────────────────────────────────────────────────────────────────────────┘
+Polls an external grid capacity API (`GRID_API_URL`) via `GridAPIClient` and
+upserts each returned slot as a **real supply** row in `energy_availability`
+(`app/repositories/energy_availability.py`, `record_type="supply"`).
 
-1. USER CREATES CR
-   │
-   │  kubectl apply -f my-eao.yaml
-   │
-   ▼
-2. KOPF OPERATOR RECEIVES EVENT
-   │
-   │  @kopf.on.create triggers reconcile_handler
-   │
-   ▼
-3. EXTRACT SPEC
-   │
-   │  priority = spec.priority
-   │  energy_consumption = spec.energyConsumption
-   │  application_ref = spec.applicationRef
-   │
-   ▼
-4. CALL SCHEDULER SERVICE
-   │
-   │  scheduler.calculate_schedule(priority, energy_consumption)
-   │
-   ▼
-5. SCHEDULER EVALUATES
-   │
-   │  ┌─────────────────────────────────────────────┐
-   │  │  if Critical:                               │
-   │  │      return DeployImmediately               │
-   │  │  if Preferred:                              │
-   │  │      if energy_sufficient:                  │
-   │  │          return Scheduled (current slot)    │
-   │  │      else:                                  │
-   │  │          return Delayed (next slot)         │
-   │  │  if Optional:                               │
-   │  │      return Scheduled (best slot in 24h)    │
-   │  └─────────────────────────────────────────────┘
-   │
-   ▼
-6. UPDATE CR STATUS
-   │
-   │  patch.status["phase"] = "Scheduled"
-   │  patch.status["decision"] = { action, reason, scheduledSlot }
-   │  patch.status["energyMetrics"] = { ... }
-   │
-   ▼
-7. POST KUBERNETES EVENT
-   │
-   │  kopf.event(body, type="Normal", reason="Scheduled", message="...")
-   │
-   ▼
-8. PERIODIC RE-EVALUATION (every hour)
-   │
-   │  @kopf.timer re-runs scheduler to update if conditions change
-   │
-   ▼
-9. DONE
-```
+Stays dormant (constructed as `None`, never started) if `GRID_API_URL` isn't
+set - there's nothing to poll without a real endpoint, and logging a
+connection error every 5 minutes would be noise. **This is currently backed
+by a mock/dev stub** - wiring a real external grid endpoint is open backlog
+work (see `energy-aware-operator` demand-reporting integration, US5).
+
+Each slot is upserted independently inside its own `try`/`except`, so one
+malformed slot in a batch doesn't discard the rest of that cycle's data.
+
+## 3. ForecastingScheduler
+
+Refreshes **predicted supply** rows so the scheduler has a sensible answer
+for slots beyond what live grid polling has reached. Every 30 minutes
+(default), for each distinct provider with real supply history:
+
+1. Pull up to 14 days of real supply history for that provider
+2. Call `PredictionService.predict(history, future_slots)` for the next 8
+   fixed 6-hour slots (aligned to 0/6/12/18 UTC boundaries, i.e. 2 days ahead)
+3. Upsert each prediction as a `record_type="supply"` row with `data_source="predicted"`, so it can be picked up by demand resolution
+
+`PredictionService.predict()` is currently a **placeholder**: it buckets
+history by hour-of-day/slot and returns the historical average per bucket -
+it is not a trained model. Replacing it with a real forecasting model is
+open backlog work; the integration point (same input/output contract) is
+this call site, so a real model can be swapped in without touching the
+scheduler itself.
+
+A provider with no real supply history yet is a no-op cycle, not an error -
+there's nothing to forecast from.
+
+## 4. MetricsRetentionScheduler
+
+Deletes rows older than `retention_days` (default 30) from `node_metrics`
+and `container_power_metrics` every hour. Both tables get a fresh row every
+`MetricCollectorScheduler` cycle with no upsert, so nothing else ever
+removes old data - confirmed in practice, `container_power_metrics` alone
+reaches roughly 141K rows/day at default 30s collection. This scheduler
+exists purely as a hygiene/safety measure and is on by default.
 
 ---
 
-## Integration with Energy Data
+## End-to-end data flow
 
-The scheduler integrates with the existing energy availability system:
+How the five schedulers feed each other, from raw metrics/grid data down to
+an actual deployment decision:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Energy Data Integration                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌──────────────────────┐      ┌───────────────────────────────┐   │
-│  │ EnergyAvailability   │      │  EnergyAvailabilityService    │   │
-│  │ (PostgreSQL Table)   │◄────▶│  - get_current_time_slot()    │   │
-│  │                      │      │  - calculate_available_energy()│   │
-│  │  - slot_start_time   │      │  - check_energy_sufficient()  │   │
-│  │  - slot_end_time     │      └───────────────────────────────┘   │
-│  │  - available_watts   │                    ▲                     │
-│  │  - provider_name     │                    │                     │
-│  │  - confidence_%      │                    │                     │
-│  └──────────────────────┘                    │                     │
-│                                              │                     │
-│  ┌───────────────────────────────────────────┴───────────────────┐ │
-│  │                   EAO Scheduler Service                       │ │
-│  │                                                               │ │
-│  │  async def get_energy_for_slot(slot):                         │ │
-│  │      repository = EnergyAvailabilityRepository(session)       │ │
-│  │      availability = await repository.get_all(                 │ │
-│  │          start_time=slot.start_time,                          │ │
-│  │          end_time=slot.end_time                               │ │
-│  │      )                                                        │ │
-│  │      slot.available_energy_watts = availability.available_watts │ │
-│  │      return slot                                              │ │
-│  └───────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
+ GridPollingScheduler          MetricCollectorScheduler
+ (every 5 min, if               (every 30s, if enabled)
+  GRID_API_URL set)                      │
+        │                                ▼
+        │                     Prometheus (Kepler + cAdvisor)
+        ▼                                │
+ energy_availability                     ▼
+   record_type=supply          node_metrics /
+   data_source=real             container_power_metrics
+        │                                │
+        │                                │ (last 1h, summed)
+        ▼                                │
+ ForecastingScheduler                    │
+ (every 30 min)                          │
+   reads real supply history             │
+   writes predicted slots ─┐             │
+        │                  │             │
+        ▼                  │             │
+ energy_availability        │             │
+   record_type=supply       │             │
+   data_source=predicted    │             │
+        │                  │             │
+        └──────────┬───────┘             │
+                    ▼                    │
+      EnergyAvailabilityService          │
+      .get_current_time_slot_energy()    │
+        real slot preferred over         │
+        predicted for the same window    │
+                    │                    │
+                    ▼                    ▼
+          slot_energy_watts  −  current_consumption_watts
+                    │
+                    ▼
+          total_available_watts  ≥  required_energy_watts ?
+                    │
+                    ▼
+         Consumed by whatever actually makes deployment decisions:
+           - energy-aware-operator (separate repo) - the real path today
+           - DeploymentScheduler (this repo, every 30s) - NOT USED in
+             production, see "Unused: DeploymentScheduler" below
+                    │
+                    ▼
+         kubectl/helm/CR apply to the cluster
 ```
+
+`MetricsRetentionScheduler` runs alongside this independently, deleting rows
+from `node_metrics`/`container_power_metrics` older than `retention_days` -
+it doesn't sit in the decision path above, it just keeps those two tables
+bounded.
 
 ---
----
 
-## Usage Examples
+## Unused: DeploymentScheduler
 
-### Deploy a Critical Workload
+Runs `DeploymentSchedulerService.process_pending_deployments()` every 30s,
+but nothing in production relies on its output: real workload scheduling
+lives in the separate `energy-aware-operator` repo (CRD + reconcile loop).
+This scheduler, the `ApplicationDeployment`/`ApplicationDefinition` tables
+it drives, and the `EnergyAvailabilityService.check_energy_sufficient_
+for_deployment()` energy check it alone calls (no API endpoint or other
+service touches it) are a leftover in-repo path with no other caller
+anywhere in this codebase. Treat it as a removal candidate (see Future
+Enhancements), not as documentation of how deployments actually get made.
 
-```yaml
-apiVersion: eas.hiro.io/v1
-kind: EnergyAwareOrchestration
-metadata:
-  name: production-api
-spec:
-  applicationRef:
-    name: api-server
-    namespace: production
-  energyConsumption: 100
-  forecastWindowDays: 7
-  priority: Critical
-```
-
-**Result:**
-```
-status:
-  phase: Scheduled
-  decision:
-    action: DeployImmediately
-    reason: "Critical priority workload - deploy immediately (24/7 operation)"
-```
-
-### Deploy an Optional Workload
-
-```yaml
-apiVersion: eas.hiro.io/v1
-kind: EnergyAwareOrchestration
-metadata:
-  name: ml-training
-spec:
-  applicationRef:
-    name: training-job
-    namespace: ml
-  energyConsumption: 500
-  forecastWindowDays: 3
-  priority: Optional
-```
-
-**Result:**
-```
-status:
-  phase: Scheduled
-  decision:
-    action: Scheduled
-    reason: "Optional workload - best slot found with sufficient energy"
-    scheduledSlot:
-      slotNumber: 3
-      slotStart: "2025-12-09T12:00:00+00:00"
-      slotEnd: "2025-12-09T18:00:00+00:00"
-```
+Briefly, when active: it polls `ApplicationDeployment` rows in
+`Created`/`Schedule` status, checks each one's `WorkloadType`
+(`Critical` skips the energy check; `Preferred`/`Optional` require the
+current slot's available watts, real supply preferred over predicted, to
+cover the estimated requirement), then delegates to a `kubernetes` /
+`helm` / `custom` deployment service based on `deployment_type`.
 
 ---
 
 ## Future Enhancements
 
-1. **Deployment Trigger** - Actually deploy workloads at scheduled times
-2. **Energy Forecasting** - Predict future energy availability using ML
-3. **Cost Optimization** - Consider energy cost in addition to availability
-4. **Multi-Cluster** - Schedule across multiple clusters
-5. **Preemption** - Allow Critical workloads to preempt Optional ones
-
-
+1. **Real ML forecasting model** - replace `PredictionService.predict()`'s
+   historical-average placeholder with an actual trained model
+2. **Real external grid endpoint** - `GridPollingScheduler` currently talks
+   to a mock/dev stub; wire up a production grid API
+3. **Remove the unused DeploymentScheduler path** - `DeploymentScheduler`,
+   `DeploymentSchedulerService`, and the energy-resolution code it alone
+   calls are dead weight now that `energy-aware-operator` is the real
+   scheduling path; delete rather than keep maintaining in parallel
+4. **Cost optimization** - factor energy cost, not just availability, into
+   deployment decisions (in whichever repo ends up owning scheduling)

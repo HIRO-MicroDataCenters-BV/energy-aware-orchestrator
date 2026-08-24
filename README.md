@@ -8,25 +8,25 @@ A Kubernetes platform that schedules workloads based on real-time and forecasted
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                          Kubernetes Cluster                              │
-│                                                                          │
-│  ┌─────────────────────┐        ┌──────────────────────────────────┐   │
-│  │  energy-aware-      │  calls │  energy-metric-service           │   │
-│  │  operator           │───────▶│  (FastAPI + PostgreSQL)          │   │
-│  │  (Kopf / Python)    │        │  /api/energy-availability/...    │   │
-│  │                     │        └──────────────┬───────────────────┘   │
+│                          Kubernetes Cluster                             │
+│                                                                         │
+│  ┌─────────────────────┐        ┌──────────────────────────────────┐     │
+│  │  energy-aware-      │  calls │  energy-metric-service           │    │
+│  │  operator           │───────▶│  (FastAPI + PostgreSQL)          │    │
+│  │  (Kopf / Python)    │        │  /api/energy-availability/...    │    │
+│  │                     │        └──────────────┬───────────────────┘    │
 │  │  Watches EAO CRDs   │                       │ reads                  │
-│  │  Schedules workloads│        ┌──────────────▼───────────────────┐   │
-│  └─────────────────────┘        │  energy-monitoring-helm-stack    │   │
-│                                  │  Kepler → Prometheus → Grafana  │   │
-│  ┌─────────────────────┐        └──────────────────────────────────┘   │
+│  │  Schedules workloads│        ┌──────────────▼───────────────────┐    │
+│  └─────────────────────┘        │  energy-monitoring-helm-stack    │    │
+│                                 │  Kepler → Prometheus → Grafana   │    │
+│  ┌─────────────────────┐        └──────────────────────────────────┘    │
 │  │  orchestrator-      │                                                │
-│  │  library-ui         │  ◀─────── talks to energy-metric-service      │
-│  │  (Angular 20 + Nx)  │          via K8s proxy                        │
+│  │  library-ui         │  ◀─────── talks to energy-metric-service       │
+│  │  (Angular 20 + Nx)  │          via K8s proxy                         │
 │  └─────────────────────┘                                                │
-│                                                                          │
+│                                                                         │
 │  ┌─────────────────────┐                                                │
-│  │  workload/          │  ◀─────── EAO CRs applied by the user         │
+│  │  workload/          │  ◀─────── EAO CRs applied by the user          │
 │  │  (sample manifests) │                                                │
 │  └─────────────────────┘                                                │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -145,7 +145,7 @@ A FastAPI service that acts as the energy data backend for the operator and the 
 | `charts/app` | FastAPI application |
 | `charts/postgres` | Custom PostgreSQL StatefulSet |
 
-→ [energy-metric-service/README.md](energy-metric-service/README.md)
+→ [energy-metric-service/README.md](energy-metric-service/README.md) · [scheduler architecture](energy-metric-service/docs/SCHEDULER_ARCHITECTURE.md)
 
 ---
 
