@@ -12,10 +12,6 @@ data:
 {{ .Files.Get "dashboards/pod-node-energy-dashboard.json" | indent 4 }}
   kepler-container-energy-dashboard.json: |
 {{ .Files.Get "dashboards/kepler-container-energy-dashboard.json" | indent 4 }}
-  cadvisor-container-metrics-dashboard.json: |
-{{ .Files.Get "dashboards/cadvisor-container-metrics-dashboard.json" | indent 4 }}
-  cadvisor-node-metrics-dashboard.json: |
-{{ .Files.Get "dashboards/cadvisor-node-metrics-dashboard.json" | indent 4 }}
   node-container-metrics-dashboard.json: |
 {{ .Files.Get "dashboards/node-container-metrics-dashboard.json" | indent 4 }}
   node-metrics-dashboard.json: |

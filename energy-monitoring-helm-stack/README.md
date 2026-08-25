@@ -198,7 +198,7 @@ kepler:
       cpu: "500m"
 ```
 
-> **Namespace gotcha:** `prometheus.extraScrapeConfigs` in `values.yaml` hardcodes the namespace its `kepler`/`cadvisor`/`node-exporter` scrape jobs look for pods in (currently `default`, matching this repo's deploy convention). This is the **Kubernetes namespace**, not the Helm release/chart name (`energy-metrics`) — confusing the two silently breaks all three scrape jobs (zero targets discovered, no error). If you deploy this chart into a different namespace, update `prometheus.extraScrapeConfigs` to match.
+> **Namespace gotcha:** `prometheus.extraScrapeConfigs` in `values.yaml` hardcodes the namespace its `kepler`/`node-exporter` scrape jobs look for pods in (currently `default`, matching this repo's deploy convention). This is the **Kubernetes namespace**, not the Helm release/chart name (`energy-metrics`) — confusing the two silently breaks both scrape jobs (zero targets discovered, no error). If you deploy this chart into a different namespace, update `prometheus.extraScrapeConfigs` to match. (Container CPU/memory metrics come from Prometheus's own built-in `kubernetes-nodes-cadvisor` job, not from an `extraScrapeConfigs` entry — see [Container Metrics Collection](../energy-metric-service/README.md#-container-metrics-collection) in the service README.)
 
 ## 🔧 Troubleshooting
 
@@ -206,11 +206,11 @@ kepler:
 
 #### 1. **No Metrics in Grafana**
 ```bash
-# Check Prometheus actually has kepler/cadvisor/node-exporter as active,
-# healthy scrape targets - this is the most direct check and will catch a
-# namespace mismatch in extraScrapeConfigs (see Configuration note above),
-# which fails silently otherwise (no error, just zero targets)
-curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.scrapePool | test("kepler|cadvisor|node-exporter")) | {scrapePool, health}'
+# Check Prometheus actually has kepler/node-exporter/kubernetes-nodes-cadvisor
+# as active, healthy scrape targets - this is the most direct check and will
+# catch a namespace mismatch in extraScrapeConfigs (see Configuration note
+# above), which fails silently otherwise (no error, just zero targets)
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.scrapePool | test("kepler|node-exporter|cadvisor")) | {scrapePool, health}'
 
 # Verify Kepler is running
 kubectl get pods -n default -l app.kubernetes.io/name=kepler
