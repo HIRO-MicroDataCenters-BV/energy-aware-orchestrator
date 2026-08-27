@@ -356,6 +356,7 @@ flowchart TD
     B3 --> C
     C --> D["energy_availability<br/>record_type=demand"]
     D --> E["CR status.energyMetrics<br/>should match the DB row exactly"]
+    D --> H["GET /api/energy-availability/demand<br/>(external consumer, e.g. a grid operator)"]
 ```
 
 ```bash
@@ -383,6 +384,62 @@ status — `critical` at `0W` (a legitimately idle nginx container, resolved
 via the Measured tier, not a broken measurement) and `optional` at `200W`.
 One row per identifier confirmed (no history accumulation) — matches the
 "upsert, not append" design.
+
+**Also readable now, not just written** (added 2026-08-27, after deploying
+the new endpoint). `GET /api/energy-availability/demand` — optionally
+filtered by `identifier` — returns every workload's demand row, current and
+future, with no time-window restriction:
+
+```bash
+curl -s http://localhost:8000/api/energy-availability/demand | jq '.demand[] | {provider_name, slot_start_time, slot_end_time, available_watts}'
+```
+```json
+{"provider_name": "default/test-zero-check", "slot_start_time": "2026-08-20T18:00:00+00:00", "slot_end_time": "2026-08-21T00:00:00+00:00", "available_watts": 0.0}
+{"provider_name": "default/eaoprofile-critical", "slot_start_time": "2026-08-27T12:00:00+00:00", "slot_end_time": "2026-08-27T18:00:00+00:00", "available_watts": 0.0}
+{"provider_name": "default/eaoprofile-optional", "slot_start_time": "2026-08-27T18:00:00+00:00", "slot_end_time": "2026-08-28T00:00:00+00:00", "available_watts": 0.0}
+```
+
+```bash
+curl -s "http://localhost:8000/api/energy-availability/demand?identifier=default/eaoprofile-optional" | jq
+```
+```json
+{
+  "status": "success",
+  "filters": {"identifier": "default/eaoprofile-optional", "limit": 100},
+  "demand": [
+    {
+      "id": 172,
+      "provider_name": "default/eaoprofile-optional",
+      "slot_start_time": "2026-08-27T18:00:00+00:00",
+      "slot_end_time": "2026-08-28T00:00:00+00:00",
+      "available_watts": 0.0,
+      "forecast_date": "2026-08-27",
+      "is_active": true,
+      "record_type": "demand",
+      "data_source": "real"
+    }
+  ],
+  "count": 1
+}
+```
+
+Note `eaoprofile-optional`'s row here already carries a **future** slot
+(`18:00-00:00`, later than "now") since that's the slot the operator
+currently has it scheduled into per Scenario 6 — confirming this endpoint
+genuinely surfaces upcoming demand, not just what's active this instant.
+This is the piece that lets an actual grid operator see demand coming and
+plan supply for it, rather than data only ever flowing one direction
+(operator → DB, with nothing able to read it back out).
+
+One implementation note worth recording: this endpoint had to be registered
+*before* `GET /{availability_id}` in the router file, not after. FastAPI
+matches `/{availability_id}` against any single path segment (including the
+literal string "demand") and only validates it as an int afterward via
+Pydantic — it doesn't fall through to try other routes on a validation
+failure. Registering `/demand` later caused every call to 422 with "Input
+should be a valid integer, input: demand" instead of ever reaching the
+handler. `/current/active` and `/future/forecast` never hit this because
+they're two-segment paths, structurally incompatible with `/{availability_id}`.
 
 ---
 

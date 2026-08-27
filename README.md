@@ -136,7 +136,7 @@ A FastAPI service that acts as the energy data backend for the operator and the 
 
 - Scrapes Kepler energy metrics from Prometheus on a schedule and persists them in PostgreSQL (`container_power_metrics`).
 - Polls an external grid API (or a dev/test mock server) for live supply data, and predicts supply for future slots beyond what polling has reached — real always wins over predicted at query time.
-- Exposes a REST API including `/api/energy-availability/future/forecast` which the operator calls, and `/api/energy-availability/demand` which the operator reports to.
+- Exposes a REST API including `/api/energy-availability/future/forecast` which the operator calls, and `/api/energy-availability/demand` (`POST`/`GET`/`DELETE`) which the operator reports to and external consumers (e.g. a grid operator) can read back.
 - Resolves each workload's actual demand through a trained **Random Forest** consumption model (`app/energy_forecasting_model.pkl`, r²≈0.97, predicts watts from CPU/memory utilization) — used as a fallback tier when direct Kepler measurement isn't available, itself falling back to the operator's static estimate before deployment. (`energy_forecasting_linear_regression.pkl`/`energy_forecasting_scaler.pkl` at the repo root are earlier, unused artifacts — the model actually loaded lives under `app/`.)
 - Includes a Jupyter notebook (`energy_forecasting_model.ipynb`) and training script (`train_model.py`) for retraining.
 

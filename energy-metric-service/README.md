@@ -331,6 +331,7 @@ Only these two tables are covered - `energy_availability` (supply/demand) doesn'
 `energy-aware-operator` reports each EAO custom resource's currently-decided energy demand here, once per reconcile:
 
 - `POST /api/energy-availability/demand` — create/replace the single current demand row for a workload (`identifier` = `<namespace>/<name>`). One row per identifier — a fresh report replaces the previous slot/wattage rather than accumulating history, since a workload only ever has one currently-decided slot.
+- `GET /api/energy-availability/demand` — read reported demand back, optionally filtered by `identifier`. Returns both currently-active and future-scheduled slots (no time-window filter) since a workload's one row may already represent a future slot for Preferred/Optional priorities. Intended for external consumers (e.g. a grid operator) that need visibility into upcoming demand, not just "right now".
 - `DELETE /api/energy-availability/demand/{identifier}` — soft-deactivate a workload's demand record (called on CR deletion). Returns success (`404`-as-success) even if nothing was there, since the end state — no active demand — is the same either way.
 
 ### Demand Resolution: Real vs Predicted vs Estimated

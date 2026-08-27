@@ -457,6 +457,14 @@ wattage should match what's on the CR's own status.energyMetrics."
     "kubectl get eao $CRITICAL_CR -n $NAMESPACE -o jsonpath='{.status.energyMetrics}'; echo"
   run "$OPTIONAL_CR status.energyMetrics" \
     "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.energyMetrics}'; echo"
+
+  echo
+  echo "${BOLD}Now readable externally via the new GET /demand endpoint${RESET}"
+  echo "${DIM}(e.g. a grid operator querying this to know what demand to plan supply for)${RESET}"
+  run "all current + future demand, across every workload" \
+    "curl -s $APP_URL/api/energy-availability/demand | jq '.demand[] | {provider_name, slot_start_time, slot_end_time, available_watts}'"
+  run "filtered to one workload" \
+    "curl -s \"$APP_URL/api/energy-availability/demand?identifier=$NAMESPACE/$OPTIONAL_CR\" | jq"
   pause
 }
 
