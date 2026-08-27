@@ -49,13 +49,14 @@ class EnergyAvailabilityRepository:
         end_time: Optional[datetime] = None,
         forecast_date: Optional[date] = None,
         is_active: Optional[bool] = True,
+        record_type: Optional[str] = None,
         limit: int = 1000,
         order_by: str = "slot_start_time",
         order_direction: str = "desc"
     ) -> List[EnergyAvailability]:
         """
         Get energy availability records with optional filtering.
-        
+
         Args:
             provider_name: Filter by energy provider name
             location: Filter by location
@@ -64,10 +65,11 @@ class EnergyAvailabilityRepository:
             end_time: Filter records with slot_end_time <= this value
             forecast_date: Filter by forecast date
             is_active: Filter by active status
+            record_type: Filter by 'supply' or 'demand'
             limit: Maximum number of records to return
             order_by: Field to order by
             order_direction: Order direction (asc/desc)
-            
+
         Returns:
             List of EnergyAvailability records
         """
@@ -104,7 +106,10 @@ class EnergyAvailabilityRepository:
                 
             if is_active is not None:
                 conditions.append(EnergyAvailability.is_active == is_active)
-            
+
+            if record_type:
+                conditions.append(EnergyAvailability.record_type == record_type)
+
             if conditions:
                 query = query.where(and_(*conditions))
             

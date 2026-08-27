@@ -2,6 +2,8 @@
 
 A Kubernetes platform that schedules workloads based on real-time and forecasted energy availability. It collects node-level power consumption data, exposes an ML-backed forecast API, and uses a custom operator to decide when each workload should run — favouring slots with cheap or renewable energy.
 
+See [E2E_DEMO.md](E2E_DEMO.md) for a recorded, real-command walkthrough of the full cycle across all three services, or run [e2e_demo.sh](e2e_demo.sh) for a live narrated version.
+
 ---
 
 ## Architecture
@@ -254,6 +256,8 @@ energy-aware-orchestrator/
 ├── deploy-full-stack.sh                  # One-command full-stack deployment
 ├── DEPLOY.md                        # Deployment guide (prerequisites, steps, troubleshooting)
 ├── README.md                        # This file
+├── E2E_DEMO.md                      # Cross-repo end-to-end demo: metrics → forecasting → scheduling decision (recorded run)
+├── e2e_demo.sh                      # Same demo, live/interactive - narrates + executes + pauses between scenarios
 │
 ├── energy-aware-operator/           # Kubernetes operator (Python / Kopf)
 ├── energy-metric-service/           # Energy API + forecasting (FastAPI / PostgreSQL)

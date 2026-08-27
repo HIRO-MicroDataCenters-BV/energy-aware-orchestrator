@@ -265,6 +265,41 @@ async def get_future_availability(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve future energy availability: {str(e)}")
 
 
+@router.get("/demand", summary="Get workload demand records (current and future)")
+async def get_demand(
+    identifier: Optional[str] = Query(None, description="Filter by '<namespace>/<name>' identifier"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Get reported workload demand - both currently-active and future-scheduled
+    slots. Each identifier has exactly one row for whatever slot it's
+    currently decided to run in, which may itself be a future slot for
+    Preferred/Optional workloads - so an unfiltered read already covers both
+    current and future demand, not just "right now". Intended for external
+    consumers (e.g. a grid operator) that need visibility into upcoming
+    demand to plan supply ahead of time.
+    """
+    try:
+        repository = EnergyAvailabilityRepository(db)
+        records = await repository.get_all(
+            record_type="demand",
+            provider_name=identifier,
+            order_by="slot_start_time",
+            order_direction="asc",
+            limit=limit,
+        )
+        return {
+            "status": "success",
+            "filters": {"identifier": identifier, "limit": limit},
+            "demand": [record.to_dict() for record in records],
+            "count": len(records),
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving demand records: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve demand records: {str(e)}")
+
+
 @router.post("/demand", summary="Report a workload's current energy demand")
 async def report_demand(
     demand: DemandReport,
