@@ -125,7 +125,8 @@ class SimpleSchedulerService:
 
         return self.energy_api_client.map_api_slots_to_scheduler_slots(
             api_slots,
-            slot_number_calculator=self._get_current_slot_number
+            slot_number_calculator=self._get_current_slot_number,
+            slot_boundary_calculator=self._get_slot_boundaries,
         )
 
     def _build_critical_result(
@@ -354,17 +355,57 @@ class SimpleSchedulerService:
         logger.warning(f"No slots with sufficient energy found, falling back to time-based scheduling")
         return self._build_optional_result(now, required_energy_watts)
 
-    def get_current_slot_window(self, now: Optional[datetime] = None) -> tuple[datetime, datetime]:
+    def forecast_demand_slots(
+        self,
+        required_energy_watts: float,
+        schedule_result: Dict[str, Any],
+        now: Optional[datetime] = None,
+        slots_ahead: int = 4,
+    ) -> List[Dict[str, Any]]:
         """
-        Public helper: start/end of the 6-hour slot `now` currently falls
-        within. Used for demand reporting on DeployImmediately decisions,
-        which - unlike Scheduled - have no scheduledSlot of their own to
-        derive a window from.
+        Project this CR's demand across the next `slots_ahead` predefined
+        6-hour slots (default 4 = 1 day), so a consumer like a grid
+        operator gets a forecast to plan capacity against instead of a
+        single current/next data point.
+
+        A workload only draws power once it's actually running: every slot
+        counts for DeployImmediately (already running), but for a Scheduled
+        decision only the slots from its own scheduledSlot start onward do -
+        earlier slots report 0W/not-running so a consumer can see exactly
+        when the draw begins, not just that it eventually will.
+
+        Returns [] if the decision has nothing concrete to report yet
+        (mirrors the Delayed/Waiting/unknown check the caller used to do
+        inline).
         """
         if now is None:
             now = datetime.now(timezone.utc)
-        slot_number = self._get_current_slot_number(now)
-        return self._get_slot_boundaries(now, slot_number)
+
+        decision = schedule_result.get("decision", {}) or {}
+        action = decision.get("action")
+
+        if action == "DeployImmediately":
+            start_slot_start = None
+        elif action == "Scheduled" and (decision.get("scheduledSlot") or {}).get("slotStart"):
+            start_slot_start = date_parser.isoparse(decision["scheduledSlot"]["slotStart"])
+        else:
+            return []
+
+        current_slot_num = self._get_current_slot_number(now)
+        window_start, _ = self._get_slot_boundaries(now, current_slot_num)
+
+        slots = []
+        for i in range(slots_ahead):
+            slot_start = window_start + timedelta(hours=6 * i)
+            slot_end = slot_start + timedelta(hours=6)
+            running = start_slot_start is None or slot_start >= start_slot_start
+            slots.append({
+                "slot_start": slot_start,
+                "slot_end": slot_end,
+                "watts": required_energy_watts if running else 0.0,
+                "running": running,
+            })
+        return slots
 
     def _get_current_slot_number(self, dt: datetime) -> int:
         """

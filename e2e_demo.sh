@@ -446,12 +446,16 @@ CURRENT slot (computed dynamically), then delete it immediately after."
 # ---------------------------------------------------------------------------
 show_demand_reporting_and_resolution() {
   print_scenario_header 5 "Demand reporting and resolution" \
-    "Why: energy-aware-operator reports each CR's current demand to
-POST /api/energy-availability/demand, one row per identifier. The resolved
-wattage should match what's on the CR's own status.energyMetrics."
+    "Why: energy-aware-operator reports each CR's demand as a rolling
+forecast - the current slot plus the next several predefined slots (1 day
+ahead) - via POST /api/energy-availability/demand/batch, one row per
+(identifier, slot). A Scheduled (not-yet-running) workload reports 0W for
+slots before its own start slot, then its real required wattage from
+there on, so a consumer sees exactly when the draw begins, not just that
+it eventually will."
 
-  run "demand rows in the DB" \
-    "psql_pretty \"SELECT provider_name, available_watts, forecast_date, created_at FROM energy_availability WHERE record_type='demand' ORDER BY created_at DESC;\""
+  run "demand forecast rows in the DB, per workload" \
+    "psql_pretty \"SELECT provider_name, slot_start_time, slot_end_time, available_watts FROM energy_availability WHERE record_type='demand' ORDER BY provider_name, slot_start_time;\""
   echo
   run "$CRITICAL_CR status.energyMetrics" \
     "kubectl get eao $CRITICAL_CR -n $NAMESPACE -o jsonpath='{.status.energyMetrics}'; echo"
@@ -459,12 +463,12 @@ wattage should match what's on the CR's own status.energyMetrics."
     "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.energyMetrics}'; echo"
 
   echo
-  echo "${BOLD}Now readable externally via the new GET /demand endpoint${RESET}"
-  echo "${DIM}(e.g. a grid operator querying this to know what demand to plan supply for)${RESET}"
+  echo "${BOLD}Now readable externally via the GET /demand endpoint${RESET}"
+  echo "${DIM}(e.g. a grid operator querying this to know what demand to plan supply for, today and tomorrow)${RESET}"
   run "all current + future demand, across every workload" \
     "curl -s $APP_URL/api/energy-availability/demand | jq '.demand[] | {provider_name, slot_start_time, slot_end_time, available_watts}'"
-  run "filtered to one workload" \
-    "curl -s \"$APP_URL/api/energy-availability/demand?identifier=$NAMESPACE/$OPTIONAL_CR\" | jq"
+  run "filtered to one workload - its full forecast curve" \
+    "curl -s \"$APP_URL/api/energy-availability/demand?identifier=$NAMESPACE/$OPTIONAL_CR\" | jq '.demand[] | {slot_start_time, slot_end_time, available_watts}'"
   pause
 }
 

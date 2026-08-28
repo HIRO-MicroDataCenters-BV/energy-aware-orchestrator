@@ -15,10 +15,14 @@ class EnergyAvailability(Base, BaseDictMixin):
     """
     __tablename__ = 'energy_availability'
     __table_args__ = (
-        # One demand row per identifier (provider_name holds '<namespace>/<name>').
+        # One demand row per (identifier, slot) - a CR now reports a rolling
+        # forecast across several future slots, not just its single current
+        # decision, so each slot needs its own row.
         Index(
-            "ix_energy_availability_demand_provider_name",
+            "ix_energy_availability_demand_provider_slot",
             "provider_name",
+            "slot_start_time",
+            "slot_end_time",
             unique=True,
             postgresql_where=text("record_type = 'demand'"),
         ),

@@ -340,98 +340,107 @@ curl -s http://localhost:8000/api/energy-availability/current/active | jq '.coun
 
 ## Scenario 5 — Demand reporting and resolution
 
-**Statement:** `energy-aware-operator` reports each CR's current demand to
-`POST /api/energy-availability/demand`, one row per identifier
-(`<namespace>/<name>`), and the resolved wattage should match what's on the
-CR's own `status.energyMetrics`.
+**Statement:** `energy-aware-operator` reports each CR's demand as a
+**rolling forecast** - the current slot plus the next three predefined
+6-hour slots (1 day ahead) - via `POST /api/energy-availability/demand/batch`,
+one row per `(identifier, slot)`. A `Scheduled` (not-yet-running) workload
+reports `0W` for slots before its own start slot, then its real required
+wattage from there on, so a consumer sees exactly when the draw begins, not
+just that it eventually will. `DeployImmediately` workloads report the same
+watts in every slot, since they're already running.
 
 ```mermaid
 flowchart TD
-    A["energy-aware-operator<br/>(reconcile loop)"] --> B{"Resolve demand,<br/>most accurate tier first"}
-    B -->|"1. Measured"| B1["Real Kepler wattage,<br/>via container_power_metrics"]
-    B -->|"2. Predicted"| B2["RandomForest model,<br/>from CPU/mem utilization"]
-    B -->|"3. Fallback"| B3["spec.energyConsumption<br/>(static estimate)"]
-    B1 --> C["POST /api/energy-availability/demand<br/>(one row per identifier, upserted - not appended)"]
-    B2 --> C
-    B3 --> C
-    C --> D["energy_availability<br/>record_type=demand"]
-    D --> E["CR status.energyMetrics<br/>should match the DB row exactly"]
-    D --> H["GET /api/energy-availability/demand<br/>(external consumer, e.g. a grid operator)"]
+    A["energy-aware-operator<br/>(reconcile loop)"] --> B["forecast_demand_slots()<br/>project 4 predefined 6h slots (1 day)"]
+    B --> C{"Per slot: has this<br/>workload started running yet?"}
+    C -->|"No (before its start slot)"| C1["0W, application_name omitted<br/>- forces verbatim 0, no measurement"]
+    C -->|"Yes"| C2{"Resolve demand,<br/>most accurate tier first"}
+    C2 -->|"1. Measured"| C2a["Real Kepler wattage,<br/>via container_power_metrics"]
+    C2 -->|"2. Predicted"| C2b["RandomForest model,<br/>from CPU/mem utilization"]
+    C2 -->|"3. Fallback"| C2c["spec.energyConsumption<br/>(static estimate)"]
+    C1 --> D["POST /api/energy-availability/demand/batch<br/>(one row per identifier+slot, upserted)"]
+    C2a --> D
+    C2b --> D
+    C2c --> D
+    D --> E["energy_availability<br/>record_type=demand"]
+    E --> F["CR status.energyMetrics<br/>mirrors the current slot's resolved value"]
+    E --> H["GET /api/energy-availability/demand<br/>(external consumer, e.g. a grid operator)"]
 ```
 
 ```bash
 PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d orchestration_db -c \
-"SELECT provider_name, available_watts, forecast_date, created_at FROM energy_availability
- WHERE record_type='demand' ORDER BY created_at DESC;"
+"SELECT provider_name, slot_start_time, slot_end_time, available_watts FROM energy_availability
+ WHERE record_type='demand' ORDER BY provider_name, slot_start_time;"
 ```
 ```
-provider_name                  | available_watts | forecast_date | created_at
-default/test-zero-check        | 0.0000          | 2026-08-20    | 2026-08-20 21:14:33 (unrelated manual test, leftover)
-default/eaoprofile-delete-test | 42.0000         | 2026-08-17    | 2026-08-17 21:03:10 (unrelated manual test, leftover)
-default/eaoprofile-optional    | 200.0000        | 2026-08-26    | 2026-08-17 19:51:06
-default/eaoprofile-critical    | 0.0000          | 2026-08-26    | 2026-08-17 19:51:06
+provider_name                | slot_start_time        | slot_end_time          | available_watts
+default/eaoprofile-critical  | 2026-08-28 00:00:00+00 | 2026-08-28 06:00:00+00 | 247.7061
+default/eaoprofile-critical  | 2026-08-28 06:00:00+00 | 2026-08-28 12:00:00+00 | 247.7061
+default/eaoprofile-critical  | 2026-08-28 12:00:00+00 | 2026-08-28 18:00:00+00 | 247.7061
+default/eaoprofile-critical  | 2026-08-28 18:00:00+00 | 2026-08-29 00:00:00+00 | 247.7061
+default/eaoprofile-optional  | 2026-08-28 00:00:00+00 | 2026-08-28 06:00:00+00 | 0.0000
+default/eaoprofile-optional  | 2026-08-28 06:00:00+00 | 2026-08-28 12:00:00+00 | 0.0000
+default/eaoprofile-optional  | 2026-08-28 12:00:00+00 | 2026-08-28 18:00:00+00 | 247.7061
+default/eaoprofile-optional  | 2026-08-28 18:00:00+00 | 2026-08-29 00:00:00+00 | 247.7061
 ```
+
+`eaoprofile-optional` is `Scheduled` into the `12:00-18:00` slot (see
+Scenario 6) - its two earlier slots correctly show `0W` (not running yet),
+then `247.7061W` from its start slot onward, the same resolved value
+`eaoprofile-critical` gets (both nginx pods are equally idle, so both
+resolve through the same ML-prediction tier to the same figure).
 
 ```bash
 kubectl get eao eaoprofile-critical -n default -o jsonpath='{.status.energyMetrics}'
-# => {"measuredWatts":0,"requiredWatts":100,"sufficient":true}
+# => {"measuredWatts":247.7061,"requiredWatts":100,"sufficient":true}
 kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.energyMetrics}'
-# => {"measuredWatts":200,"requiredWatts":200,"sufficient":false}
+# => {"measuredWatts":0,"requiredWatts":200,"sufficient":false}
 ```
 
-**Observed:** the DB's per-identifier demand row matches each CR's own
-status — `critical` at `0W` (a legitimately idle nginx container, resolved
-via the Measured tier, not a broken measurement) and `optional` at `200W`.
-One row per identifier confirmed (no history accumulation) — matches the
-"upsert, not append" design.
+`status.energyMetrics.measuredWatts` mirrors the **first** (current) slot of
+each CR's forecast only - `optional`'s shows `0` here because "now" still
+falls in one of its pre-start slots, even though its DB rows already show
+`247.7061W` waiting from `12:00` onward.
 
-**Also readable now, not just written** (added 2026-08-27, after deploying
-the new endpoint). `GET /api/energy-availability/demand` — optionally
-filtered by `identifier` — returns every workload's demand row, current and
-future, with no time-window restriction:
+**Observed:** each workload now has a full day's forecast instead of a
+single point, and the pre-start-vs-running transition is visible directly
+in the data - a grid operator reading this doesn't need to separately ask
+"is it running yet", the `0` vs non-`0` values already say so.
+
+**Readable externally via `GET /demand`.** Optionally filtered by
+`identifier`, with already-elapsed slots excluded so a read only ever shows
+current + future:
 
 ```bash
 curl -s http://localhost:8000/api/energy-availability/demand | jq '.demand[] | {provider_name, slot_start_time, slot_end_time, available_watts}'
 ```
 ```json
-{"provider_name": "default/test-zero-check", "slot_start_time": "2026-08-20T18:00:00+00:00", "slot_end_time": "2026-08-21T00:00:00+00:00", "available_watts": 0.0}
-{"provider_name": "default/eaoprofile-critical", "slot_start_time": "2026-08-27T12:00:00+00:00", "slot_end_time": "2026-08-27T18:00:00+00:00", "available_watts": 0.0}
-{"provider_name": "default/eaoprofile-optional", "slot_start_time": "2026-08-27T18:00:00+00:00", "slot_end_time": "2026-08-28T00:00:00+00:00", "available_watts": 0.0}
+{"provider_name": "default/eaoprofile-critical", "slot_start_time": "2026-08-28T00:00:00+00:00", "slot_end_time": "2026-08-28T06:00:00+00:00", "available_watts": 247.7061}
+{"provider_name": "default/eaoprofile-optional", "slot_start_time": "2026-08-28T00:00:00+00:00", "slot_end_time": "2026-08-28T06:00:00+00:00", "available_watts": 0.0}
+{"provider_name": "default/eaoprofile-optional", "slot_start_time": "2026-08-28T06:00:00+00:00", "slot_end_time": "2026-08-28T12:00:00+00:00", "available_watts": 0.0}
+{"provider_name": "default/eaoprofile-critical", "slot_start_time": "2026-08-28T06:00:00+00:00", "slot_end_time": "2026-08-28T12:00:00+00:00", "available_watts": 247.7061}
+{"provider_name": "default/eaoprofile-critical", "slot_start_time": "2026-08-28T12:00:00+00:00", "slot_end_time": "2026-08-28T18:00:00+00:00", "available_watts": 247.7061}
+{"provider_name": "default/eaoprofile-optional", "slot_start_time": "2026-08-28T12:00:00+00:00", "slot_end_time": "2026-08-28T18:00:00+00:00", "available_watts": 247.7061}
+{"provider_name": "default/eaoprofile-critical", "slot_start_time": "2026-08-28T18:00:00+00:00", "slot_end_time": "2026-08-29T00:00:00+00:00", "available_watts": 247.7061}
+{"provider_name": "default/eaoprofile-optional", "slot_start_time": "2026-08-28T18:00:00+00:00", "slot_end_time": "2026-08-29T00:00:00+00:00", "available_watts": 247.7061}
 ```
 
 ```bash
-curl -s "http://localhost:8000/api/energy-availability/demand?identifier=default/eaoprofile-optional" | jq
+curl -s "http://localhost:8000/api/energy-availability/demand?identifier=default/eaoprofile-optional" | jq '.demand[] | {slot_start_time, slot_end_time, available_watts}'
 ```
 ```json
-{
-  "status": "success",
-  "filters": {"identifier": "default/eaoprofile-optional", "limit": 100},
-  "demand": [
-    {
-      "id": 172,
-      "provider_name": "default/eaoprofile-optional",
-      "slot_start_time": "2026-08-27T18:00:00+00:00",
-      "slot_end_time": "2026-08-28T00:00:00+00:00",
-      "available_watts": 0.0,
-      "forecast_date": "2026-08-27",
-      "is_active": true,
-      "record_type": "demand",
-      "data_source": "real"
-    }
-  ],
-  "count": 1
-}
+{"slot_start_time": "2026-08-28T00:00:00+00:00", "slot_end_time": "2026-08-28T06:00:00+00:00", "available_watts": 0.0}
+{"slot_start_time": "2026-08-28T06:00:00+00:00", "slot_end_time": "2026-08-28T12:00:00+00:00", "available_watts": 0.0}
+{"slot_start_time": "2026-08-28T12:00:00+00:00", "slot_end_time": "2026-08-28T18:00:00+00:00", "available_watts": 247.7061}
+{"slot_start_time": "2026-08-28T18:00:00+00:00", "slot_end_time": "2026-08-29T00:00:00+00:00", "available_watts": 247.7061}
 ```
 
-Note `eaoprofile-optional`'s row here already carries a **future** slot
-(`18:00-00:00`, later than "now") since that's the slot the operator
-currently has it scheduled into per Scenario 6 — confirming this endpoint
-genuinely surfaces upcoming demand, not just what's active this instant.
-This is the piece that lets an actual grid operator see demand coming and
-plan supply for it, rather than data only ever flowing one direction
-(operator → DB, with nothing able to read it back out).
+This is the piece that lets an actual grid operator plan ahead - not a
+single "here's what's needed right now" reading, but a full day's curve per
+workload, refreshed every reconcile, with no time-window filter needed since
+elapsed slots already drop out server-side.
 
-One implementation note worth recording: this endpoint had to be registered
+One implementation note worth recording: `GET /demand` had to be registered
 *before* `GET /{availability_id}` in the router file, not after. FastAPI
 matches `/{availability_id}` against any single path segment (including the
 literal string "demand") and only validates it as an int afterward via

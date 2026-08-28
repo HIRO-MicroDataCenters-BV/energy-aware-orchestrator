@@ -347,16 +347,17 @@ class EnergyAvailabilityRepository:
         forecast_date: date,
     ) -> EnergyAvailability:
         """
-        Create or replace the single current demand row for a CR.
+        Create or replace one slot of a CR's demand forecast.
 
         `identifier` is '<namespace>/<name>' of the EAO CR, stored in
-        provider_name. One demand row per identifier - a fresh call always
-        replaces the previous one via the partial unique index on
-        provider_name WHERE record_type = 'demand', matching how the
-        operator only ever reports its single current decision per CR, not
-        an accumulating history. A real upsert (single statement) rather
-        than delete-then-insert, so an unchanged report costs one indexed
-        write instead of two.
+        provider_name. One demand row per (identifier, slot) - the operator
+        now reports a rolling multi-slot forecast per CR (see
+        forecast_demand_slots() in energy-aware-operator), calling this once
+        per slot, so the partial unique index is on
+        (provider_name, slot_start_time, slot_end_time) WHERE
+        record_type = 'demand', the same shape supply already uses. A real
+        upsert (single statement) rather than delete-then-insert, so an
+        unchanged slot costs one indexed write instead of two.
         """
         try:
             stmt = pg_insert(EnergyAvailability).values(
@@ -370,11 +371,9 @@ class EnergyAvailabilityRepository:
                 data_source="real",
             )
             stmt = stmt.on_conflict_do_update(
-                index_elements=["provider_name"],
+                index_elements=["provider_name", "slot_start_time", "slot_end_time"],
                 index_where=text("record_type = 'demand'"),
                 set_={
-                    "slot_start_time": stmt.excluded.slot_start_time,
-                    "slot_end_time": stmt.excluded.slot_end_time,
                     "available_watts": stmt.excluded.available_watts,
                     "forecast_date": stmt.excluded.forecast_date,
                     "is_active": True,
@@ -394,6 +393,8 @@ class EnergyAvailabilityRepository:
                 .where(
                     EnergyAvailability.provider_name == identifier,
                     EnergyAvailability.record_type == "demand",
+                    EnergyAvailability.slot_start_time == slot_start_time,
+                    EnergyAvailability.slot_end_time == slot_end_time,
                 )
                 .execution_options(populate_existing=True)
             )

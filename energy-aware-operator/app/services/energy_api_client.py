@@ -87,16 +87,13 @@ class EnergyAPIClient:
             logger.error(f"Unexpected error fetching energy data: {e}")
             return None
 
-    async def report_demand(
+    async def report_demand_batch(
         self,
         identifier: str,
-        slot_start_time: str,
-        slot_end_time: str,
-        required_watts: float,
-        application_name: Optional[str] = None,
-    ) -> Optional[float]:
+        slots: List[Dict[str, Any]],
+    ) -> Optional[List[float]]:
         """
-        Report a CR's current demand to energy-metric-service.
+        Report a CR's demand forecast across multiple slots in one HTTP call.
 
         Best-effort like fetch_energy_forecast(): failures are logged and
         return None rather than raising, so a demand-reporting problem
@@ -104,47 +101,39 @@ class EnergyAPIClient:
 
         Args:
             identifier: '<namespace>/<name>' of the EAO CR
-            slot_start_time: ISO 8601 start of the currently decided slot
-            slot_end_time: ISO 8601 end of the currently decided slot
-            required_watts: spec.energyConsumption - the fallback estimate,
-                used verbatim only until real measurement/prediction exists
-            application_name: spec.applicationRef.name, used server-side to
-                correlate with Kepler-measured pods for demand resolution.
-                Omit to always store required_watts verbatim.
+            slots: list of dicts, each with slot_start_time/slot_end_time
+                (ISO 8601 strings), required_watts, and application_name
+                (may be None to force required_watts verbatim for that
+                slot - e.g. a not-yet-running future slot, where live
+                measurement/prediction would reflect 'now', not that slot).
 
         Returns:
-            The resolved watts actually stored (may differ from
+            Resolved watts per slot, same order as input (may differ from
             required_watts - see resolve_demand_watts() server-side), or
-            None if the report failed.
+            None if the whole batch failed.
         """
         if not self.api_url:
-            logger.debug("No API URL configured, skipping demand report")
+            logger.debug("No API URL configured, skipping demand batch report")
             return None
 
-        url = f"{self.api_url}/api/energy-availability/demand"
-        payload = {
-            "identifier": identifier,
-            "slot_start_time": slot_start_time,
-            "slot_end_time": slot_end_time,
-            "required_watts": required_watts,
-            "application_name": application_name,
-        }
+        url = f"{self.api_url}/api/energy-availability/demand/batch"
+        payload = {"identifier": identifier, "slots": slots}
 
         try:
             response = await self.http_client.post(url, json=payload)
             response.raise_for_status()
-            resolved_watts = response.json()["demand"]["available_watts"]
-            logger.info(f"Reported demand for '{identifier}': {required_watts}W requested, {resolved_watts}W resolved ({slot_start_time} - {slot_end_time})")
-            return float(resolved_watts)
+            resolved = [float(record["available_watts"]) for record in response.json()["demand"]]
+            logger.info(f"Reported demand batch for '{identifier}': {len(resolved)} slot(s), current={resolved[0] if resolved else None}W resolved")
+            return resolved
 
         except (httpx.TimeoutException, httpx.ConnectError) as e:
-            logger.warning(f"Energy API unavailable, could not report demand for '{identifier}': {e.__class__.__name__}")
+            logger.warning(f"Energy API unavailable, could not report demand batch for '{identifier}': {e.__class__.__name__}")
             return None
         except httpx.HTTPStatusError as e:
-            logger.error(f"Energy API error reporting demand for '{identifier}': {e.response.status_code}")
+            logger.error(f"Energy API error reporting demand batch for '{identifier}': {e.response.status_code}")
             return None
         except Exception as e:
-            logger.error(f"Unexpected error reporting demand for '{identifier}': {e}")
+            logger.error(f"Unexpected error reporting demand batch for '{identifier}': {e}")
             return None
 
     async def delete_demand(self, identifier: str) -> bool:
@@ -190,7 +179,8 @@ class EnergyAPIClient:
     def map_api_slots_to_scheduler_slots(
         self,
         api_slots: List[Dict[str, Any]],
-        slot_number_calculator: callable
+        slot_number_calculator: callable,
+        slot_boundary_calculator: callable,
     ) -> List[Dict[str, Any]]:
         """
         Map API slots to 6-hour scheduler slots, aggregating energy by time period.
@@ -198,6 +188,9 @@ class EnergyAPIClient:
         Args:
             api_slots: List of energy slots from API
             slot_number_calculator: Function to calculate slot number from datetime
+            slot_boundary_calculator: Function to calculate (start, end) for a
+                (datetime, slot_number) pair - shares SimpleSchedulerService's
+                own boundary math instead of a separate copy of it here.
 
         Returns:
             List of enriched scheduler slots
@@ -244,8 +237,12 @@ class EnergyAPIClient:
         # Convert to scheduler slot format
         scheduler_slots = []
         for (date, slot_num), agg_data in sorted(aggregated.items()):
-            # Calculate slot boundaries
-            slot_start, slot_end = self._calculate_slot_boundaries(date, slot_num)
+            # slot_boundary_calculator takes a datetime (it only reads
+            # .date() off it), so wrap the bare aggregation-key date first.
+            slot_start, slot_end = slot_boundary_calculator(
+                datetime.combine(date, datetime.min.time(), tzinfo=timezone.utc),
+                slot_num,
+            )
 
             avg_confidence = None
             if agg_data["confidence_count"] > 0:
@@ -262,39 +259,3 @@ class EnergyAPIClient:
 
         logger.debug(f"Mapped {len(api_slots)} API slots to {len(scheduler_slots)} scheduler slots")
         return scheduler_slots
-
-    def _calculate_slot_boundaries(self, date, slot_number: int) -> tuple:
-        """
-        Calculate start and end times for a scheduler slot.
-
-        Args:
-            date: Date for the slot
-            slot_number: Slot number (1-4)
-
-        Returns:
-            Tuple of (start_time, end_time)
-        """
-        slot_hours = {
-            1: (0, 6),
-            2: (6, 12),
-            3: (12, 18),
-            4: (18, 24),
-        }
-
-        start_hour, end_hour = slot_hours.get(slot_number, (0, 6))
-
-        start_time = datetime.combine(date, datetime.min.time()).replace(
-            hour=start_hour, tzinfo=timezone.utc
-        )
-
-        # Handle hour 24 as hour 0 of next day
-        if end_hour == 24:
-            end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=0, tzinfo=timezone.utc
-            ) + timedelta(days=1)
-        else:
-            end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour, tzinfo=timezone.utc
-            )
-
-        return start_time, end_time

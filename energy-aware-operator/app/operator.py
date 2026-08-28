@@ -76,11 +76,14 @@ async def _report_demand_if_needed(
     patch: kopf.Patch,
 ) -> None:
     """
-    Report the CR's current demand to energy-metric-service, skipping the
-    call when nothing has changed since the last successfully reported
-    demand (see the demandReported field's docstring in app/crd/models.py
-    for why plain content comparison against `status` isn't enough on its
-    own).
+    Report the CR's demand forecast (current slot + next 1 day, in
+    predefined 6-hour slots) to energy-metric-service, skipping the whole
+    batch when nothing has changed since the last successfully reported
+    forecast for a Scheduled decision (see the demandReported field's
+    docstring in app/crd/models.py for why plain content comparison
+    against `status` isn't enough on its own). DeployImmediately has no
+    scheduledSlot to compare against, so it always re-reports - bounded,
+    small cost per reconcile.
 
     Never raises - a problem here must not prevent the CR's own scheduling
     decision (already applied to `patch` by the caller) from being
@@ -100,51 +103,47 @@ async def _report_demand_if_needed(
         if required_watts is None:
             return
 
-        if action == "DeployImmediately":
-            # No scheduledSlot for this action, so there's nothing to
-            # compare against - always report, using the current slot
-            # boundary as the window. Bounded, small cost per reconcile;
-            # avoids reinventing window-staleness tracking for the case
-            # most likely to already have sufficient energy right now.
-            slot_start, slot_end = scheduler_service.get_current_slot_window()
-            resolved_watts = await energy_api_client.report_demand(
-                identifier=identifier,
-                slot_start_time=slot_start.isoformat(),
-                slot_end_time=slot_end.isoformat(),
-                required_watts=float(required_watts),
-                application_name=application_name,
+        if action != "DeployImmediately":
+            scheduled_slot = decision.get("scheduledSlot")
+            if action != "Scheduled" or not scheduled_slot:
+                # Delayed/Waiting/unknown - nothing concrete to report yet
+                return
+
+            old_decision = old_status.get("decision") or {}
+            old_scheduled_slot = old_decision.get("scheduledSlot") or {}
+            old_energy_metrics = old_status.get("energyMetrics") or {}
+
+            unchanged = (
+                old_decision.get("action") == action
+                and old_scheduled_slot.get("slotStart") == scheduled_slot.get("slotStart")
+                and old_scheduled_slot.get("slotEnd") == scheduled_slot.get("slotEnd")
+                and old_energy_metrics.get("requiredWatts") == required_watts
+                and old_status.get("demandReported") is True
             )
-            _apply_demand_report_result(patch, resolved_watts)
-            return
+            if unchanged:
+                logger.debug(f"Demand forecast unchanged for '{identifier}', skipping report")
+                return
 
-        scheduled_slot = decision.get("scheduledSlot")
-        if action != "Scheduled" or not scheduled_slot:
-            # Delayed/Waiting/unknown - nothing concrete to report yet
-            return
-
-        old_decision = old_status.get("decision") or {}
-        old_scheduled_slot = old_decision.get("scheduledSlot") or {}
-        old_energy_metrics = old_status.get("energyMetrics") or {}
-
-        unchanged = (
-            old_decision.get("action") == action
-            and old_scheduled_slot.get("slotStart") == scheduled_slot.get("slotStart")
-            and old_scheduled_slot.get("slotEnd") == scheduled_slot.get("slotEnd")
-            and old_energy_metrics.get("requiredWatts") == required_watts
-            and old_status.get("demandReported") is True
+        forecast_slots = scheduler_service.forecast_demand_slots(
+            required_energy_watts=float(required_watts),
+            schedule_result=schedule_result,
         )
-        if unchanged:
-            logger.debug(f"Demand unchanged for '{identifier}', skipping report")
+        if not forecast_slots:
             return
 
-        resolved_watts = await energy_api_client.report_demand(
+        resolved = await energy_api_client.report_demand_batch(
             identifier=identifier,
-            slot_start_time=scheduled_slot["slotStart"],
-            slot_end_time=scheduled_slot["slotEnd"],
-            required_watts=float(required_watts),
-            application_name=application_name,
+            slots=[
+                {
+                    "slot_start_time": slot["slot_start"].isoformat(),
+                    "slot_end_time": slot["slot_end"].isoformat(),
+                    "required_watts": slot["watts"],
+                    "application_name": application_name if slot["running"] else None,
+                }
+                for slot in forecast_slots
+            ],
         )
-        _apply_demand_report_result(patch, resolved_watts)
+        _apply_demand_report_result(patch, resolved[0] if resolved else None)
 
     except Exception as e:
         logger.warning(f"Demand reporting skipped for '{namespace}/{name}' due to an error: {e}")
