@@ -43,7 +43,7 @@ energy-metric-service/
 - **Resource Monitoring:** Tracks CPU and memory utilization, per node and per container
 - **Grid Capacity Polling:** Periodically polls an external grid API for live supply data (see [Grid Integration](#-grid-integration))
 - **Supply Forecasting:** Predicts future supply for slots beyond what live polling has reached (see [Supply Forecasting](#-supply-forecasting-predictions)) — currently a dummy averaging model, not yet a trained ML model (see [Known Limitations](#-known-limitations--next-steps))
-- **Demand Reporting:** Tracks each workload's currently required watts, reported by `energy-aware-operator` (see [Demand Reporting](#-demand-reporting))
+- **Demand Reporting:** Tracks each workload's demand as a rolling forecast (current slot + next 1 day, in predefined slots), reported by `energy-aware-operator` (see [Demand Reporting](#-demand-reporting))
 - **Automatic Database Migrations:** Alembic migrations run at deploy time and on every container start, with a drift check gating the deploy (see [Database Migrations](#-database-migrations))
 - **Kubernetes Integration:** Pod and namespace management APIs
 - **Time Series Analysis:** Historical data and trend monitoring
@@ -322,31 +322,32 @@ cAdvisor utilization reads `job="kubernetes-nodes-cadvisor"` — the built-in ku
 | `METRICS_RETENTION_DAYS` | `30` | How old a row must be before it's deleted |
 | `METRICS_RETENTION_INTERVAL_SECONDS` | `3600` | How often the cleanup runs |
 
-Only these two tables are covered - `energy_availability` (supply/demand) doesn't need it: demand rows are upserted in place (one row per identifier, see [Demand Reporting](#-demand-reporting)) and supply rows are upserted per `(provider, slot, data_source)`, so neither accumulates unboundedly the way a per-cycle metrics scrape does.
+Only these two tables are covered - `energy_availability` (supply/demand) doesn't need it: demand rows are upserted in place (one row per `(identifier, slot)`, see [Demand Reporting](#-demand-reporting)) and supply rows are upserted per `(provider, slot, data_source)`, so neither accumulates unboundedly the way a per-cycle metrics scrape does. Elapsed demand/supply rows do still accumulate in the table itself, though - there's no retention job for `energy_availability` yet, only for these two.
 
 ---
 
 ## 📨 Demand Reporting
 
-`energy-aware-operator` reports each EAO custom resource's currently-decided energy demand here, once per reconcile:
+`energy-aware-operator` reports each EAO custom resource's demand here, once per reconcile, as a rolling forecast rather than a single point:
 
-- `POST /api/energy-availability/demand` — create/replace the single current demand row for a workload (`identifier` = `<namespace>/<name>`). One row per identifier — a fresh report replaces the previous slot/wattage rather than accumulating history, since a workload only ever has one currently-decided slot.
-- `GET /api/energy-availability/demand` — read reported demand back, optionally filtered by `identifier`. Returns both currently-active and future-scheduled slots (no time-window filter) since a workload's one row may already represent a future slot for Preferred/Optional priorities. Intended for external consumers (e.g. a grid operator) that need visibility into upcoming demand, not just "right now".
-- `DELETE /api/energy-availability/demand/{identifier}` — soft-deactivate a workload's demand record (called on CR deletion). Returns success (`404`-as-success) even if nothing was there, since the end state — no active demand — is the same either way.
+- `POST /api/energy-availability/demand` — create/replace a single demand slot for a workload (`identifier` = `<namespace>/<name>`). One row per `(identifier, slot)` — a fresh report for a given slot replaces it rather than accumulating history.
+- `POST /api/energy-availability/demand/batch` — the multi-slot form, and what the operator actually calls each reconcile: report several slots for a workload in one request. It reports the current predefined slot plus the next several (currently 1 day ahead). A slot the workload hasn't started running in yet is reported at `0W` with `application_name` omitted, forcing the fallback verbatim rather than letting live measurement/prediction (which reflects "now", not that future slot) leak in — see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated).
+- `GET /api/energy-availability/demand` — read reported demand back, optionally filtered by `identifier`. Already-elapsed slots are excluded, so a read always shows current + future demand as a forecast curve, not just "right now". Intended for external consumers (e.g. a grid operator) that need visibility into upcoming demand to plan supply ahead of time.
+- `DELETE /api/energy-availability/demand/{identifier}` — soft-deactivate every slot of a workload's demand forecast (called on CR deletion). Returns success (`404`-as-success) even if nothing was there, since the end state — no active demand — is the same either way.
 
 ### Demand Resolution: Real vs Predicted vs Estimated
 
-The `required_watts` a report carries (from `spec.energyConsumption`) is only ever the *fallback*. `resolve_demand_watts()` (`app/services/demand_resolution_service.py`) resolves the actually-stored value through three tiers, most accurate first:
+The `required_watts` a slot report carries (from `spec.energyConsumption`, or an explicit `0` for a not-yet-running future slot) is only ever the *fallback*. `resolve_demand_watts()` (`app/services/demand_resolution_service.py`) resolves the actually-stored value through three tiers, most accurate first:
 
-1. **Measured** — real Kepler-measured wattage (`ContainerPowerMetricsRepository.get_latest_measured_watts()`), correlated to the workload via the `application_name` field the operator now includes (`spec.applicationRef.name` — pod names are prefixed by their owning Deployment's name).
-2. **Predicted** — `EnergyForecastingService`'s trained `RandomForestRegressor` (`app/energy_forecasting_model.pkl`, r²≈0.97), predicting consumption from the workload's live CPU/memory utilization. Used only when direct measurement is momentarily unavailable (e.g. a scrape gap).
-3. **Fallback** — `required_watts` verbatim, the operator's static estimate. The only option before deployment, since utilization data can't exist for a workload that isn't running yet.
+1. **Measured** — real Kepler-measured wattage (`ContainerPowerMetricsRepository.get_latest_measured_watts()`), correlated to the workload via the `application_name` field the operator includes (`spec.applicationRef.name` — pod names are prefixed by their owning Deployment's name). Treated as unavailable if it sums to exactly `0` — Kepler attributes container power proportionally to CPU usage, so a genuinely idle pod measures as `0W`, a true "not drawing power right now" reading but a degenerate one to store verbatim; falling through lets prediction/fallback supply a non-zero estimate instead. (Separately, the operator omits `application_name` entirely for a forecast slot the workload hasn't started running in yet, which always skips straight to tier 3 regardless of this check.)
+2. **Predicted** — `EnergyForecastingService`'s trained `RandomForestRegressor` (`app/energy_forecasting_model.pkl`, r²≈0.97), predicting consumption from the workload's live CPU/memory utilization. Used when direct measurement is unavailable or degenerate.
+3. **Fallback** — `required_watts` verbatim, the operator's static estimate. The only option before deployment, or for a forecast slot the workload isn't running in yet.
 
 This mirrors the real-over-predicted precedence already used for supply (see [Supply Forecasting](#-supply-forecasting-predictions)) — never raises, always falls through to a safe value.
 
-The resolved value round-trips back to the operator, which surfaces it on the CR as `status.energyMetrics.measuredWatts` (informational only — `status.energyMetrics.requiredWatts` remains the number the scheduling decision was actually based on).
+The *current slot's* resolved value round-trips back to the operator, which surfaces it on the CR as `status.energyMetrics.measuredWatts` (informational only — `status.energyMetrics.requiredWatts` remains the number the scheduling decision was actually based on). The rest of the forecast's resolved values are visible via the DB / `GET /demand` but aren't mirrored onto CR status.
 
-**All three tiers are live-verified** against a real cluster (Kepler + cAdvisor via Prometheus, see [Container Metrics Collection](#-container-metrics-collection)). Tiers 1-2 require `ENABLE_METRICS_SCHEDULER=true` and the monitoring stack deployed; with it off, every demand report resolves to the fallback tier (tier 3) instead - still correct, just less precise. `0W` is a legitimate measured value for an idle container, not a sign anything is broken.
+**All three tiers are live-verified** against a real cluster (Kepler + cAdvisor via Prometheus, see [Container Metrics Collection](#-container-metrics-collection)). Tiers 1-2 require `ENABLE_METRICS_SCHEDULER=true` and the monitoring stack deployed; with it off, every demand report resolves to the fallback tier (tier 3) instead - still correct, just less precise.
 
 ---
 

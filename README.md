@@ -36,11 +36,19 @@ See [E2E_DEMO.md](E2E_DEMO.md) for a recorded, real-command walkthrough of the f
 
 ### Data flow
 
-The full loop, from raw hardware counters to a scheduling decision and back, in four stages: **generate → collect/store → predict → decide/report**.
+The full loop, from raw hardware counters to a scheduling decision and
+back, told as five steps — each step's output is the next step's input.
 
-Split into five small, mostly-linear diagrams — one per stage — so no edge has to cross behind an unrelated box. Each stage's output feeds the next.
+**Worth stating plainly before the diagrams, since it's easy to mix up:**
+two separate forecasts happen in this loop, using two different
+techniques. **Supply** forecasting (Step 2) is a simple historical
+average — not ML yet, a known gap. **Demand** prediction (Step 3) is an
+actual trained ML model, a `RandomForestRegressor` saved as
+`energy_forecasting_model.pkl`. Same-sounding job, opposite techniques —
+don't swap them.
 
-**① Generate → Collect (energy-monitoring-helm-stack → energy-metric-service, every 30s)**
+**Step 1 — Generate & Collect** (`energy-monitoring-helm-stack` →
+`energy-metric-service`, every 30s)
 
 ```mermaid
 flowchart TD
@@ -51,40 +59,48 @@ flowchart TD
     MCS["MetricCollectorScheduler<br/>PromQL · every 30s"] --> NodeMetrics[("node_metrics<br/>node-level")]
     MCS --> ContainerMetrics[("container_power_metrics<br/>per pod / container / namespace")]
 ```
+→ `container_power_metrics` feeds Step 3's demand resolution.
 
-**② Supply: real + predicted (feeds `energy_availability`)**
+**Step 2 — Forecast Supply** (feeds `energy_availability`, `record_type=supply`)
 
 ```mermaid
 flowchart TD
     Grid["External grid API<br/>(or dev/test mock)"] --> GridSched["GridPollingScheduler<br/>real supply · every 5 min"]
-    GridSched --> EA[("energy_availability<br/>supply: real + predicted<br/>demand: 1 row per workload")]
-    EA -->|14d real history| ForecastSched["ForecastingScheduler<br/>predicted supply · every 30 min<br/>(PredictionService)"]
+    GridSched --> EA[("energy_availability<br/>record_type=supply")]
+    EA -->|14d real history| ForecastSched["ForecastingScheduler · every 30 min<br/>PredictionService:<br/>simple 6h-bucket average (NOT ML)"]
     ForecastSched -->|predicted rows,<br/>never overwrites real| EA
 ```
+→ `energy_availability`'s supply rows feed Step 4's scheduling decision.
 
-**③ Resolve demand: measured ▸ predicted ▸ fallback (uses `container_power_metrics` from stage ①)**
+**Step 3 — Predict Demand** (uses `container_power_metrics` from Step 1)
 
 ```mermaid
 flowchart TD
-    ContainerMetrics[("container_power_metrics")] -->|tier 1: measured watts| Resolve{{"resolve_demand_watts()"}}
-    ContainerMetrics -->|tier 2 input:<br/>live utilization| EFS["EnergyForecastingService<br/>.pkl model"]
+    ContainerMetrics[("container_power_metrics<br/>(from Step 1)")] -->|"tier 1: measured watts<br/>(skipped if exactly 0)"| Resolve{{"resolve_demand_watts()"}}
+    ContainerMetrics -->|tier 2 input:<br/>live CPU/mem utilization| EFS["EnergyForecastingService<br/>trained RandomForestRegressor<br/>(energy_forecasting_model.pkl, r²≈0.97)"]
     EFS -->|tier 2: predicted watts| Resolve
-    DemandReport["tier 3 input:<br/>POST /demand's required_watts"] -->|tier 3: fallback watts| Resolve
+    Fallback["tier 3 input:<br/>required_watts from the<br/>operator's POST /demand(/batch)"] -->|tier 3: fallback watts| Resolve
 ```
+→ `resolve_demand_watts()` is called once per forecast slot inside Step 4.
 
-**④ Decide & report (energy-aware-operator, reads/writes `energy_availability` from stage ②)**
+**Step 4 — Decide & Report** (`energy-aware-operator`, reads Step 2's
+supply forecast, calls Step 3's resolver, writes back to `energy_availability`)
 
 ```mermaid
 flowchart TD
-    EA[("energy_availability")] -->|GET /future/forecast| Reconcile["Reconcile EAO CR:<br/>required vs available watts"]
+    EA1[("energy_availability<br/>(read: supply forecast, Step 2)")] -->|GET /future/forecast| Reconcile["Reconcile EAO CR:<br/>compare required vs available watts"]
     Reconcile --> CRStatus["CR status updated<br/>phase / action / requiredWatts"]
-    Reconcile --> DemandReport["POST /demand<br/>identifier, required_watts"]
-    DemandReport -->|resolved via stage ③| Resolve["resolve_demand_watts()"]
-    Resolve -->|demand row upserted| EA
-    EA -->|measuredWatts| CRStatus
+    Reconcile --> ForecastSlots["forecast_demand_slots()<br/>current + next 1 day, 4 slots"]
+    ForecastSlots --> DemandBatch["POST /demand/batch<br/>identifier + per-slot watts"]
+    DemandBatch --> Resolve["resolve_demand_watts()<br/>(Step 3, once per slot)"]
+    Resolve --> EA2[("energy_availability<br/>(write: demand rows upserted)")]
+    Resolve -->|current slot's<br/>resolved watts| CRStatus
 ```
+→ the next reconcile reads this write back in as part of Step 2/4's
+current state — this is the loop closing.
 
-**⑤ Retention (energy-metric-service, hourly — trims the append-only tables from stage ①)**
+**Step 5 — Clean Up** (`energy-metric-service`, hourly — a housekeeping
+side-process, not part of the decision loop above)
 
 ```mermaid
 flowchart LR
@@ -101,12 +117,10 @@ flowchart LR
 - **`container_power_metrics`** — per-`(pod, namespace, container)` power + utilization time series, collected cluster-wide (not namespace-scoped) so any EAO CR's `applicationRef` can be matched at query time. The only input to demand tiers 1-2.
 - **`GridPollingScheduler`** (every 5 min) — polls the real external grid API (or the dev/test mock) for live capacity, writes it as *real* supply rows.
 - **`ForecastingScheduler`** (every 30 min) — fills future slots beyond what real polling has reached, via `PredictionService` (today: a simple 6-hour-bucket historical average; the real-ML swap point is a single function and is documented but not yet implemented). Writes *predicted* supply rows, never overwriting a real one for the same slot.
-- **`energy_availability`** — single table holding both supply (`record_type=supply`, `data_source=real|predicted`) and demand (`record_type=demand`, one upserted row per workload identifier). Real supply always wins over predicted for the same slot at query time.
-- **`energy-aware-operator`** — separate repo/process. On every `EnergyAwareOrchestration` CR reconcile: fetches the supply forecast, compares `required_watts` against `available_watts` to decide `Scheduled`/`DeployImmediately`/deferred, writes the CR's status, then reports the workload's resolved demand back.
-- **`resolve_demand_watts()`** — resolves what actually gets stored/reported for demand, most accurate first: measured (real Kepler wattage) → predicted (`EnergyForecastingService`'s trained model from live utilization) → fallback (the CR's static estimate, used pre-deployment or on a total data gap). Never raises — always falls through to a safe value.
+- **`energy_availability`** — single table holding both supply (`record_type=supply`, `data_source=real|predicted`) and demand (`record_type=demand`, one upserted row per `(workload identifier, slot)` — a rolling forecast, not a single point). Real supply always wins over predicted for the same slot at query time.
+- **`energy-aware-operator`** — separate process/deployable, same repo (`energy-aware-operator/`). On every `EnergyAwareOrchestration` CR reconcile: fetches the supply forecast, compares `required_watts` against `available_watts` to decide `Scheduled`/`DeployImmediately`/deferred, writes the CR's status, then reports the workload's resolved demand forecast back (current slot + next 1 day, via `POST /demand/batch`).
+- **`resolve_demand_watts()`** — resolves what actually gets stored/reported for each demand slot, most accurate first: measured (real Kepler wattage, skipped if it sums to exactly `0`) → predicted (`EnergyForecastingService`'s trained model from live utilization) → fallback (the CR's static estimate, or explicit `0` for a slot the workload isn't running in yet). Never raises — always falls through to a safe value.
 - **`MetricsRetentionScheduler`** (hourly) — the only piece that deletes anything; trims `node_metrics`/`container_power_metrics` past `METRICS_RETENTION_DAYS` (30d default) so Postgres storage doesn't grow unbounded. `energy_availability` doesn't need it since rows are upserted, not appended per cycle.
-
-The loop closes because each operator reconcile both *reads* `energy_availability` (kept fresh by the four schedulers above) and *writes* back into it (the demand report) — the next reconcile sees the workload's own prior report as part of current state.
 
 ---
 
@@ -136,7 +150,7 @@ A FastAPI service that acts as the energy data backend for the operator and the 
 
 - Scrapes Kepler energy metrics from Prometheus on a schedule and persists them in PostgreSQL (`container_power_metrics`).
 - Polls an external grid API (or a dev/test mock server) for live supply data, and predicts supply for future slots beyond what polling has reached — real always wins over predicted at query time.
-- Exposes a REST API including `/api/energy-availability/future/forecast` which the operator calls, and `/api/energy-availability/demand` (`POST`/`GET`/`DELETE`) which the operator reports to and external consumers (e.g. a grid operator) can read back.
+- Exposes a REST API including `/api/energy-availability/future/forecast` which the operator calls, and `/api/energy-availability/demand` (`POST`/`POST /batch`/`GET`/`DELETE`) which the operator reports a rolling multi-slot forecast to and external consumers (e.g. a grid operator) can read back.
 - Resolves each workload's actual demand through a trained **Random Forest** consumption model (`app/energy_forecasting_model.pkl`, r²≈0.97, predicts watts from CPU/memory utilization) — used as a fallback tier when direct Kepler measurement isn't available, itself falling back to the operator's static estimate before deployment. (`energy_forecasting_linear_regression.pkl`/`energy_forecasting_scaler.pkl` at the repo root are earlier, unused artifacts — the model actually loaded lives under `app/`.)
 - Includes a Jupyter notebook (`energy_forecasting_model.ipynb`) and training script (`train_model.py`) for retraining.
 

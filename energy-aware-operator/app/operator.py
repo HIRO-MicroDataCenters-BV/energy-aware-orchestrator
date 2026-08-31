@@ -283,7 +283,7 @@ async def reconcile_handler(
     logger.info("-" * 80)
     try:
         schedule_result = await scheduler_service.calculate_schedule(
-            priority, float(energy_consumption)
+            priority, float(energy_consumption), old_status=status
         )
 
         if schedule_result:
@@ -475,7 +475,7 @@ async def periodic_reconcile(
         logger.info("Recalculating schedule")
         logger.info("-" * 80)
         schedule_result = await scheduler_service.calculate_schedule(
-            priority, float(energy_consumption)
+            priority, float(energy_consumption), old_status=status
         )
 
         if schedule_result:

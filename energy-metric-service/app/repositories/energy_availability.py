@@ -191,7 +191,7 @@ class EnergyAvailabilityRepository:
         record_type: str = "supply"
     ) -> List[EnergyAvailability]:
         """
-        Get future energy availability within specified hours.
+        Get current + future energy availability within specified hours.
 
         Args:
             hours_ahead: Number of hours to look ahead
@@ -202,7 +202,11 @@ class EnergyAvailabilityRepository:
                 available capacity.
 
         Returns:
-            List of future availability records
+            List of current + future availability records. Includes the
+            slot "now" currently falls inside (filtered on slot_end_time,
+            not slot_start_time) - callers like the operator's scheduler
+            need to see the current slot to decide "is it sufficient right
+            now", not just what's strictly ahead.
         """
         try:
             now = datetime.now(timezone.utc)
@@ -211,7 +215,7 @@ class EnergyAvailabilityRepository:
 
             query = select(EnergyAvailability).where(
                 and_(
-                    EnergyAvailability.slot_start_time >= now,
+                    EnergyAvailability.slot_end_time >= now,
                     EnergyAvailability.slot_start_time <= future_time,
                     EnergyAvailability.is_active == True,
                     EnergyAvailability.record_type == record_type

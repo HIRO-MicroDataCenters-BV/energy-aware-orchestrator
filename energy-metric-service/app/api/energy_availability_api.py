@@ -289,9 +289,10 @@ async def get_future_availability(
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Get future energy availability within specified hours.
-    
-    Returns records for energy slots starting in the next N hours.
+    Get current + future energy availability within specified hours.
+
+    Returns records for the slot "now" currently falls inside, plus every
+    slot starting in the next N hours after that.
     Results are ordered chronologically by slot_start_time.
     
     **Use case:** Plan workload scheduling based on predicted energy availability.

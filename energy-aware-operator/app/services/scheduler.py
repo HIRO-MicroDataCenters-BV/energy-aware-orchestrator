@@ -43,7 +43,8 @@ class SimpleSchedulerService:
         )
 
     async def calculate_schedule(
-        self, priority: str, required_energy_watts: float
+        self, priority: str, required_energy_watts: float,
+        old_status: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Calculate schedule based on priority and energy requirements.
@@ -51,6 +52,9 @@ class SimpleSchedulerService:
         Args:
             priority: Workload priority (Critical, Preferred, Optional)
             required_energy_watts: Required energy in Watts
+            old_status: the CR's status before this reconcile, so Optional
+                can recognize "this is the slot I already committed to"
+                once it arrives. Unused by Critical/Preferred.
 
         Returns:
             Schedule result dictionary with phase, decision, and energyMetrics
@@ -84,7 +88,7 @@ class SimpleSchedulerService:
         if priority == "Preferred":
             return self._build_preferred_result_with_energy(now, required_energy_watts, mapped_slots)
         elif priority == "Optional":
-            return self._build_optional_result_with_energy(now, required_energy_watts, mapped_slots)
+            return self._build_optional_result_with_energy(now, required_energy_watts, mapped_slots, old_status)
 
         # Default fallback
         logger.warning(f"Unknown priority '{priority}', treating as Preferred")
@@ -288,10 +292,22 @@ class SimpleSchedulerService:
         self,
         now: datetime,
         required_energy_watts: float,
-        energy_slots: List[Dict[str, Any]]
+        energy_slots: List[Dict[str, Any]],
+        old_status: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Build Optional result using real energy data."""
+        """
+        Build Optional result using real energy data.
 
+        Optional never deploys just because the current slot happens to be
+        sufficient - unlike Preferred, it always waits for the single best
+        (highest-energy) slot in the next 24h, per the documented "skip
+        current slot / maximize efficiency" behavior. The one exception:
+        once `now` reaches the exact slot it already committed to (its own
+        previous scheduledSlot), it must honor that commitment - re-checked
+        against fresh data, since real polling may have changed the number
+        since it was chosen - otherwise the workload would never actually
+        run, just perpetually get rescheduled to a new "better" slot.
+        """
         current_slot_num = self._get_current_slot_number(now)
         current_date = now.date().isoformat()
 
@@ -300,19 +316,29 @@ class SimpleSchedulerService:
              if slot["slotNumber"] == current_slot_num and slot["date"] == current_date),
             None
         )
-
         current_available = current_slot_data["availableEnergyWatts"] if current_slot_data else None
-        is_sufficient = current_available is not None and current_available >= required_energy_watts
 
-        # If the current slot already has sufficient energy, deploy immediately.
-        # (Previously the current slot was always skipped, so Optional workloads
-        # could never reach DeployImmediately even when energy was available now.)
-        if is_sufficient:
+        old_decision = (old_status or {}).get("decision") or {}
+        old_scheduled_slot = old_decision.get("scheduledSlot") or {}
+        committed_to_current_slot = (
+            current_slot_data is not None
+            and old_scheduled_slot.get("slotStart") == current_slot_data.get("slotStart")
+        )
+
+        if committed_to_current_slot and current_slot_data is not None and current_available is not None and current_available >= required_energy_watts:
             return {
                 "phase": "Scheduled",
                 "decision": {
                     "action": "DeployImmediately",
-                    "reason": f"Optional priority - current slot has sufficient energy ({current_available:.0f}W >= {required_energy_watts:.0f}W)",
+                    "reason": f"Optional priority - honoring previously committed slot ({current_available:.0f}W >= {required_energy_watts:.0f}W)",
+                    "scheduledSlot": {
+                        "slotNumber": current_slot_data["slotNumber"],
+                        "slotStart": current_slot_data["slotStart"],
+                        "slotEnd": current_slot_data["slotEnd"],
+                        "availableEnergyWatts": current_available,
+                        "requiredEnergyWatts": required_energy_watts,
+                        "confidencePercentage": current_slot_data.get("confidencePercentage"),
+                    },
                 },
                 "energyMetrics": {
                     "currentSlotAvailableWatts": current_available,
@@ -323,33 +349,39 @@ class SimpleSchedulerService:
                 "lastUpdated": now.isoformat(),
             }
 
-        # Find first future slot with sufficient energy (skip current slot for Optional)
-        for slot in energy_slots:
-            slot_start = date_parser.isoparse(slot["slotStart"])
-            if slot_start > now and slot["availableEnergyWatts"] >= required_energy_watts:
-                return {
-                    "phase": "Scheduled",
-                    "decision": {
-                        "action": "Scheduled",
-                        "reason": f"Optional priority - scheduled for optimal energy slot ({slot['availableEnergyWatts']:.0f}W >= {required_energy_watts:.0f}W)",
-                        "scheduledSlot": {
-                            "slotNumber": slot["slotNumber"],
-                            "slotStart": slot["slotStart"],
-                            "slotEnd": slot["slotEnd"],
-                            "availableEnergyWatts": slot["availableEnergyWatts"],
-                            "requiredEnergyWatts": required_energy_watts,
-                            "confidencePercentage": slot.get("confidencePercentage"),
-                        },
-                        "nextEvaluationTime": slot["slotStart"],
+        # Find the BEST (highest-energy) future slot in the next 24h - never
+        # the current slot, and never just the first one that merely clears
+        # the bar, so a genuinely better later slot isn't passed over.
+        candidates = [
+            slot for slot in energy_slots
+            if date_parser.isoparse(slot["slotStart"]) > now
+            and slot["availableEnergyWatts"] >= required_energy_watts
+        ]
+        if candidates:
+            best_slot = max(candidates, key=lambda s: s["availableEnergyWatts"])
+            return {
+                "phase": "Scheduled",
+                "decision": {
+                    "action": "Scheduled",
+                    "reason": f"Optional priority - scheduled for optimal energy slot ({best_slot['availableEnergyWatts']:.0f}W >= {required_energy_watts:.0f}W)",
+                    "scheduledSlot": {
+                        "slotNumber": best_slot["slotNumber"],
+                        "slotStart": best_slot["slotStart"],
+                        "slotEnd": best_slot["slotEnd"],
+                        "availableEnergyWatts": best_slot["availableEnergyWatts"],
+                        "requiredEnergyWatts": required_energy_watts,
+                        "confidencePercentage": best_slot.get("confidencePercentage"),
                     },
-                    "energyMetrics": {
-                        "currentSlotAvailableWatts": current_available,
-                        "currentSlotConsumedWatts": None,
-                        "requiredWatts": required_energy_watts,
-                        "sufficient": False,
-                    },
-                    "lastUpdated": now.isoformat(),
-                }
+                    "nextEvaluationTime": best_slot["slotStart"],
+                },
+                "energyMetrics": {
+                    "currentSlotAvailableWatts": current_available,
+                    "currentSlotConsumedWatts": None,
+                    "requiredWatts": required_energy_watts,
+                    "sufficient": False,
+                },
+                "lastUpdated": now.isoformat(),
+            }
 
         # No sufficient slot found - fall back to time-based scheduling
         logger.warning(f"No slots with sufficient energy found, falling back to time-based scheduling")
