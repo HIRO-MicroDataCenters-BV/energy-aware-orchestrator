@@ -71,19 +71,15 @@ async def _report_demand_if_needed(
     name: str,
     namespace: str,
     spec: Dict[str, Any],
-    old_status: Dict[str, Any],
     schedule_result: Dict[str, Any],
     patch: kopf.Patch,
 ) -> None:
     """
-    Report the CR's demand forecast (current slot + next 1 day, in
-    predefined 6-hour slots) to energy-metric-service, skipping the whole
-    batch when nothing has changed since the last successfully reported
-    forecast for a Scheduled decision (see the demandReported field's
-    docstring in app/crd/models.py for why plain content comparison
-    against `status` isn't enough on its own). DeployImmediately has no
-    scheduledSlot to compare against, so it always re-reports - bounded,
-    small cost per reconcile.
+    Report the CR's demand forecast (current slot + next 1 day) to
+    energy-metric-service every reconcile, unconditionally - forecast
+    content depends on `now`, not just the decision, so "decision
+    unchanged" doesn't mean "nothing to re-report" (a previous version
+    skipped in that case, leaving Optional's rows stale for hours).
 
     Never raises - a problem here must not prevent the CR's own scheduling
     decision (already applied to `patch` by the caller) from being
@@ -107,21 +103,6 @@ async def _report_demand_if_needed(
             scheduled_slot = decision.get("scheduledSlot")
             if action != "Scheduled" or not scheduled_slot:
                 # Delayed/Waiting/unknown - nothing concrete to report yet
-                return
-
-            old_decision = old_status.get("decision") or {}
-            old_scheduled_slot = old_decision.get("scheduledSlot") or {}
-            old_energy_metrics = old_status.get("energyMetrics") or {}
-
-            unchanged = (
-                old_decision.get("action") == action
-                and old_scheduled_slot.get("slotStart") == scheduled_slot.get("slotStart")
-                and old_scheduled_slot.get("slotEnd") == scheduled_slot.get("slotEnd")
-                and old_energy_metrics.get("requiredWatts") == required_watts
-                and old_status.get("demandReported") is True
-            )
-            if unchanged:
-                logger.debug(f"Demand forecast unchanged for '{identifier}', skipping report")
                 return
 
         forecast_slots = scheduler_service.forecast_demand_slots(
@@ -301,7 +282,7 @@ async def reconcile_handler(
 
             # Report demand to energy-metric-service (best-effort, skips
             # when unchanged - see _report_demand_if_needed)
-            await _report_demand_if_needed(name, namespace, spec, status, schedule_result, patch)
+            await _report_demand_if_needed(name, namespace, spec, schedule_result, patch)
 
             # Log decision
             logger.info("")
@@ -492,7 +473,7 @@ async def periodic_reconcile(
 
             # Report demand to energy-metric-service (best-effort, skips
             # when unchanged - see _report_demand_if_needed)
-            await _report_demand_if_needed(name, namespace, spec, status, schedule_result, patch)
+            await _report_demand_if_needed(name, namespace, spec, schedule_result, patch)
 
             logger.info("")
             logger.info("=" * 80)

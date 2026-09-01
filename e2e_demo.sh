@@ -15,10 +15,10 @@
 #   kubectl port-forward -n default svc/energy-metrics-prometheus-server 9090:80 &
 #   kubectl port-forward -n default svc/grid-stub 8090:80 &
 #
-# Usage: ./e2e_demo.sh [--yes] [--context=kind-sample] [--scenario=<1-6|e|a>]
+# Usage: ./e2e_demo.sh [--yes] [--context=kind-sample] [--scenario=<1-7|e|a>]
 #   --yes         don't pause within a scenario (for a dry run / CI smoke test)
 #   --context     expected kubectl context (safety check), default kind-sample
-#   --scenario    which scenario to run (1-6, e for end-to-end, a for all).
+#   --scenario    which scenario to run (1-7, e for end-to-end, a for all).
 #                 Skips the interactive menu if given.
 
 set -uo pipefail
@@ -76,8 +76,14 @@ print_scenario_header() {
 }
 
 run() {
-  # run "description (unused, kept for call-site readability)" "command string"
+  # run "description" "command string" - explains what's about to happen,
+  # shows the exact command, waits for Enter, then runs it.
+  echo
+  echo "${BOLD}${1}${RESET}"
   echo "${YELLOW}\$ $2${RESET}"
+  if ! $AUTO_CONTINUE; then
+    read -r -p "${DIM}-- press Enter to run this -- ${RESET}"
+  fi
   eval "$2"
   local status=$?
   if [ $status -ne 0 ]; then
@@ -136,6 +142,7 @@ next_slot_bounds() {
 PRECEDENCE_TEST_SLOT_START=""
 PRECEDENCE_TEST_SLOT_END=""
 PUSHED_TO_STUB=false
+DEMO_HONOR_CR=""
 cleanup() {
   if [ -n "$PRECEDENCE_TEST_SLOT_START" ]; then
     echo
@@ -146,6 +153,10 @@ cleanup() {
     echo "${DIM}Resetting grid-stub back to empty and removing pushed test rows...${RESET}"
     curl -s -X POST "$GRID_STUB_URL/capacity" -H "Content-Type: application/json" -d '{"availability": []}' >/dev/null 2>&1
     psql_q "DELETE FROM energy_availability WHERE provider_name='${PUSH_TEST_PROVIDER}';" >/dev/null 2>&1
+  fi
+  if [ -n "$DEMO_HONOR_CR" ]; then
+    echo "${DIM}Deleting temporary CR '$DEMO_HONOR_CR'...${RESET}"
+    kubectl delete eao "$DEMO_HONOR_CR" -n "$NAMESPACE" --ignore-not-found >/dev/null 2>&1
   fi
 }
 trap cleanup EXIT INT TERM
@@ -188,9 +199,10 @@ prompt_scenario_choice() {
   echo "  4) Real supply wins over predicted for the same slot"
   echo "  5) Demand reporting and resolution"
   echo "  6) Critical vs. Optional decision logic"
-  echo "  e) End-to-end - forced live reconcile"
+  echo "  7) Optional honors its committed slot when it arrives"
+  echo "  e) End-to-end - full top-to-bottom flow"
   echo "  a) All scenarios in order"
-  read -r -p "Enter choice [1-6/e/a]: " SCENARIO_CHOICE
+  read -r -p "Enter choice [1-7/e/a]: " SCENARIO_CHOICE
 }
 
 run_selected_scenario() {
@@ -201,7 +213,8 @@ run_selected_scenario() {
     4) demo_real_beats_predicted_for_same_slot ;;
     5) show_demand_reporting_and_resolution ;;
     6) show_priority_decision_logic ;;
-    e|E) force_reconcile_and_observe_full_cycle ;;
+    7) demo_optional_honors_committed_slot ;;
+    e|E) run_full_end_to_end_flow ;;
     a|A|all)
       check_metric_collection_is_live
       demo_push_supply_and_verify_it_lands
@@ -209,7 +222,8 @@ run_selected_scenario() {
       demo_real_beats_predicted_for_same_slot
       show_demand_reporting_and_resolution
       show_priority_decision_logic
-      force_reconcile_and_observe_full_cycle
+      demo_optional_honors_committed_slot
+      run_full_end_to_end_flow
       ;;
     *)
       echo "${RED}Unrecognized choice: '$SCENARIO_CHOICE'${RESET}"
@@ -252,7 +266,6 @@ show_existing_supply_baseline() {
   run "existing supply/demand rows by source" \
     "psql_pretty \"SELECT record_type, data_source, provider_name, count(*), min(slot_start_time), max(slot_start_time)
      FROM energy_availability GROUP BY record_type, data_source, provider_name ORDER BY record_type, data_source;\""
-  pause
 }
 
 push_test_capacity_to_grid_stub() {
@@ -332,7 +345,6 @@ the real background loop uses, just invoked once, on demand."
   push_test_capacity_to_grid_stub
   trigger_grid_poll_now
   verify_push_landed
-  pause
   reset_grid_stub_test_data
   pause
 }
@@ -436,7 +448,6 @@ We prove this live with one temporary, reversible test insert for the
 CURRENT slot (computed dynamically), then delete it immediately after."
 
   insert_precedence_test_rows
-  pause
   cleanup_precedence_test_rows
   pause
 }
@@ -488,27 +499,165 @@ evaluate a future slot's availability against the requirement."
 }
 
 # ---------------------------------------------------------------------------
-# End-to-end - forced live reconcile
+# Scenario 7 - Optional honors its committed slot when it arrives
 # ---------------------------------------------------------------------------
-force_reconcile_and_observe_full_cycle() {
-  print_scenario_header "E2E" "One full cycle, forced and observed live" \
-    "Why: trigger a real reconcile on a live CR and watch every layer respond,
-in order - metrics -> demand -> forecast -> decision -> CR status."
+create_demo_optional_profile() {
+  DEMO_HONOR_CR="eaoprofile-demo-honor-test"
+  local current_watts required_watts
+  current_watts=$(curl -s "$APP_URL/api/energy-availability/current/active" | jq '[.availability[].available_watts] | max // 0')
+  if [ "${current_watts%.*}" -le 0 ] 2>/dev/null; then
+    echo "${RED}No real/predicted supply for the current slot right now (the known${RESET}"
+    echo "${RED}PredictionService gap from Scenario 3) - can't prove sufficiency live.${RESET}"
+    echo "${RED}Try again once the current slot has coverage, or see Scenario 3.${RESET}"
+    DEMO_HONOR_CR=""
+    return 1
+  fi
+  required_watts=$(( ${current_watts%.*} / 2 ))
+  [ "$required_watts" -lt 10 ] && required_watts=10
+  DEMO_REQUIRED_WATTS=$required_watts
 
-  run "baseline lastUpdated" \
+  echo "Current slot has ~${current_watts}W available - creating a temporary Optional"
+  echo "CR needing ${required_watts}W (comfortably below it), so sufficiency is unambiguous."
+  run "create a temporary sample Optional CR" \
+    "cat <<EOF | kubectl apply -f -
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: $DEMO_HONOR_CR
+  namespace: $NAMESPACE
+spec:
+  applicationRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo-honor-test-nonexistent
+    namespace: $NAMESPACE
+  energyConsumption: $required_watts
+  forecastWindowDays: 1
+  priority: Optional
+EOF"
+  sleep 5
+  run "its real initial decision, right after creation" \
+    "kubectl get eao $DEMO_HONOR_CR -n $NAMESPACE -o jsonpath='{.status.decision}' | python3 -m json.tool"
+}
+
+fake_commitment_to_current_slot() {
+  current_slot_bounds
+  echo "Faking: pretend this CR already committed to the slot active right now"
+  echo "($CURRENT_SLOT_START) - the exact situation Optional hits once its real"
+  echo "committed slot's time actually arrives."
+  run "patch its real status to claim that prior commitment" \
+    "kubectl patch eao $DEMO_HONOR_CR -n $NAMESPACE --type=merge --subresource=status -p '{\"status\":{\"decision\":{\"action\":\"Scheduled\",\"scheduledSlot\":{\"slotStart\":\"$CURRENT_SLOT_START\",\"slotEnd\":\"$CURRENT_SLOT_END\",\"availableEnergyWatts\":0,\"requiredEnergyWatts\":$DEMO_REQUIRED_WATTS}},\"energyMetrics\":{\"requiredWatts\":$DEMO_REQUIRED_WATTS,\"sufficient\":false},\"demandReported\":true}}'"
+}
+
+force_reconcile_demo_cr() {
+  run "force a real reconcile" \
+    "kubectl annotate eao $DEMO_HONOR_CR -n $NAMESPACE force-reconcile=\"\$(date +%s)\" --overwrite"
+  echo "${DIM}(waiting a few seconds for the operator to pick it up...)${RESET}"
+  sleep 8
+}
+
+cleanup_demo_optional_profile() {
+  run "cleanup: delete the temporary CR" \
+    "kubectl delete eao $DEMO_HONOR_CR -n $NAMESPACE --ignore-not-found"
+  DEMO_HONOR_CR=""
+}
+
+run_optional_commitment_simulation() {
+  # Shared by Scenario 7 and the full end-to-end flow. Creates a real,
+  # disposable CR, fakes a prior commitment to the currently-active slot via
+  # a status patch, then forces two real reconciles back to back through the
+  # actual operator loop - proving both the transition AND that it now
+  # stays DeployImmediately on the second tick (the bug we found and fixed),
+  # using real data and the real reconcile path, not an isolated function call.
+  create_demo_optional_profile || return
+  fake_commitment_to_current_slot
+  force_reconcile_demo_cr
+  run "decision after reconcile 1 - should now be DeployImmediately" \
+    "kubectl get eao $DEMO_HONOR_CR -n $NAMESPACE -o jsonpath='{.status.decision}' | python3 -m json.tool"
+
+  force_reconcile_demo_cr
+  run "decision after reconcile 2 - must STAY DeployImmediately" \
+    "kubectl get eao $DEMO_HONOR_CR -n $NAMESPACE -o jsonpath='{.status.decision}' | python3 -m json.tool"
+
+  echo
+  echo "${GREEN}Expect: BOTH reconciles show DeployImmediately, through the real reconcile${RESET}"
+  echo "${GREEN}loop and real data - reconcile 2 is the case that used to revert to${RESET}"
+  echo "${GREEN}Scheduled before the fix.${RESET}"
+
+  cleanup_demo_optional_profile
+}
+
+demo_optional_honors_committed_slot() {
+  print_scenario_header 7 "Optional: Scheduled -> DeployImmediately when its slot arrives" \
+    "Why: Optional never deploys just because \"now\" happens to be sufficient -
+it always waits for its committed slot (the best one in the next 24h). Once
+that slot arrives, it must flip to DeployImmediately and STAY there for the
+whole slot, not just one reconcile tick. Waiting for a real slot boundary
+takes hours, so this creates a temporary, disposable CR and fakes \"the
+committed slot just arrived\" on it via a status patch, then proves the
+transition through real reconciles - not a simulation, the real CR."
+
+  run_optional_commitment_simulation
+  pause
+}
+
+# ---------------------------------------------------------------------------
+# End-to-end - full top-to-bottom flow, all 5 pipeline steps, live
+# ---------------------------------------------------------------------------
+run_full_end_to_end_flow() {
+  print_scenario_header "E2E" "Full end-to-end flow: generation to decision" \
+    "Why: walk the entire pipeline top to bottom in one continuous pass, in the
+same order as the Data flow section of the root README - Step 1: Generate &
+Collect, Step 2: Forecast Supply, Step 3: Predict Demand, Step 4: Decide &
+Report (including Optional honoring its committed slot), Step 5: Clean Up -
+then prove it's genuinely live, not cached, with a forced reconcile."
+
+  echo
+  echo "${BOLD}${CYAN}--- Step 1: Generate & Collect ---${RESET}"
+  run "Kepler + cAdvisor pods generating raw data" \
+    "kubectl get pods -n $NAMESPACE -o wide | grep -E 'kepler|prometheus-server'"
+  run "MetricCollectorScheduler's joined output, freshest rows" \
+    "psql_pretty \"SELECT metric_source, count(*), max(timestamp) FROM container_power_metrics GROUP BY metric_source ORDER BY max DESC;\""
+
+  echo
+  echo "${BOLD}${CYAN}--- Step 2: Forecast Supply ---${RESET}"
+  run "current + future supply, real vs predicted" \
+    "curl -s \"$APP_URL/api/energy-availability/future/forecast?hours_ahead=24\" | jq '.availability[] | {slot_start_time, slot_end_time, available_watts, data_source}'"
+
+  echo
+  echo "${BOLD}${CYAN}--- Step 3: Predict Demand ---${RESET}"
+  run "$OPTIONAL_CR's resolved demand, live" \
+    "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.energyMetrics}'; echo"
+  run "demand forecast rows in the DB right now" \
+    "psql_pretty \"SELECT provider_name, slot_start_time, available_watts FROM energy_availability WHERE record_type='demand' ORDER BY provider_name, slot_start_time;\""
+
+  echo
+  echo "${BOLD}${CYAN}--- Step 4: Decide & Report ---${RESET}"
+  run "baseline lastUpdated, before forcing anything" \
     "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.lastUpdated}'; echo"
-  run "force reconcile" \
+  run "force a live reconcile" \
     "kubectl annotate eao $OPTIONAL_CR -n $NAMESPACE force-reconcile=\"\$(date +%s)\" --overwrite"
   echo "${DIM}(waiting a few seconds for the operator to pick it up...)${RESET}"
   sleep 8
-  run "lastUpdated after" \
+  run "lastUpdated after - proves this reconcile genuinely ran" \
     "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.lastUpdated}'; echo"
-  run "decision recomputed" \
-    "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.decision}'; echo"
+  run "decision recomputed from live data" \
+    "kubectl get eao $OPTIONAL_CR -n $NAMESPACE -o jsonpath='{.status.decision}' | python3 -m json.tool"
+  run "GET /demand reflects the same reconcile, externally readable" \
+    "curl -s \"$APP_URL/api/energy-availability/demand?identifier=$NAMESPACE/$OPTIONAL_CR\" | jq '.demand[] | {slot_start_time, slot_end_time, available_watts}'"
 
   echo
-  echo "${GREEN}Expect: lastUpdated timestamp bumped to just now - proof the reconcile${RESET}"
-  echo "${GREEN}genuinely ran (not cached), pulling live data through the whole chain.${RESET}"
+  echo "${BOLD}${CYAN}--- Step 4b: Optional honors its committed slot ---${RESET}"
+  run_optional_commitment_simulation
+
+  echo
+  echo "${BOLD}${CYAN}--- Step 5: Clean Up ---${RESET}"
+  run "MetricsRetentionScheduler evidence in the app pod's recent logs" \
+    "kubectl logs -n $NAMESPACE deploy/$APP_DEPLOYMENT --since=2h 2>&1 | grep -i 'MetricsRetentionScheduler' | tail -5 || echo 'no retention log line in the last 2h window (hourly job, may not have fired recently)'"
+
+  echo
+  echo "${GREEN}Full cycle confirmed live: raw metrics -> supply forecast -> demand${RESET}"
+  echo "${GREEN}resolution -> operator decision -> externally-readable demand forecast.${RESET}"
   pause
 }
 

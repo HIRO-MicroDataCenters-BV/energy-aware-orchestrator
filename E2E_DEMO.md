@@ -3,18 +3,29 @@
 This is a recorded run of the full cycle — metric collection, supply
 forecasting, demand reporting, and scheduling decisions — executed live
 against a real cluster (`kind-sample`), with actual commands and actual
-output. It spans three repos: `energy-metric-service` (this repo, the data
-backend), `energy-aware-operator` (schedules workloads, external repo), and
-`energy-monitoring-helm-stack` (Kepler/Prometheus/cAdvisor, external repo).
+output. It spans three components, all in this one repo:
+`energy-metric-service` (the data backend), `energy-aware-operator`
+(schedules workloads, folder `energy-aware-operator/`), and
+`energy-monitoring-helm-stack` (Kepler/Prometheus/cAdvisor).
 
 **Run date:** 2026-08-26 (Scenario 2 re-run and rewritten 2026-08-27 to push
-live data through the grid-stub instead of only reading pre-existing rows).
+live data through the grid-stub instead of only reading pre-existing rows;
+Scenario 7 and the End-to-end section rewritten 2026-08-28 to use a real,
+disposable CR exercised through the actual reconcile loop instead of an
+isolated function call).
 **Cluster:** `kind-sample` (kind, 3 nodes). Assumes the usual port-forwards
 are up: app `:8000`, Postgres `:5432`, Prometheus `:9090`, grid-stub `:8090`.
 
 Live CRs on this cluster at the time of the run:
 - `eaoprofile-critical` → `nginx-deployment-1`, priority `Critical`, `energyConsumption: 100`
 - `eaoprofile-optional` → `nginx-deployment-2`, priority `Optional`, `energyConsumption: 200`
+
+**Prefer to run this live instead of reading it?** `./e2e_demo.sh` runs
+every scenario below interactively — it explains each action, shows the
+exact command, and pauses for Enter before every single one, not just once
+per scenario. `./e2e_demo.sh --scenario=e` runs just the full end-to-end
+flow; `--scenario=7` runs just the Optional-commitment proof; `--yes`
+disables pausing for a non-interactive dry run.
 
 ---
 
@@ -497,47 +508,183 @@ there covers the `200W` requirement, sourced straight from the
 
 ---
 
-## End-to-end — one full cycle, forced and observed live
+## Scenario 7 — Optional honors its committed slot when it arrives
 
-**Statement:** trigger a real reconcile on a live CR and watch every layer
-respond, in order.
-
-```bash
-# 1. Baseline timestamp
-kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.lastUpdated}'
-# => 2026-08-26T09:55:57.595486+00:00
-
-# 2. Force the operator to reconcile right now
-kubectl annotate eao eaoprofile-optional -n default force-reconcile="$(date +%s)" --overwrite
-
-# 3. Re-check after a few seconds
-kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.lastUpdated}'
-# => 2026-08-26T10:04:06.073347+00:00   (bumped — reconcile genuinely ran)
-
-# 4. Demand row in the DB
-psql ... -c "SELECT provider_name, available_watts, created_at FROM energy_availability
-  WHERE record_type='demand' AND provider_name LIKE '%optional%';"
-# => default/eaoprofile-optional | 200.0000 | 2026-08-17 19:51:06   (created_at unchanged - it's
-#    an upsert on the value columns, not a fresh insert; energy_availability has no updated_at
-#    column, so an unchanged created_at on repeat reconciles is expected, not a sign nothing happened)
-
-# 5. Decision recomputed
-kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.decision}'
-# => identical to Scenario 6 - same result, because the underlying supply/demand data hadn't
-#    changed between reconciles; the point is that it was genuinely recomputed, not cached
-```
-
-**Full chain confirmed, in order:**
+**Statement:** `Optional` never deploys just because "now" happens to be
+sufficient — it always waits for its committed slot (the single best one in
+the next 24h, per Scenario 6). Once `now` actually reaches that slot, the
+CR must flip from `Scheduled` to `DeployImmediately` **and stay there** for
+the rest of the slot, not revert on the next reconcile tick. Waiting hours
+for a real slot boundary isn't practical live, so this proves it with a
+real, disposable CR instead of an isolated function call: create it, fake
+"the committed slot just arrived" via a `kubectl patch --subresource=status`,
+then force two real reconciles back to back through the actual Kopf
+reconcile loop and watch the transition happen — and hold — on the real
+object, then delete it.
 
 ```mermaid
 flowchart TD
-    A["Kepler + cAdvisor (Scenario 1)"] --> B["container_power_metrics<br/>(fresh, per-container, kepler+cadvisor joined)"]
-    B --> C["energy-aware-operator resolves demand<br/>via this service's tiers (Scenario 5)"]
-    C --> D["POST /api/energy-availability/demand<br/>(one row per identifier, upserted)"]
-    D --> E["operator reads GET /api/energy-availability/future/forecast,<br/>built from real + predicted energy_availability<br/>with real-always-wins precedence (Scenarios 2-4)"]
-    E --> F["operator computes a decision<br/>per WorkloadType priority (Scenario 6)"]
-    F --> G["decision written back onto the CR's own status<br/>(confirmed live, forced reconcile above)"]
+    A["kubectl apply: temporary Optional CR<br/>energyConsumption comfortably below current supply"] --> B["real initial decision:<br/>Scheduled, best slot in next 24h"]
+    B --> C["kubectl patch --subresource=status:<br/>fake scheduledSlot.slotStart = the CURRENT slot<br/>(simulates time having reached the committed slot)"]
+    C --> D["force-reconcile annotation #1<br/>(real Kopf reconcile loop, not a function call)"]
+    D --> E{"committed_to_current_slot?<br/>old scheduledSlot.slotStart == current slot's slotStart"}
+    E -->|Yes, and current slot is sufficient| F["DeployImmediately<br/>scheduledSlot carried forward"]
+    F --> G["force-reconcile annotation #2"]
+    G --> H{"committed_to_current_slot?<br/>(scheduledSlot survived from reconcile #1)"}
+    H -->|Still Yes| I["STAYS DeployImmediately<br/>(the bug this scenario proves fixed:<br/>used to revert to Scheduled here)"]
+    I --> J["kubectl delete: temporary CR cleaned up"]
 ```
+
+```bash
+# current supply sets the bar for an unambiguous "sufficient" CR
+curl -s http://localhost:8000/api/energy-availability/current/active | jq '[.availability[].available_watts] | max'
+# => 950
+
+# create a temporary Optional CR needing half that, comfortably sufficient
+cat <<EOF | kubectl apply -f -
+apiVersion: eas.hiro.io/v1
+kind: EnergyAwareOrchestration
+metadata:
+  name: eaoprofile-demo-honor-test
+  namespace: default
+spec:
+  applicationRef: {apiVersion: apps/v1, kind: Deployment, name: demo-honor-test-nonexistent, namespace: default}
+  energyConsumption: 475
+  forecastWindowDays: 1
+  priority: Optional
+EOF
+
+kubectl get eao eaoprofile-demo-honor-test -n default -o jsonpath='{.status.decision}' | python3 -m json.tool
+```
+```json
+{
+  "action": "Scheduled",
+  "reason": "Optional priority - scheduled for optimal energy slot (2200W >= 475W)",
+  "scheduledSlot": {"slotNumber": 4, "slotStart": "...T18:00:00+00:00", "slotEnd": "...T00:00:00+00:00", "availableEnergyWatts": 2200, "requiredEnergyWatts": 475}
+}
+```
+
+```bash
+# fake: pretend this CR already committed to the slot that's active RIGHT NOW
+kubectl patch eao eaoprofile-demo-honor-test -n default --type=merge --subresource=status -p \
+  '{"status":{"decision":{"action":"Scheduled","scheduledSlot":{"slotStart":"<current-slot-start>","slotEnd":"<current-slot-end>","availableEnergyWatts":0,"requiredEnergyWatts":475},"energyMetrics":{"requiredWatts":475,"sufficient":false},"demandReported":true}}}'
+
+# reconcile 1 - the exact moment "now" reaches the committed slot
+kubectl annotate eao eaoprofile-demo-honor-test -n default force-reconcile="$(date +%s)" --overwrite
+kubectl get eao eaoprofile-demo-honor-test -n default -o jsonpath='{.status.decision}' | python3 -m json.tool
+```
+```json
+{
+  "action": "DeployImmediately",
+  "reason": "Optional priority - honoring previously committed slot (950W >= 475W)",
+  "scheduledSlot": {"slotNumber": 3, "slotStart": "...T12:00:00+00:00", "slotEnd": "...T18:00:00+00:00", "availableEnergyWatts": 950, "requiredEnergyWatts": 475}
+}
+```
+
+```bash
+# reconcile 2 - must STAY DeployImmediately, not revert to Scheduled
+kubectl annotate eao eaoprofile-demo-honor-test -n default force-reconcile="$(date +%s)" --overwrite
+kubectl get eao eaoprofile-demo-honor-test -n default -o jsonpath='{.status.decision}' | python3 -m json.tool
+```
+```json
+{
+  "action": "DeployImmediately",
+  "reason": "Optional priority - honoring previously committed slot (950W >= 475W)",
+  "scheduledSlot": {"slotNumber": 3, "slotStart": "...T12:00:00+00:00", "slotEnd": "...T18:00:00+00:00", "availableEnergyWatts": 950, "requiredEnergyWatts": 475}
+}
+```
+
+**Observed:** both reconciles return `DeployImmediately`, through the real
+reconcile loop and real live data — reconcile 2 is the case that used to
+silently revert to `Scheduled` before the fix (see "Errors and fixes" in
+project history: `committed_to_current_slot` originally required the prior
+`action` to still say `"Scheduled"`, which stops being true the instant
+reconcile 1 sets it to `DeployImmediately`; fixed by matching purely on
+`scheduledSlot.slotStart` and carrying `scheduledSlot` forward on the
+`DeployImmediately` branch too, so the commitment persists across
+reconciles for the rest of the slot).
+
+**Cleanup (immediately after):**
+```bash
+kubectl delete eao eaoprofile-demo-honor-test -n default --ignore-not-found
+```
+
+---
+
+## End-to-end — full top-to-bottom flow, all 5 pipeline steps
+
+**Statement:** walk the entire pipeline in one continuous pass, in the same
+order as the root README's [Data flow](README.md#data-flow) section — not a
+handful of isolated queries, but Generate & Collect through Clean Up, each
+step reading the previous step's real output, finishing with a forced
+reconcile and Scenario 7's honor-commitment proof inline as Step 4b.
+
+```mermaid
+flowchart TD
+    subgraph S1["Step 1 - Generate & Collect"]
+      A1["Kepler + cAdvisor pods"] --> A2["container_power_metrics<br/>(fresh, kepler+cadvisor joined)"]
+    end
+    subgraph S2["Step 2 - Forecast Supply"]
+      B1["GET /future/forecast<br/>real + predicted, real-always-wins"]
+    end
+    subgraph S3["Step 3 - Predict Demand"]
+      C1["CR status.energyMetrics<br/>(resolved via Step 1's metrics)"]
+      C2["demand rows in energy_availability"]
+    end
+    subgraph S4["Step 4 - Decide & Report"]
+      D1["baseline lastUpdated"] --> D2["force-reconcile annotation"]
+      D2 --> D3["lastUpdated bumped -<br/>proves this reconcile genuinely ran"]
+      D3 --> D4["decision recomputed from live data"]
+      D4 --> D5["GET /demand reflects the same reconcile,<br/>externally readable"]
+      D5 --> D6["Step 4b: Optional commitment honored<br/>across two real reconciles (Scenario 7)"]
+    end
+    subgraph S5["Step 5 - Clean Up"]
+      E1["MetricsRetentionScheduler log evidence<br/>(hourly housekeeping job)"]
+    end
+    S1 --> S2 --> S3 --> S4 --> S5
+```
+
+```bash
+# --- Step 1: Generate & Collect ---
+kubectl get pods -n default -o wide | grep -E "kepler|prometheus-server"
+psql ... -c "SELECT metric_source, count(*), max(timestamp) FROM container_power_metrics GROUP BY metric_source ORDER BY max DESC;"
+
+# --- Step 2: Forecast Supply ---
+curl -s "http://localhost:8000/api/energy-availability/future/forecast?hours_ahead=24" | jq '.availability[] | {slot_start_time, slot_end_time, available_watts, data_source}'
+
+# --- Step 3: Predict Demand ---
+kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.energyMetrics}'
+psql ... -c "SELECT provider_name, slot_start_time, available_watts FROM energy_availability WHERE record_type='demand' ORDER BY provider_name, slot_start_time;"
+
+# --- Step 4: Decide & Report ---
+kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.lastUpdated}'
+# => 2026-08-28T09:55:57.595486+00:00
+
+kubectl annotate eao eaoprofile-optional -n default force-reconcile="$(date +%s)" --overwrite
+
+kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.lastUpdated}'
+# => 2026-08-28T10:04:06.073347+00:00   (bumped - reconcile genuinely ran)
+
+kubectl get eao eaoprofile-optional -n default -o jsonpath='{.status.decision}' | python3 -m json.tool
+curl -s "http://localhost:8000/api/energy-availability/demand?identifier=default/eaoprofile-optional" | jq '.demand[] | {slot_start_time, slot_end_time, available_watts}'
+
+# --- Step 4b: Optional honors its committed slot (Scenario 7, inline) ---
+#     create temp CR -> fake commitment to current slot -> reconcile x2 -> DeployImmediately both times -> delete
+
+# --- Step 5: Clean Up ---
+kubectl logs -n default deploy/energy-metric-service --since=2h | grep -i MetricsRetentionScheduler | tail -5
+```
+
+**Observed:** each step's real output feeds the next — Step 1's fresh
+`container_power_metrics` is what Step 3's resolver reads; Step 2's
+`/future/forecast` is what Step 4's scheduling decision is computed
+against; Step 4's forced reconcile proves the whole chain is live, not
+cached (`lastUpdated` genuinely bumps, and the same demand batch it writes
+is immediately visible through `GET /demand`); Step 4b proves Optional's
+commitment survives across reconciles once its slot arrives, not just on
+the first tick; Step 5 confirms the hourly retention job is a real,
+currently-running scheduler, even though nothing in the earlier steps
+depends on it having fired yet.
 
 This entire loop runs through `energy-aware-operator`'s own reconcile logic
 — this repo's `DeploymentScheduler` (see

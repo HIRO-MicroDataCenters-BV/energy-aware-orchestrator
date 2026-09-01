@@ -176,13 +176,7 @@ class EnergyAwareOrchestrationStatus(BaseModel):
     )
     demandReported: bool = Field(
         default=False,
-        description=(
-            "Whether the current decision (action, scheduledSlot, "
-            "energyMetrics.requiredWatts) has been successfully reported as "
-            "demand to energy-metric-service. Reset to false whenever the "
-            "decision changes or a report attempt fails; used to skip "
-            "redundant demand reports on reconciles where nothing changed."
-        )
+        description="Whether the last demand-forecast report to energy-metric-service succeeded. Informational only."
     )
     # Legacy field for backward compatibility
     executionSchedule: Optional[ExecutionSchedule] = Field(

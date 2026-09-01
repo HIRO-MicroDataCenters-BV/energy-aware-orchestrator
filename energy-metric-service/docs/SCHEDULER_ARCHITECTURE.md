@@ -73,7 +73,7 @@ work (see `energy-aware-operator` demand-reporting integration, US5).
 Each slot is upserted independently inside its own `try`/`except`, so one
 malformed slot in a batch doesn't discard the rest of that cycle's data.
 
-## 3. ForecastingScheduler
+## 4. ForecastingScheduler
 
 Refreshes **predicted supply** rows so the scheduler has a sensible answer
 for slots beyond what live grid polling has reached. Every 30 minutes
@@ -94,7 +94,7 @@ scheduler itself.
 A provider with no real supply history yet is a no-op cycle, not an error -
 there's nothing to forecast from.
 
-## 4. MetricsRetentionScheduler
+## 5. MetricsRetentionScheduler
 
 Deletes rows older than `retention_days` (default 30) from `node_metrics`
 and `container_power_metrics` every hour. Both tables get a fresh row every
@@ -150,7 +150,7 @@ an actual deployment decision:
          Consumed by whatever actually makes deployment decisions:
            - energy-aware-operator (separate repo) - the real path today
            - DeploymentScheduler (this repo, every 30s) - NOT USED in
-             production, see "Unused: DeploymentScheduler" below
+             production, see the note in section 2 above
                     │
                     ▼
          kubectl/helm/CR apply to the cluster
@@ -160,27 +160,6 @@ an actual deployment decision:
 from `node_metrics`/`container_power_metrics` older than `retention_days` -
 it doesn't sit in the decision path above, it just keeps those two tables
 bounded.
-
----
-
-## Unused: DeploymentScheduler
-
-Runs `DeploymentSchedulerService.process_pending_deployments()` every 30s,
-but nothing in production relies on its output: real workload scheduling
-lives in the separate `energy-aware-operator` repo (CRD + reconcile loop).
-This scheduler, the `ApplicationDeployment`/`ApplicationDefinition` tables
-it drives, and the `EnergyAvailabilityService.check_energy_sufficient_
-for_deployment()` energy check it alone calls (no API endpoint or other
-service touches it) are a leftover in-repo path with no other caller
-anywhere in this codebase. Treat it as a removal candidate (see Future
-Enhancements), not as documentation of how deployments actually get made.
-
-Briefly, when active: it polls `ApplicationDeployment` rows in
-`Created`/`Schedule` status, checks each one's `WorkloadType`
-(`Critical` skips the energy check; `Preferred`/`Optional` require the
-current slot's available watts, real supply preferred over predicted, to
-cover the estimated requirement), then delegates to a `kubernetes` /
-`helm` / `custom` deployment service based on `deployment_type`.
 
 ---
 
