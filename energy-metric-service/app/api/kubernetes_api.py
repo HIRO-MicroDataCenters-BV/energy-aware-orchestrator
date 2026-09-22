@@ -5,7 +5,7 @@ Kubernetes API endpoints for pod and namespace management.
 from datetime import datetime
 from typing import Optional, Dict
 from fastapi import APIRouter, HTTPException, Query
-from app.servicesv2.kubernetes_service import KubernetesService
+from app.services.kubernetes_service import KubernetesService
 from app.models.kubernetes_models import (
     PodInfo,
     PodsResponse,

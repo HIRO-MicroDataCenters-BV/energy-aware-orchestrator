@@ -25,6 +25,12 @@ async def resolve_demand_watts(
     accurate first:
 
     1. Measured - actual Kepler-measured wattage for the workload's pods.
+       Treated as unavailable if it sums to 0 - Kepler attributes
+       container power proportionally to CPU usage, so an idle pod
+       measures as exactly 0W, which is a true "not currently drawing
+       power" reading but a useless signal for a workload that may spike
+       or that this row represents a future-scheduled slot for - falling
+       through lets prediction/fallback supply a non-degenerate estimate.
     2. Predicted - the ML model's estimate from the workload's live
        CPU/memory utilization, used only when direct measurement is
        momentarily unavailable (e.g. a scrape gap).
@@ -43,7 +49,7 @@ async def resolve_demand_watts(
         repository = ContainerPowerMetricsRepository(db)
 
         measured = await repository.get_latest_measured_watts(application_name, namespace)
-        if measured is not None:
+        if measured is not None and measured > 0:
             return measured
 
         utilization = await repository.get_latest_utilization(application_name, namespace)

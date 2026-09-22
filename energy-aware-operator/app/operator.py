@@ -71,16 +71,15 @@ async def _report_demand_if_needed(
     name: str,
     namespace: str,
     spec: Dict[str, Any],
-    old_status: Dict[str, Any],
     schedule_result: Dict[str, Any],
     patch: kopf.Patch,
 ) -> None:
     """
-    Report the CR's current demand to energy-metric-service, skipping the
-    call when nothing has changed since the last successfully reported
-    demand (see the demandReported field's docstring in app/crd/models.py
-    for why plain content comparison against `status` isn't enough on its
-    own).
+    Report the CR's demand forecast (current slot + next 1 day) to
+    energy-metric-service every reconcile, unconditionally - forecast
+    content depends on `now`, not just the decision, so "decision
+    unchanged" doesn't mean "nothing to re-report" (a previous version
+    skipped in that case, leaving Optional's rows stale for hours).
 
     Never raises - a problem here must not prevent the CR's own scheduling
     decision (already applied to `patch` by the caller) from being
@@ -100,51 +99,32 @@ async def _report_demand_if_needed(
         if required_watts is None:
             return
 
-        if action == "DeployImmediately":
-            # No scheduledSlot for this action, so there's nothing to
-            # compare against - always report, using the current slot
-            # boundary as the window. Bounded, small cost per reconcile;
-            # avoids reinventing window-staleness tracking for the case
-            # most likely to already have sufficient energy right now.
-            slot_start, slot_end = scheduler_service.get_current_slot_window()
-            resolved_watts = await energy_api_client.report_demand(
-                identifier=identifier,
-                slot_start_time=slot_start.isoformat(),
-                slot_end_time=slot_end.isoformat(),
-                required_watts=float(required_watts),
-                application_name=application_name,
-            )
-            _apply_demand_report_result(patch, resolved_watts)
-            return
+        if action != "DeployImmediately":
+            scheduled_slot = decision.get("scheduledSlot")
+            if action != "Scheduled" or not scheduled_slot:
+                # Delayed/Waiting/unknown - nothing concrete to report yet
+                return
 
-        scheduled_slot = decision.get("scheduledSlot")
-        if action != "Scheduled" or not scheduled_slot:
-            # Delayed/Waiting/unknown - nothing concrete to report yet
-            return
-
-        old_decision = old_status.get("decision") or {}
-        old_scheduled_slot = old_decision.get("scheduledSlot") or {}
-        old_energy_metrics = old_status.get("energyMetrics") or {}
-
-        unchanged = (
-            old_decision.get("action") == action
-            and old_scheduled_slot.get("slotStart") == scheduled_slot.get("slotStart")
-            and old_scheduled_slot.get("slotEnd") == scheduled_slot.get("slotEnd")
-            and old_energy_metrics.get("requiredWatts") == required_watts
-            and old_status.get("demandReported") is True
+        forecast_slots = scheduler_service.forecast_demand_slots(
+            required_energy_watts=float(required_watts),
+            schedule_result=schedule_result,
         )
-        if unchanged:
-            logger.debug(f"Demand unchanged for '{identifier}', skipping report")
+        if not forecast_slots:
             return
 
-        resolved_watts = await energy_api_client.report_demand(
+        resolved = await energy_api_client.report_demand_batch(
             identifier=identifier,
-            slot_start_time=scheduled_slot["slotStart"],
-            slot_end_time=scheduled_slot["slotEnd"],
-            required_watts=float(required_watts),
-            application_name=application_name,
+            slots=[
+                {
+                    "slot_start_time": slot["slot_start"].isoformat(),
+                    "slot_end_time": slot["slot_end"].isoformat(),
+                    "required_watts": slot["watts"],
+                    "application_name": application_name if slot["running"] else None,
+                }
+                for slot in forecast_slots
+            ],
         )
-        _apply_demand_report_result(patch, resolved_watts)
+        _apply_demand_report_result(patch, resolved[0] if resolved else None)
 
     except Exception as e:
         logger.warning(f"Demand reporting skipped for '{namespace}/{name}' due to an error: {e}")
@@ -284,7 +264,7 @@ async def reconcile_handler(
     logger.info("-" * 80)
     try:
         schedule_result = await scheduler_service.calculate_schedule(
-            priority, float(energy_consumption)
+            priority, float(energy_consumption), old_status=status
         )
 
         if schedule_result:
@@ -302,7 +282,7 @@ async def reconcile_handler(
 
             # Report demand to energy-metric-service (best-effort, skips
             # when unchanged - see _report_demand_if_needed)
-            await _report_demand_if_needed(name, namespace, spec, status, schedule_result, patch)
+            await _report_demand_if_needed(name, namespace, spec, schedule_result, patch)
 
             # Log decision
             logger.info("")
@@ -476,7 +456,7 @@ async def periodic_reconcile(
         logger.info("Recalculating schedule")
         logger.info("-" * 80)
         schedule_result = await scheduler_service.calculate_schedule(
-            priority, float(energy_consumption)
+            priority, float(energy_consumption), old_status=status
         )
 
         if schedule_result:
@@ -493,7 +473,7 @@ async def periodic_reconcile(
 
             # Report demand to energy-metric-service (best-effort, skips
             # when unchanged - see _report_demand_if_needed)
-            await _report_demand_if_needed(name, namespace, spec, status, schedule_result, patch)
+            await _report_demand_if_needed(name, namespace, spec, schedule_result, patch)
 
             logger.info("")
             logger.info("=" * 80)

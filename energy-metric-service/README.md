@@ -15,12 +15,13 @@ energy-metric-service/
 │   ├── repositories/       # Data access logic
 │   ├── scheduler/          # Background schedulers (metrics, deployment, grid polling, forecasting)
 │   ├── schemas/            # Pydantic schemas
-│   ├── services/           # Metrics, prediction, and integration logic (grid client, prediction service)
-│   ├── servicesv2/         # Newer service implementations
+│   ├── services/           # Metrics, prediction, deployment, and integration logic
 │   └── utils/               # Utilities and helpers
 ├── charts/
 │   ├── app/                # Helm chart for FastAPI app (incl. dev/test grid stub)
 │   └── postgres/           # Helm chart for PostgreSQL
+├── docs/
+│   └── SCHEDULER_ARCHITECTURE.md  # Background scheduler internals & data flow
 ├── migrations/            # Alembic database migrations (see "Database Migrations" below)
 │   └── versions/
 ├── scripts/
@@ -38,12 +39,12 @@ energy-metric-service/
 
 ## 🚀 Features
 
-- **Energy Metrics Collection:** Fetches energy data from Kepler via Prometheus
-- **Resource Monitoring:** Tracks CPU and memory utilization
+- **Energy Metrics Collection:** Fetches per-node and per-container energy data from Kepler + cAdvisor via Prometheus (see [Container Metrics Collection](#-container-metrics-collection))
+- **Resource Monitoring:** Tracks CPU and memory utilization, per node and per container
 - **Grid Capacity Polling:** Periodically polls an external grid API for live supply data (see [Grid Integration](#-grid-integration))
 - **Supply Forecasting:** Predicts future supply for slots beyond what live polling has reached (see [Supply Forecasting](#-supply-forecasting-predictions)) — currently a dummy averaging model, not yet a trained ML model (see [Known Limitations](#-known-limitations--next-steps))
-- **Demand Reporting:** Tracks each workload's currently required watts, reported by `energy-aware-operator` (see [Demand Reporting](#-demand-reporting))
-- **Automatic Database Migrations:** Alembic migrations run on every container start (see [Database Migrations](#-database-migrations))
+- **Demand Reporting:** Tracks each workload's demand as a rolling forecast (current slot + next 1 day, in predefined slots), reported by `energy-aware-operator` (see [Demand Reporting](#-demand-reporting))
+- **Automatic Database Migrations:** Alembic migrations run at deploy time and on every container start, with a drift check gating the deploy (see [Database Migrations](#-database-migrations))
 - **Kubernetes Integration:** Pod and namespace management APIs
 - **Time Series Analysis:** Historical data and trend monitoring
 - **Custom PostgreSQL Helm Chart:** Easy, persistent storage setup
@@ -111,6 +112,9 @@ From the `energy-metric-service/` directory:
   - `--no-build` — skip Docker image build
   - `--grid-stub` — also deploy the dev/test mock grid server and point `GRID_API_URL` at it (see [Grid Integration](#-grid-integration))
   - `--grid-url URL` — point `GRID_API_URL` at a real grid endpoint instead
+  - `--enable-metrics-scheduler` — turn on Kepler/cAdvisor metrics collection (see [Container Metrics Collection](#-container-metrics-collection)); requires the monitoring stack deployed
+  - `--prometheus-url URL` — override `PROMETHEUS_BASE_URL` (default: auto-derived)
+  - `--monitoring-release NAME` — Helm release name the monitoring stack was installed under (default: `energy-metrics`)
 
 ---
 
@@ -178,13 +182,17 @@ Environment variables under `app.env`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ENABLE_METRICS_SCHEDULER` | `false` | Periodic Prometheus/Kepler metrics collection |
+| `ENABLE_METRICS_SCHEDULER` | `false` | Periodic Kepler/cAdvisor metrics collection into `node_metrics` and `container_power_metrics` (see [Container Metrics Collection](#-container-metrics-collection)). Defaults **on** in `deploy-full-stack.sh`'s `deploy` command (`--disable-metrics-scheduler` to opt out); this chart-level default stays `false` for direct/manual installs |
+| `PROMETHEUS_BASE_URL` | `""` | Where `ENABLE_METRICS_SCHEDULER` reads from. Empty = auto-derive `http://<monitoring.releaseName>-prometheus-server:80/api/v1` |
 | `ENABLE_DEPLOYMENT_SCHEDULER` | `true` | Legacy deployment-request processor (largely superseded by `energy-aware-operator`) |
 | `ENABLE_GRID_POLLING` | `true` | Whether `GridPollingScheduler` runs at all |
 | `GRID_API_URL` | `""` | Where to poll for grid capacity. Empty = poller stays dormant, unless `gridStub.enabled=true` auto-points it at the dev stub |
 | `GRID_POLL_INTERVAL_SECONDS` | `300` | Grid polling interval |
 | `ENABLE_FORECASTING` | `true` | Whether `ForecastingScheduler` runs at all (in-process, no URL needed) |
 | `FORECASTING_INTERVAL_SECONDS` | `1800` | Supply prediction refresh interval |
+| `ENABLE_METRICS_RETENTION` | `true` | Whether `MetricsRetentionScheduler` deletes old `node_metrics`/`container_power_metrics` rows (see [Metrics Retention](#-metrics-retention)) |
+| `METRICS_RETENTION_DAYS` | `30` | How old a row must be before it's deleted |
+| `METRICS_RETENTION_INTERVAL_SECONDS` | `3600` | How often the cleanup runs |
 | `LOG_LEVEL` | `INFO` | App log level |
 | `KUBERNETES_NAMESPACE` | *(release namespace)* | Namespace the app operates against |
 | `USE_KUBECTL_PROXY` | `false` | Use `kubectl proxy` instead of in-cluster ServiceAccount auth |
@@ -194,15 +202,24 @@ Top-level chart values:
 | Value | Default | Purpose |
 |---|---|---|
 | `gridStub.enabled` | `false` | Deploy the dev/test mock grid server (see [Grid Integration](#-grid-integration)) |
+| `monitoring.releaseName` | `energy-metrics` | Helm release name `energy-monitoring-helm-stack` was installed under - only used to auto-derive `PROMETHEUS_BASE_URL` |
 
 ---
 
 ## 🔄 Database Migrations
 
-Schema changes are managed with **Alembic** (`migrations/`).
+Schema changes are managed with **Alembic** (`migrations/`), applied at two points:
 
-- **On every container start**, `entrypoint.sh` runs `alembic upgrade head` before starting the app — no manual migration step needed for a normal deploy, fresh install or existing DB alike.
+1. **Deploy time** — `scripts/deploy-app.sh` opens a temporary port-forward to Postgres, runs `alembic upgrade head`, then `alembic check` (drift detection — see below), and **aborts the deploy** if either fails. This means a broken migration or a model that's drifted from the DB fails loudly on the host before a pod ever rolls, instead of surfacing later as a `CrashLoopBackOff`. `deploy-all.sh`/`deploy-full-stack.sh` inherit this for free since they call `deploy-app.sh`.
+2. **Pod start** — `entrypoint.sh` also runs `alembic upgrade head` before starting the app, every container start. This is what actually matters for crash-restarts or node reschedules, where deploy-app.sh never runs again; the deploy-time run above is a fail-fast check, not a replacement for it.
 - **Single-replica assumption:** Alembic has no built-in locking. If `app.replicaCount` is ever raised above 1, migrations should move to a Helm pre-upgrade hook Job instead of running from every replica's `entrypoint.sh`.
+
+**Drift detection:** `alembic check` compares the live DB schema directly against the current ORM models (not against migration history), so it only produces meaningful results *after* `alembic upgrade head` has run against that DB — running it first would flag a legitimately-pending migration as if it were drift. If a model and the DB disagree (a forgotten index, a type mismatch, a missing `server_default`), `alembic check` exits non-zero and `deploy-app.sh` stops before deploying. Run it manually anytime with:
+
+```bash
+cd energy-metric-service
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/orchestration_db uv run alembic check
+```
 
 To add a new migration:
 
@@ -211,6 +228,7 @@ cd energy-metric-service
 uv run alembic revision -m "describe the change"
 # edit the generated file in migrations/versions/
 uv run alembic upgrade head   # test it locally against DATABASE_URL
+uv run alembic check          # confirm the model changes you made match what the migration produced
 ```
 
 Always verify a new migration against **both** a fresh/empty database and an existing one before merging — the baseline migration (`512771aab2f7`) exists specifically to make fresh installs and upgrades follow the same path.
@@ -275,26 +293,61 @@ This is **dev/test only** — never intended for production use.
 
 ---
 
+## 📊 Container Metrics Collection
+
+When `ENABLE_METRICS_SCHEDULER=true`, `MetricCollectorScheduler` (`app/scheduler/metric_collector_scheduler.py`) runs two independent, isolated collectors on every cycle (default 30s):
+
+- **Node-level** (`PrometheusMetricsService`) — Kepler + node-exporter data per cluster node, stored in `node_metrics`. Powers the `/api/metrics/nodes/` dashboard endpoint.
+- **Container-level** (`PrometheusContainerMetricsService`, `app/services/prometheus_container_metrics_service.py`) — Kepler + cAdvisor data per `(pod_name, namespace, container_name)`, stored in `container_power_metrics`. This is what feeds demand resolution tiers 1-2 (see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated) below).
+
+**Kepler and cAdvisor measure two different things and are merged, not substituted for each other.** Kepler measures actual energy directly and independently — `kepler_container_*_joules_total` → watts, per container, no cAdvisor involved. cAdvisor measures CPU/memory *utilization*, not energy. `PrometheusContainerMetricsService` queries both and joins the results by `(pod_name, namespace, container_name)`, tagging each row's `metric_source` as `kepler+cadvisor`, `kepler`, or `cadvisor` depending on what's present that cycle. cAdvisor's utilization numbers double as the input features for the ML fallback tier (see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated)) — Kepler is the real signal, cAdvisor utilization is what the prediction falls back on when Kepler is momentarily unavailable.
+
+**Both query through Prometheus's PromQL API, not the Kepler/cAdvisor DaemonSets directly.** Scraping a DaemonSet's own `:9102`/`:8080` endpoint via its Kubernetes Service only ever reaches one arbitrarily-chosen node's pod - fine for cluster-wide aggregates, useless for correlating a specific pod to its own energy use. Prometheus already scrapes every DaemonSet pod on every node, so querying it gives full cluster coverage in one call.
+
+cAdvisor utilization reads `job="kubernetes-nodes-cadvisor"` — the built-in kubelet-proxied scrape, via the API server — because it comes with clean `pod`/`namespace`/`container` labels already attached. A DaemonSet's own raw `:8080/metrics` scrape only exposes cgroup paths (e.g. `/kubelet.slice/.../pod<uid>.slice/...`), which would need manual pod-UID correlation to be useful.
+
+**Utilization convention** (matches the existing node-level query in `PrometheusMetricsService`, and what `energy_forecasting_model.pkl` was trained on): `cpu_utilization_percent` is *cores actively used × 100*, not normalized to a CPU limit - a container fully using 2 cores reports `200`, not a limit-relative percentage. `memory_utilization_percent` **is** normalized, `usage_bytes / container_spec_memory_limit_bytes × 100`.
+
+**Collects across every namespace, not just where this app runs.** None of the PromQL queries filter by namespace - it's a `by (...)` grouping key, not a filter - so `container_power_metrics` ends up with rows for every pod on the cluster. This is intentional: an EAO CR's `applicationRef` can point at any namespace, and `resolve_demand_watts()` filters by `(application_name, namespace)` at query time, per CR. Collection has to be namespace-agnostic upfront for that per-CR filtering to have anything to find.
+
+---
+
+## 🧹 Metrics Retention
+
+`node_metrics` and `container_power_metrics` both accumulate a fresh row every `MetricCollectorScheduler` cycle (30s default) with no upsert - nothing else ever removes a row. Confirmed live: `container_power_metrics` alone reaches roughly **141K rows/day** at default settings. `MetricsRetentionScheduler` (`app/scheduler/metrics_retention_scheduler.py`) runs on its own interval and deletes rows older than `METRICS_RETENTION_DAYS`, on by default since it's a hygiene concern rather than an optional feature.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ENABLE_METRICS_RETENTION` | `true` | Whether the cleanup loop runs at all |
+| `METRICS_RETENTION_DAYS` | `30` | How old a row must be before it's deleted |
+| `METRICS_RETENTION_INTERVAL_SECONDS` | `3600` | How often the cleanup runs |
+
+Only these two tables are covered - `energy_availability` (supply/demand) doesn't need it: demand rows are upserted in place (one row per `(identifier, slot)`, see [Demand Reporting](#-demand-reporting)) and supply rows are upserted per `(provider, slot, data_source)`, so neither accumulates unboundedly the way a per-cycle metrics scrape does. Elapsed demand/supply rows do still accumulate in the table itself, though - there's no retention job for `energy_availability` yet, only for these two.
+
+---
+
 ## 📨 Demand Reporting
 
-`energy-aware-operator` reports each EAO custom resource's currently-decided energy demand here, once per reconcile:
+`energy-aware-operator` reports each EAO custom resource's demand here, once per reconcile, as a rolling forecast rather than a single point:
 
-- `POST /api/energy-availability/demand` — create/replace the single current demand row for a workload (`identifier` = `<namespace>/<name>`). One row per identifier — a fresh report replaces the previous slot/wattage rather than accumulating history, since a workload only ever has one currently-decided slot.
-- `DELETE /api/energy-availability/demand/{identifier}` — soft-deactivate a workload's demand record (called on CR deletion). Returns success (`404`-as-success) even if nothing was there, since the end state — no active demand — is the same either way.
+- `POST /api/energy-availability/demand` — create/replace a single demand slot for a workload (`identifier` = `<namespace>/<name>`). One row per `(identifier, slot)` — a fresh report for a given slot replaces it rather than accumulating history.
+- `POST /api/energy-availability/demand/batch` — the multi-slot form, and what the operator actually calls each reconcile: report several slots for a workload in one request. It reports the current predefined slot plus the next several (currently 1 day ahead). A slot the workload hasn't started running in yet is reported at `0W` with `application_name` omitted, forcing the fallback verbatim rather than letting live measurement/prediction (which reflects "now", not that future slot) leak in — see [Demand Resolution](#demand-resolution-real-vs-predicted-vs-estimated).
+- `GET /api/energy-availability/demand` — read reported demand back, optionally filtered by `identifier`. Already-elapsed slots are excluded, so a read always shows current + future demand as a forecast curve, not just "right now". Intended for external consumers (e.g. a grid operator) that need visibility into upcoming demand to plan supply ahead of time.
+- `DELETE /api/energy-availability/demand/{identifier}` — soft-deactivate every slot of a workload's demand forecast (called on CR deletion). Returns success (`404`-as-success) even if nothing was there, since the end state — no active demand — is the same either way.
 
 ### Demand Resolution: Real vs Predicted vs Estimated
 
-The `required_watts` a report carries (from `spec.energyConsumption`) is only ever the *fallback*. `resolve_demand_watts()` (`app/services/demand_resolution_service.py`) resolves the actually-stored value through three tiers, most accurate first:
+The `required_watts` a slot report carries (from `spec.energyConsumption`, or an explicit `0` for a not-yet-running future slot) is only ever the *fallback*. `resolve_demand_watts()` (`app/services/demand_resolution_service.py`) resolves the actually-stored value through three tiers, most accurate first:
 
-1. **Measured** — real Kepler-measured wattage (`ContainerPowerMetricsRepository.get_latest_measured_watts()`), correlated to the workload via the `application_name` field the operator now includes (`spec.applicationRef.name` — pod names are prefixed by their owning Deployment's name).
-2. **Predicted** — `EnergyForecastingService`'s trained `RandomForestRegressor` (`app/energy_forecasting_model.pkl`, r²≈0.97), predicting consumption from the workload's live CPU/memory utilization. Used only when direct measurement is momentarily unavailable (e.g. a scrape gap).
-3. **Fallback** — `required_watts` verbatim, the operator's static estimate. The only option before deployment, since utilization data can't exist for a workload that isn't running yet.
+1. **Measured** — real Kepler-measured wattage (`ContainerPowerMetricsRepository.get_latest_measured_watts()`), correlated to the workload via the `application_name` field the operator includes (`spec.applicationRef.name` — pod names are prefixed by their owning Deployment's name). Treated as unavailable if it sums to exactly `0` — Kepler attributes container power proportionally to CPU usage, so a genuinely idle pod measures as `0W`, a true "not drawing power right now" reading but a degenerate one to store verbatim; falling through lets prediction/fallback supply a non-zero estimate instead. (Separately, the operator omits `application_name` entirely for a forecast slot the workload hasn't started running in yet, which always skips straight to tier 3 regardless of this check.)
+2. **Predicted** — `EnergyForecastingService`'s trained `RandomForestRegressor` (`app/energy_forecasting_model.pkl`, r²≈0.97), predicting consumption from the workload's live CPU/memory utilization. Used when direct measurement is unavailable or degenerate.
+3. **Fallback** — `required_watts` verbatim, the operator's static estimate. The only option before deployment, or for a forecast slot the workload isn't running in yet.
 
 This mirrors the real-over-predicted precedence already used for supply (see [Supply Forecasting](#-supply-forecasting-predictions)) — never raises, always falls through to a safe value.
 
-The resolved value round-trips back to the operator, which surfaces it on the CR as `status.energyMetrics.measuredWatts` (informational only — `status.energyMetrics.requiredWatts` remains the number the scheduling decision was actually based on).
+The *current slot's* resolved value round-trips back to the operator, which surfaces it on the CR as `status.energyMetrics.measuredWatts` (informational only — `status.energyMetrics.requiredWatts` remains the number the scheduling decision was actually based on). The rest of the forecast's resolved values are visible via the DB / `GET /demand` but aren't mirrored onto CR status.
 
-**Note:** tiers 1–2 depend on `container_power_metrics` actually being populated, which requires `ENABLE_METRICS_SCHEDULER=true` (defaults to `false` in this chart). With it off, every demand report resolves to the fallback tier — confirmed working, but tiers 1–2 are not yet live-verified against real Kepler data (see [Known Limitations](#-known-limitations--next-steps)).
+**All three tiers are live-verified** against a real cluster (Kepler + cAdvisor via Prometheus, see [Container Metrics Collection](#-container-metrics-collection)). Tiers 1-2 require `ENABLE_METRICS_SCHEDULER=true` and the monitoring stack deployed; with it off, every demand report resolves to the fallback tier (tier 3) instead - still correct, just less precise.
 
 ---
 
@@ -404,9 +457,8 @@ kubectl delete pvc -n <namespace> -l app=eao-postgres
 ## ⚠️ Known Limitations & Next Steps
 
 - **Supply forecasting uses a dummy model, not real ML.** `PredictionService` currently just averages historical real supply per slot-of-day bucket — it's a deliberate placeholder with a clean swap interface (see [How to Swap in a Real ML Model](#how-to-swap-in-a-real-ml-model)), not a trained model. **Making this a real model is the next planned step.**
-- **Demand resolution tiers 1–2 (measured/predicted) are not yet live-verified.** They depend on `container_power_metrics` being populated, which needs `ENABLE_METRICS_SCHEDULER=true` (default `false`). Only the fallback tier has been confirmed against a real deployment so far — measured and ML-predicted tiers are implemented but still pending a live test with metrics collection turned on.
 - **Single-replica migrations.** See [Database Migrations](#-database-migrations) — needs a Helm hook Job if `replicaCount` is ever raised.
-- **Pre-existing drift** between some ORM models and the actual DB schema (constraint names, `NUMERIC` vs `Float`, tz-aware vs naive timestamps in a few older tables) — documented inline in the `6df62fb22abe` migration, deliberately left unactioned as out of scope.
+- **`DeploymentScheduler` is unused - a removal candidate.** It's not the active scheduling path; `energy-aware-operator` schedules workloads today. See [docs/SCHEDULER_ARCHITECTURE.md](docs/SCHEDULER_ARCHITECTURE.md) for the full picture of what's active vs. dead code among this service's background schedulers.
 
 ---
 

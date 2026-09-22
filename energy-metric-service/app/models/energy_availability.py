@@ -2,18 +2,42 @@
 Energy availability model for storing energy forecast and availability data.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Numeric, Boolean, Date, func
+from sqlalchemy import Column, Index, Integer, String, DateTime, Numeric, Boolean, Date, func, text
 from app.db.database import Base
 from app.models.base_dict_mixin import BaseDictMixin
 
 class EnergyAvailability(Base, BaseDictMixin):
     """
     Model for energy availability predictions and forecasts.
-    
+
     Stores information about available energy capacity from different providers,
     including renewable sources, weather dependencies, and forecast confidence.
     """
     __tablename__ = 'energy_availability'
+    __table_args__ = (
+        # One demand row per (identifier, slot) - a CR now reports a rolling
+        # forecast across several future slots, not just its single current
+        # decision, so each slot needs its own row.
+        Index(
+            "ix_energy_availability_demand_provider_slot",
+            "provider_name",
+            "slot_start_time",
+            "slot_end_time",
+            unique=True,
+            postgresql_where=text("record_type = 'demand'"),
+        ),
+        # One supply row per (provider_name, slot_start_time, slot_end_time, data_source)
+        # so real and predicted rows can coexist without overwriting each other.
+        Index(
+            "ix_energy_availability_supply_provider_slot_source",
+            "provider_name",
+            "slot_start_time",
+            "slot_end_time",
+            "data_source",
+            unique=True,
+            postgresql_where=text("record_type = 'supply'"),
+        ),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     provider_name = Column(String(100), nullable=False, doc="Name of the energy provider")
@@ -55,10 +79,10 @@ class EnergyAvailability(Base, BaseDictMixin):
             'energy_source_type': self.energy_source_type,
             'slot_start_time': self.slot_start_time.isoformat() if self.slot_start_time else None,
             'slot_end_time': self.slot_end_time.isoformat() if self.slot_end_time else None,
-            'available_watts': float(self.available_watts) if self.available_watts else None,
-            'guaranteed_minimum_watts': float(self.guaranteed_minimum_watts) if self.guaranteed_minimum_watts else None,
-            'potential_maximum_watts': float(self.potential_maximum_watts) if self.potential_maximum_watts else None,
-            'confidence_percentage': float(self.confidence_percentage) if self.confidence_percentage else None,
+            'available_watts': float(self.available_watts) if self.available_watts is not None else None,
+            'guaranteed_minimum_watts': float(self.guaranteed_minimum_watts) if self.guaranteed_minimum_watts is not None else None,
+            'potential_maximum_watts': float(self.potential_maximum_watts) if self.potential_maximum_watts is not None else None,
+            'confidence_percentage': float(self.confidence_percentage) if self.confidence_percentage is not None else None,
             'weather_dependency': self.weather_dependency,
             'forecast_date': self.forecast_date.isoformat() if self.forecast_date else None,
             'is_active': self.is_active,

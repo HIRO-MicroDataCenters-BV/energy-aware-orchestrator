@@ -49,13 +49,14 @@ class EnergyAvailabilityRepository:
         end_time: Optional[datetime] = None,
         forecast_date: Optional[date] = None,
         is_active: Optional[bool] = True,
+        record_type: Optional[str] = None,
         limit: int = 1000,
         order_by: str = "slot_start_time",
         order_direction: str = "desc"
     ) -> List[EnergyAvailability]:
         """
         Get energy availability records with optional filtering.
-        
+
         Args:
             provider_name: Filter by energy provider name
             location: Filter by location
@@ -64,10 +65,11 @@ class EnergyAvailabilityRepository:
             end_time: Filter records with slot_end_time <= this value
             forecast_date: Filter by forecast date
             is_active: Filter by active status
+            record_type: Filter by 'supply' or 'demand'
             limit: Maximum number of records to return
             order_by: Field to order by
             order_direction: Order direction (asc/desc)
-            
+
         Returns:
             List of EnergyAvailability records
         """
@@ -104,7 +106,10 @@ class EnergyAvailabilityRepository:
                 
             if is_active is not None:
                 conditions.append(EnergyAvailability.is_active == is_active)
-            
+
+            if record_type:
+                conditions.append(EnergyAvailability.record_type == record_type)
+
             if conditions:
                 query = query.where(and_(*conditions))
             
@@ -186,7 +191,7 @@ class EnergyAvailabilityRepository:
         record_type: str = "supply"
     ) -> List[EnergyAvailability]:
         """
-        Get future energy availability within specified hours.
+        Get current + future energy availability within specified hours.
 
         Args:
             hours_ahead: Number of hours to look ahead
@@ -197,7 +202,11 @@ class EnergyAvailabilityRepository:
                 available capacity.
 
         Returns:
-            List of future availability records
+            List of current + future availability records. Includes the
+            slot "now" currently falls inside (filtered on slot_end_time,
+            not slot_start_time) - callers like the operator's scheduler
+            need to see the current slot to decide "is it sufficient right
+            now", not just what's strictly ahead.
         """
         try:
             now = datetime.now(timezone.utc)
@@ -206,7 +215,7 @@ class EnergyAvailabilityRepository:
 
             query = select(EnergyAvailability).where(
                 and_(
-                    EnergyAvailability.slot_start_time >= now,
+                    EnergyAvailability.slot_end_time >= now,
                     EnergyAvailability.slot_start_time <= future_time,
                     EnergyAvailability.is_active == True,
                     EnergyAvailability.record_type == record_type
@@ -342,16 +351,17 @@ class EnergyAvailabilityRepository:
         forecast_date: date,
     ) -> EnergyAvailability:
         """
-        Create or replace the single current demand row for a CR.
+        Create or replace one slot of a CR's demand forecast.
 
         `identifier` is '<namespace>/<name>' of the EAO CR, stored in
-        provider_name. One demand row per identifier - a fresh call always
-        replaces the previous one via the partial unique index on
-        provider_name WHERE record_type = 'demand', matching how the
-        operator only ever reports its single current decision per CR, not
-        an accumulating history. A real upsert (single statement) rather
-        than delete-then-insert, so an unchanged report costs one indexed
-        write instead of two.
+        provider_name. One demand row per (identifier, slot) - the operator
+        now reports a rolling multi-slot forecast per CR (see
+        forecast_demand_slots() in energy-aware-operator), calling this once
+        per slot, so the partial unique index is on
+        (provider_name, slot_start_time, slot_end_time) WHERE
+        record_type = 'demand', the same shape supply already uses. A real
+        upsert (single statement) rather than delete-then-insert, so an
+        unchanged slot costs one indexed write instead of two.
         """
         try:
             stmt = pg_insert(EnergyAvailability).values(
@@ -365,11 +375,9 @@ class EnergyAvailabilityRepository:
                 data_source="real",
             )
             stmt = stmt.on_conflict_do_update(
-                index_elements=["provider_name"],
+                index_elements=["provider_name", "slot_start_time", "slot_end_time"],
                 index_where=text("record_type = 'demand'"),
                 set_={
-                    "slot_start_time": stmt.excluded.slot_start_time,
-                    "slot_end_time": stmt.excluded.slot_end_time,
                     "available_watts": stmt.excluded.available_watts,
                     "forecast_date": stmt.excluded.forecast_date,
                     "is_active": True,
@@ -389,6 +397,8 @@ class EnergyAvailabilityRepository:
                 .where(
                     EnergyAvailability.provider_name == identifier,
                     EnergyAvailability.record_type == "demand",
+                    EnergyAvailability.slot_start_time == slot_start_time,
+                    EnergyAvailability.slot_end_time == slot_end_time,
                 )
                 .execution_options(populate_existing=True)
             )

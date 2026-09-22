@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Text, DateTime, Float, func, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, Numeric, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, selectinload
 from app.db.database import Base
@@ -26,15 +26,19 @@ class DeploymentType(str, enum.Enum):
 class ApplicationDeployment(Base):
     __tablename__ = "app_deployments_request"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    app_definition_id = Column(UUID(as_uuid=True), ForeignKey("app_definitions.id"), nullable=False)
-    status = Column(String, default=RequestStatus.CREATED.value)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    app_definition_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("app_definitions.id", name="fk_deployment_app", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status = Column(String(50), nullable=False, server_default="pending", default=RequestStatus.CREATED.value)
     error_message = Column(Text, nullable=True)
-    estimated_energy_watts = Column(Float, nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    deployed_at = Column(DateTime, nullable=True)
-    schedule_at = Column(DateTime, nullable=True)  # Scheduled deployment time
+    estimated_energy_watts = Column(Numeric(10, 4), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    deployed_at = Column(DateTime(timezone=True), nullable=True)
+    schedule_at = Column(DateTime(timezone=True), nullable=True)  # Scheduled deployment time
 
     # Relationship to ApplicationDefinition
     application_definition = relationship("ApplicationDefinition", back_populates="application_deployments")

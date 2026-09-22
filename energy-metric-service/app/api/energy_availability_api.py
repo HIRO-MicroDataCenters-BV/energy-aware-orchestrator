@@ -5,8 +5,8 @@ Provides complete CRUD operations and specialized queries for energy availabilit
 including renewable energy filtering, time-based queries, and summary statistics.
 """
 
-from datetime import datetime, timedelta, date
-from typing import Optional
+from datetime import datetime, timedelta, date, timezone
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
@@ -61,6 +61,29 @@ class DemandReport(BaseModel):
             "resolution. Omit to always use required_watts verbatim."
         ),
     )
+
+
+class DemandBatchSlot(BaseModel):
+    """One slot of a workload's demand forecast, as reported via POST /demand/batch."""
+    slot_start_time: datetime = Field(..., description="Start of this forecast slot")
+    slot_end_time: datetime = Field(..., description="End of this forecast slot")
+    required_watts: float = Field(..., ge=0, description="Fallback estimate for this slot, used verbatim if application_name is omitted or no measurement/prediction is available")
+    application_name: Optional[str] = Field(
+        None,
+        max_length=100,
+        description=(
+            "spec.applicationRef.name for this slot. Omit to force "
+            "required_watts verbatim - e.g. a not-yet-running future slot, "
+            "where live measurement/prediction would reflect 'now', not "
+            "that slot."
+        ),
+    )
+
+
+class DemandBatchReport(BaseModel):
+    """Schema for reporting a workload's demand forecast across multiple slots."""
+    identifier: str = Field(..., description="'<namespace>/<name>' of the EAO CR", max_length=100)
+    slots: List[DemandBatchSlot] = Field(..., min_length=1, max_length=100, description="One entry per forecast slot, earliest first")
 
 
 class EnergyAvailabilityUpdate(BaseModel):
@@ -150,6 +173,47 @@ async def get_energy_availability(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve energy availability: {str(e)}")
 
 
+@router.get("/demand", summary="Get workload demand records (current and future)")
+async def get_demand(
+    identifier: Optional[str] = Query(None, description="Filter by '<namespace>/<name>' identifier"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Get reported workload demand - a rolling forecast across the current
+    slot and the next several predefined slots (currently 1 day ahead),
+    one row per (identifier, slot). Already-elapsed slots are excluded so a
+    read only ever shows current + future. Intended for external consumers
+    (e.g. a grid operator) that need visibility into upcoming demand to
+    plan supply ahead of time.
+
+    Registered before /{availability_id} deliberately: that route matches
+    any single path segment (including "demand") and is validated as an int
+    only after matching, so if this were registered later, GET /demand
+    would be caught by /{availability_id} first and fail with a 422 instead
+    of ever reaching this handler.
+    """
+    try:
+        repository = EnergyAvailabilityRepository(db)
+        records = await repository.get_all(
+            record_type="demand",
+            provider_name=identifier,
+            start_time=datetime.now(timezone.utc),
+            order_by="slot_start_time",
+            order_direction="asc",
+            limit=limit,
+        )
+        return {
+            "status": "success",
+            "filters": {"identifier": identifier, "limit": limit},
+            "demand": [record.to_dict() for record in records],
+            "count": len(records),
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving demand records: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve demand records: {str(e)}")
+
+
 @router.get("/{availability_id}", summary="Get energy availability by ID")
 async def get_energy_availability_by_id(
     availability_id: int,
@@ -225,9 +289,10 @@ async def get_future_availability(
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Get future energy availability within specified hours.
-    
-    Returns records for energy slots starting in the next N hours.
+    Get current + future energy availability within specified hours.
+
+    Returns records for the slot "now" currently falls inside, plus every
+    slot starting in the next N hours after that.
     Results are ordered chronologically by slot_start_time.
     
     **Use case:** Plan workload scheduling based on predicted energy availability.
@@ -307,6 +372,50 @@ async def report_demand(
     except Exception as e:
         logger.error(f"Error reporting demand for {demand.identifier}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to report demand: {str(e)}")
+
+
+@router.post("/demand/batch", summary="Report a workload's demand forecast across multiple slots")
+async def report_demand_batch(
+    batch: DemandBatchReport,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Create or replace several demand slots for a workload in one call -
+    the multi-slot form of POST /demand, for reporting a forecast (e.g.
+    current + next 1 day in predefined slots) instead of a single
+    decision. Each slot is resolved and upserted independently via the
+    same resolve_demand_watts() tiers as POST /demand; a failure on one
+    slot doesn't roll back slots already committed, since each is its own
+    row (see the demand unique index: one row per (identifier, slot)).
+    """
+    try:
+        namespace = batch.identifier.split("/", 1)[0]
+        repository = EnergyAvailabilityRepository(db)
+        results = []
+        for slot in batch.slots:
+            resolved_watts = await resolve_demand_watts(
+                db=db,
+                application_name=slot.application_name,
+                namespace=namespace,
+                fallback_watts=slot.required_watts,
+            )
+            record = await repository.upsert_demand(
+                identifier=batch.identifier,
+                slot_start_time=slot.slot_start_time,
+                slot_end_time=slot.slot_end_time,
+                required_watts=resolved_watts,
+                forecast_date=slot.slot_start_time.date(),
+            )
+            results.append(record.to_dict())
+        return {
+            "status": "success",
+            "identifier": batch.identifier,
+            "demand": results,
+            "count": len(results),
+        }
+    except Exception as e:
+        logger.error(f"Error reporting demand batch for {batch.identifier}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to report demand batch: {str(e)}")
 
 
 @router.delete("/demand/{identifier:path}", summary="Deactivate a workload's demand record")

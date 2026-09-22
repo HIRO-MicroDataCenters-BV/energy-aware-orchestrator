@@ -206,8 +206,12 @@ status:
   energyMetrics:
     requiredWatts: 100
     sufficient: true
+    measuredWatts: 100
+  demandReported: true
   lastUpdated: "2026-01-06T10:30:00Z"
 ```
+
+> **`energyMetrics.measuredWatts`** is the demand `energy-metric-service` actually resolved when this CR's demand was last reported — real Kepler measurement if available, else an ML prediction from live utilization, else the same value as `requiredWatts` (see `energy-metric-service/README.md`'s Demand Resolution section for the three tiers). It's informational only; `requiredWatts` above is always the number the scheduling decision itself was based on. `null` until the workload is deployed and generating metrics, or if demand reporting failed - check `demandReported` for that. Every example status block below has been simplified to omit these two fields for brevity, but they're present on every CR.
 
 ---
 

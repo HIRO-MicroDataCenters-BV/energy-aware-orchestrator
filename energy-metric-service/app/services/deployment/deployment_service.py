@@ -7,12 +7,12 @@ from typing import Dict, Any, Optional
 from enum import Enum
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.servicesv2.kubernetes_service import KubernetesService
-from app.servicesv2.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
-from app.servicesv2.energy_availability_service import EnergyAvailabilityService
-from app.servicesv2.deployment.kubernetes_native_deployment_service import KubernetesNativeDeploymentService
-from app.servicesv2.deployment.helm_deployment_service import HelmDeploymentService
-from app.servicesv2.deployment.custom_resource_deployment_service import CustomResourceDeploymentService
+from app.services.kubernetes_service import KubernetesService
+from app.services.prometheus_metrics_service_v2 import PrometheusMetricsServiceV2
+from app.services.energy_availability_service import EnergyAvailabilityService
+from app.services.deployment.kubernetes_native_deployment_service import KubernetesNativeDeploymentService
+from app.services.deployment.helm_deployment_service import HelmDeploymentService
+from app.services.deployment.custom_resource_deployment_service import CustomResourceDeploymentService
 
 
 class DeploymentStatus(Enum):

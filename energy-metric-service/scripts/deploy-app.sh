@@ -24,6 +24,15 @@ ENABLE_GRID_STUB="${ENABLE_GRID_STUB:-false}"
 # A real grid endpoint, if provided. Takes priority over the mock server
 # (see deployment.yaml's GRID_API_URL derivation).
 GRID_API_URL="${GRID_API_URL:-}"
+# Scrapes Kepler power/utilization data via Prometheus, feeding demand
+# resolution tiers 1-2 (measured/ML-predicted). Off by default.
+ENABLE_METRICS_SCHEDULER="${ENABLE_METRICS_SCHEDULER:-false}"
+# Override where PROMETHEUS_BASE_URL points. Empty means auto-derive from
+# MONITORING_RELEASE_NAME (see deployment.yaml's PROMETHEUS_BASE_URL derivation).
+PROMETHEUS_BASE_URL="${PROMETHEUS_BASE_URL:-}"
+# Helm release name the monitoring stack (energy-monitoring-helm-stack) was
+# installed under - only matters if it was deployed under a non-default name.
+MONITORING_RELEASE_NAME="${MONITORING_RELEASE_NAME:-energy-metrics}"
 
 # When rebuilding, tag the image from git content so the Deployment spec
 # actually changes and Kubernetes rolls the pod on its own -- a mutable
@@ -55,11 +64,22 @@ Options:
     --grid-stub         Deploy the dev/test mock grid server and point
                          GRID_API_URL at it (see grid_stub.py)
     --grid-url URL      Point GRID_API_URL at a real grid endpoint instead
+    --enable-metrics-scheduler
+                         Scrape Kepler data via Prometheus into
+                         container_power_metrics (feeds demand resolution
+                         tiers 1-2). Requires the monitoring stack deployed.
+    --prometheus-url URL
+                         Override PROMETHEUS_BASE_URL (default: auto-derived
+                         from --monitoring-release)
+    --monitoring-release NAME
+                         Helm release name the monitoring stack was
+                         installed under (default: energy-metrics)
 
 Examples:
     $0                  # Build and deploy
     $0 --no-build       # Deploy only (use existing image)
     $0 --grid-stub      # Deploy with the mock grid server for testing
+    $0 --enable-metrics-scheduler --no-build   # Turn on Kepler metric scraping
 
 EOF
     exit 0
@@ -72,6 +92,9 @@ while [[ $# -gt 0 ]]; do
         --no-build) BUILD_IMAGE=false; shift ;;
         --grid-stub) ENABLE_GRID_STUB=true; shift ;;
         --grid-url) GRID_API_URL="$2"; shift 2 ;;
+        --enable-metrics-scheduler) ENABLE_METRICS_SCHEDULER=true; shift ;;
+        --prometheus-url) PROMETHEUS_BASE_URL="$2"; shift 2 ;;
+        --monitoring-release) MONITORING_RELEASE_NAME="$2"; shift 2 ;;
         *) print_error "Unknown option: $1"; usage ;;
     esac
 done
@@ -87,6 +110,8 @@ echo "  Namespace: $NAMESPACE"
 echo "  Build Image: $BUILD_IMAGE"
 echo "  Grid Stub: $ENABLE_GRID_STUB"
 echo "  Grid API URL: ${GRID_API_URL:-<none>}"
+echo "  Metrics Scheduler: $ENABLE_METRICS_SCHEDULER"
+echo "  Prometheus URL: ${PROMETHEUS_BASE_URL:-<auto: $MONITORING_RELEASE_NAME-prometheus-server>}"
 echo ""
 
 # Check if PostgreSQL is running
@@ -97,6 +122,52 @@ if ! kubectl get pod -l app=eao-postgres -n "$NAMESPACE" --no-headers 2>/dev/nul
     exit 1
 fi
 print_info "PostgreSQL is running ✓"
+
+# Apply migrations and check for ORM/DB schema drift before rolling a new
+# pod. entrypoint.sh also runs `alembic upgrade head` on pod start (belt
+# and suspenders for crash-restarts), but doing it here too means a broken
+# migration or a model that's drifted from the DB fails the deploy loudly,
+# instead of surfacing later as a CrashLoopBackOff.
+print_info "Applying migrations and checking for schema drift..."
+DB_SVC_NAME=$(kubectl get svc -n "$NAMESPACE" -l app=eao-postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+if [ -z "$DB_SVC_NAME" ]; then
+    print_error "Could not find the PostgreSQL service in namespace $NAMESPACE"
+    exit 1
+fi
+
+DB_NAME="${POSTGRES_DB:-orchestration_db}"
+DB_USER="${POSTGRES_USER:-postgres}"
+DB_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
+ALEMBIC_CHECK_PORT=15432
+
+kubectl port-forward -n "$NAMESPACE" "svc/$DB_SVC_NAME" "${ALEMBIC_CHECK_PORT}:5432" > /tmp/alembic-check-pf.log 2>&1 &
+PF_PID=$!
+trap 'kill $PF_PID 2>/dev/null || true' EXIT
+
+PF_READY=false
+for _ in $(seq 1 15); do
+    if nc -z localhost "$ALEMBIC_CHECK_PORT" 2>/dev/null; then
+        PF_READY=true
+        break
+    fi
+    sleep 1
+done
+if [ "$PF_READY" != true ]; then
+    print_error "Could not reach PostgreSQL via port-forward to run migrations"
+    exit 1
+fi
+
+MIGRATION_DB_URL="postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@localhost:${ALEMBIC_CHECK_PORT}/${DB_NAME}"
+if ! (cd "$PROJECT_ROOT" && DATABASE_URL="$MIGRATION_DB_URL" uv run alembic upgrade head); then
+    print_error "Migration failed - aborting deploy"
+    exit 1
+fi
+if ! (cd "$PROJECT_ROOT" && DATABASE_URL="$MIGRATION_DB_URL" uv run alembic check); then
+    print_error "ORM models have drifted from the DB schema - fix before deploying (see diff above)"
+    exit 1
+fi
+print_info "Migrations applied, no schema drift ✓"
+kill $PF_PID 2>/dev/null || true
 
 # Build Docker image
 if [ "$BUILD_IMAGE" = true ]; then
@@ -130,11 +201,16 @@ HELM_ARGS=(
     --namespace "$NAMESPACE"
     --set "app.image.tag=$IMAGE_TAG"
     --set "gridStub.enabled=$ENABLE_GRID_STUB"
+    --set "app.env.ENABLE_METRICS_SCHEDULER=$ENABLE_METRICS_SCHEDULER"
+    --set "monitoring.releaseName=$MONITORING_RELEASE_NAME"
     --wait
     --timeout 5m
 )
 if [ -n "$GRID_API_URL" ]; then
     HELM_ARGS+=(--set "app.env.GRID_API_URL=$GRID_API_URL")
+fi
+if [ -n "$PROMETHEUS_BASE_URL" ]; then
+    HELM_ARGS+=(--set "app.env.PROMETHEUS_BASE_URL=$PROMETHEUS_BASE_URL")
 fi
 
 helm upgrade --install "$RELEASE_NAME" "$PROJECT_ROOT/charts/app" "${HELM_ARGS[@]}"

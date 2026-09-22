@@ -11,10 +11,10 @@ from typing import List
 from app.models.ApplicationDeployment import ApplicationDeployment, RequestStatus, WorkloadType
 from app.repositories.application_deployment_repository import ApplicationDeploymentRepository
 from app.repositories.application_definition_repository import ApplicationDefinitionRepository
-from app.servicesv2.deployment.deployment_service import DeploymentHelperService
-from app.servicesv2.deployment.kubernetes_native_deployment_service import KubernetesNativeDeploymentService
-from app.servicesv2.deployment.helm_deployment_service import HelmDeploymentService
-from app.servicesv2.deployment.custom_resource_deployment_service import CustomResourceDeploymentService
+from app.services.deployment.deployment_service import DeploymentHelperService
+from app.services.deployment.kubernetes_native_deployment_service import KubernetesNativeDeploymentService
+from app.services.deployment.helm_deployment_service import HelmDeploymentService
+from app.services.deployment.custom_resource_deployment_service import CustomResourceDeploymentService
 from app.db.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)

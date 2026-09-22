@@ -84,6 +84,19 @@ DELETE_PVC="${DELETE_PVC:-false}"
 GRID_API_URL="${GRID_API_URL:-}"
 ENABLE_GRID_STUB="${ENABLE_GRID_STUB:-}"
 
+# ENABLE_METRICS_SCHEDULER: scrapes Kepler power/utilization data via
+# Prometheus into container_power_metrics, feeding demand resolution tiers
+# 1-2 (measured/ML-predicted). On by default - the monitoring stack is
+# deployed later in this same run (step 3/5), so there's a brief window of
+# harmless no-op connection errors until it's up, then it self-heals.
+ENABLE_METRICS_SCHEDULER="${ENABLE_METRICS_SCHEDULER:-true}"
+# Override where PROMETHEUS_BASE_URL points. Empty means auto-derive from
+# MONITORING_RELEASE_NAME.
+PROMETHEUS_BASE_URL="${PROMETHEUS_BASE_URL:-}"
+# Helm release name the monitoring stack gets installed under (step 3/5) -
+# only matters if you're overriding its default.
+MONITORING_RELEASE_NAME="${MONITORING_RELEASE_NAME:-energy-metrics}"
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  ARGUMENT PARSING
 # ─────────────────────────────────────────────────────────────────────────────
@@ -106,6 +119,15 @@ Options (deploy only):
   --grid-url URL        Point GRID_API_URL at a real grid endpoint instead
                          of the mock server (implies --no-grid-stub unless
                          --grid-stub is also passed)
+  --disable-metrics-scheduler
+                         Don't scrape Kepler data via Prometheus into
+                         container_power_metrics (feeds demand resolution
+                         tiers 1-2). On by default.
+  --prometheus-url URL  Override PROMETHEUS_BASE_URL (default: auto-derived
+                         from --monitoring-release)
+  --monitoring-release NAME
+                         Helm release name for the monitoring stack
+                         (default: energy-metrics)
 
 Options (cleanup only):
   --delete-crd         Also delete the operator CRD   (default: keep)
@@ -117,11 +139,15 @@ Environment overrides:
   OPERATOR_IMAGE_TAG   Operator Docker image tag   (default: latest)
   ENABLE_GRID_STUB     Same as --grid-stub
   GRID_API_URL         Same as --grid-url
+  ENABLE_METRICS_SCHEDULER  Same as --disable-metrics-scheduler (set to false)
+  PROMETHEUS_BASE_URL       Same as --prometheus-url
+  MONITORING_RELEASE_NAME   Same as --monitoring-release
 
 Examples:
-  ./deploy-full-stack.sh                       # deploy, mock grid server on by default
+  ./deploy-full-stack.sh                       # deploy, mock grid server + metrics scheduler on by default
   ./deploy-full-stack.sh deploy --no-grid-stub
   ./deploy-full-stack.sh deploy --grid-url http://real-grid.example.com/capacity
+  ./deploy-full-stack.sh deploy --disable-metrics-scheduler
   ./deploy-full-stack.sh cleanup
   ./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
   NAMESPACE=staging ./deploy-full-stack.sh deploy
@@ -146,6 +172,9 @@ parse_args() {
             --grid-stub)    ENABLE_GRID_STUB=true; shift ;;
             --no-grid-stub) ENABLE_GRID_STUB=false; shift ;;
             --grid-url)     GRID_API_URL="$2"; shift 2 ;;
+            --disable-metrics-scheduler) ENABLE_METRICS_SCHEDULER=false; shift ;;
+            --prometheus-url) PROMETHEUS_BASE_URL="$2"; shift 2 ;;
+            --monitoring-release) MONITORING_RELEASE_NAME="$2"; shift 2 ;;
             --delete-crd)   DELETE_CRD=true; shift ;;
             --delete-pvc)   DELETE_PVC=true; shift ;;
             -h|--help)      usage ;;
@@ -293,6 +322,9 @@ deploy_metric_service() {
 
     if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
            ENABLE_GRID_STUB="$ENABLE_GRID_STUB" GRID_API_URL="$GRID_API_URL" \
+           ENABLE_METRICS_SCHEDULER="$ENABLE_METRICS_SCHEDULER" \
+           PROMETHEUS_BASE_URL="$PROMETHEUS_BASE_URL" \
+           MONITORING_RELEASE_NAME="$MONITORING_RELEASE_NAME" \
            bash "$ROOT_DIR/energy-metric-service/scripts/deploy-all.sh"; then
         DEPLOY_METRIC_STATUS="OK"
         info "Energy Metric Service deployed ✓"
