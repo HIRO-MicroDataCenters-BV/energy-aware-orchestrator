@@ -1,17 +1,17 @@
 """
 Grid Polling Scheduler
-Periodically polls the external grid for live capacity data and stores it
-as supply rows in energy_availability.
+Periodically polls one or more configured grid sources (HTTP, Modbus, ...)
+for live capacity data and stores it as supply rows in energy_availability.
 """
 
 import asyncio
 import logging
-import os
-from datetime import date, datetime
+from datetime import datetime
+from typing import List
 
 from app.db.database import AsyncSessionLocal
 from app.repositories.energy_availability import EnergyAvailabilityRepository
-from app.services.grid_api_client import GridAPIClient
+from app.services.grid_clients.base import GridSourceClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,35 +20,45 @@ DEFAULT_PROVIDER_NAME = "grid"
 
 class GridPollingScheduler:
     """
-    Background scheduler that polls the grid API for capacity data.
+    Background scheduler that polls every configured grid source for
+    capacity data, once per interval.
 
-    Failures (grid unreachable, bad response, a single bad slot) are caught
-    and logged per cycle - the loop always sleeps and tries again on the
-    next interval rather than stopping.
+    Takes an already-built list of GridSourceClient - HTTP, Modbus, or any
+    future kind - rather than constructing one itself, so the choice of
+    which sources are active lives entirely in config (see app/main.py).
+
+    Failures (a source unreachable, a bad response, a single bad slot) are
+    caught and logged per source - one bad source never stops the others
+    from being polled, and the loop always sleeps and tries again next
+    interval rather than stopping.
     """
 
-    def __init__(self, api_url: str, interval_seconds: int = 300):
+    def __init__(self, clients: List[GridSourceClient], interval_seconds: int = 300):
+        self.clients = clients
         self.interval_seconds = interval_seconds
-        self.grid_client = GridAPIClient(api_url=api_url)
         self._task = None
         self._running = False
 
     async def _run(self):
         self._running = True
-        logger.info(f"GridPollingScheduler started, interval: {self.interval_seconds} seconds")
+        logger.info(
+            f"GridPollingScheduler started, {len(self.clients)} source(s), "
+            f"interval: {self.interval_seconds} seconds"
+        )
 
         while self._running:
-            try:
-                slots = await self.grid_client.fetch_grid_capacity()
+            for client in self.clients:
+                try:
+                    slots = await client.fetch_grid_capacity()
 
-                if not slots:
-                    logger.debug("GridPollingScheduler: No capacity data this cycle, skipping")
-                else:
-                    stored_count = await self._store_slots(slots)
-                    logger.info(f"GridPollingScheduler: Stored {stored_count}/{len(slots)} capacity slot(s)")
+                    if not slots:
+                        logger.debug(f"GridPollingScheduler: No capacity data from {client}, skipping")
+                    else:
+                        stored_count = await self._store_slots(slots)
+                        logger.info(f"GridPollingScheduler: Stored {stored_count}/{len(slots)} capacity slot(s) from {client}")
 
-            except Exception as e:
-                logger.exception(f"Error in GridPollingScheduler: {e}")
+                except Exception as e:
+                    logger.exception(f"Error polling {client} in GridPollingScheduler: {e}")
 
             await asyncio.sleep(self.interval_seconds)
 
@@ -90,3 +100,10 @@ class GridPollingScheduler:
         if self._task:
             self._task.cancel()
             self._task = None
+
+    async def close_clients(self):
+        for client in self.clients:
+            try:
+                await client.close()
+            except Exception as e:
+                logger.warning(f"GridPollingScheduler: error closing {client}: {e}")

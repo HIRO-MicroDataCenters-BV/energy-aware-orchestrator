@@ -2,6 +2,42 @@
 
 Custom PostgreSQL chart with StatefulSet, Service, and ConfigMaps.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+  - [Option 1: Using the Script (Easiest)](#option-1-using-the-script-easiest)
+  - [Option 2: Using Helm Directly](#option-2-using-helm-directly)
+- [What's Included](#whats-included)
+- [Chart Components](#chart-components)
+  - [StatefulSet](#statefulset)
+  - [Service](#service)
+  - [ConfigMaps](#configmaps)
+- [Default Configuration](#default-configuration)
+- [Deployment Examples](#deployment-examples)
+  - [Example 1: Development](#example-1-development)
+  - [Example 2: Production](#example-2-production)
+  - [Example 3: With Values File](#example-3-with-values-file)
+- [Connection Details](#connection-details)
+  - [Get Connection String](#get-connection-string)
+  - [Connect from Pod](#connect-from-pod)
+  - [Port Forward](#port-forward)
+- [Management](#management)
+  - [Upgrade](#upgrade)
+  - [Logs](#logs)
+  - [Backup](#backup)
+  - [Uninstall](#uninstall)
+- [Customization](#customization)
+  - [Change Database Credentials](#change-database-credentials)
+  - [Change Storage Size](#change-storage-size)
+  - [Add Custom Init Script](#add-custom-init-script)
+- [Environment Variables for Application](#environment-variables-for-application)
+- [Troubleshooting](#troubleshooting)
+  - [Pod Not Starting](#pod-not-starting)
+  - [Connection Issues](#connection-issues)
+- [Documentation](#documentation)
+- [Support](#support)
+- [Summary](#summary)
+
 ## Quick Start
 
 ### Option 1: Using the Script (Easiest)

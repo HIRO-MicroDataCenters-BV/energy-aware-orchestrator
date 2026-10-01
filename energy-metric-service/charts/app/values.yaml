@@ -44,12 +44,19 @@ app:
     # somewhere non-standard.
     PROMETHEUS_BASE_URL: ""
 
-    # Grid capacity polling. Poller stays dormant until GRID_API_URL is set
-    # to a real grid endpoint - no URL means nothing to poll. Leave empty to
-    # auto-point at the dev stub below when gridStub.enabled is true.
+    # Grid capacity polling. Poller stays dormant until a source is
+    # configured below - no source means nothing to poll. HTTP: leave
+    # GRID_API_URL empty to auto-point at the dev stub when gridStub.enabled
+    # is true. Modbus: set GRID_MODBUS_HOST to a Main/standalone PDU's
+    # address - can be set alongside GRID_API_URL, both get polled.
     ENABLE_GRID_POLLING: "true"
     GRID_API_URL: ""
     GRID_POLL_INTERVAL_SECONDS: "300"
+    GRID_MODBUS_HOST: ""
+    GRID_MODBUS_PORT: "502"
+    GRID_MODBUS_UNIT_IDS: "1"
+    GRID_MODBUS_MODE: "reading"
+    GRID_MODBUS_RATED_CAPACITY_WATTS: ""
 
     # Supply forecasting. Runs in-process (no external service/URL needed) -
     # a harmless no-op cycle when there's no real supply history yet.
@@ -78,6 +85,13 @@ app:
 # be exercised without one. When enabled and app.env.GRID_API_URL is empty,
 # GRID_API_URL is auto-set to this stub's address.
 gridStub:
+  enabled: false
+
+# Dev/test-only mock Modbus PDU server (see templates/modbus-stub.yaml). Not
+# for production - stands in for a real Modbus TCP PDU so ModbusGridClient
+# can be exercised without one. When enabled and app.env.GRID_MODBUS_HOST is
+# empty, GRID_MODBUS_HOST is auto-set to this stub's address.
+modbusStub:
   enabled: false
 
 # Helm release name the energy-monitoring-helm-stack chart was installed

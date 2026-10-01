@@ -56,6 +56,24 @@ spec:
             {{- end }}
             - name: GRID_POLL_INTERVAL_SECONDS
               value: "{{ .Values.app.env.GRID_POLL_INTERVAL_SECONDS }}"
+            {{- $gridModbusHost := .Values.app.env.GRID_MODBUS_HOST }}
+            {{- if and (not $gridModbusHost) .Values.modbusStub.enabled }}
+            {{- $gridModbusHost = "modbus-pdu-stub" }}
+            {{- end }}
+            {{- if $gridModbusHost }}
+            - name: GRID_MODBUS_HOST
+              value: "{{ $gridModbusHost }}"
+            - name: GRID_MODBUS_PORT
+              value: "{{ .Values.app.env.GRID_MODBUS_PORT }}"
+            - name: GRID_MODBUS_UNIT_IDS
+              value: "{{ .Values.app.env.GRID_MODBUS_UNIT_IDS }}"
+            - name: GRID_MODBUS_MODE
+              value: "{{ .Values.app.env.GRID_MODBUS_MODE }}"
+            {{- if .Values.app.env.GRID_MODBUS_RATED_CAPACITY_WATTS }}
+            - name: GRID_MODBUS_RATED_CAPACITY_WATTS
+              value: "{{ .Values.app.env.GRID_MODBUS_RATED_CAPACITY_WATTS }}"
+            {{- end }}
+            {{- end }}
 
             # Supply forecasting. Runs in-process, no URL needed.
             - name: ENABLE_FORECASTING

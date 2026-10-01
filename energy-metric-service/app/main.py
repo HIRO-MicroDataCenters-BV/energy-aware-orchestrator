@@ -19,6 +19,8 @@ from app.api import energy_availability_api
 from app.scheduler.metric_collector_scheduler import MetricCollectorScheduler
 from app.scheduler.deployment_scheduler import DeploymentScheduler
 from app.scheduler.grid_polling_scheduler import GridPollingScheduler
+from app.services.grid_clients.http_client import HttpGridClient
+from app.services.grid_clients.modbus_client import ModbusGridClient
 from app.scheduler.forecasting_scheduler import ForecastingScheduler
 from app.scheduler.metrics_retention_scheduler import MetricsRetentionScheduler
 from app.services.energy_forecasting_service import EnergyForecastingService
@@ -39,19 +41,42 @@ deployment_scheduler = None
 if os.environ.get("ENABLE_DEPLOYMENT_SCHEDULER", "true").lower() == "true":
     deployment_scheduler = DeploymentScheduler(interval_seconds=30)  # Runs every 1 minute
 
-# Grid capacity polling. Off unless both the toggle is on and a URL is set -
-# without a real grid endpoint there is nothing to poll, so it stays dormant
-# rather than logging a connection error every interval.
+# Grid capacity polling. Off unless the toggle is on and at least one source
+# is configured - without a real source there is nothing to poll, so it
+# stays dormant rather than logging a connection error every interval. An
+# HTTP source and a Modbus PDU source can both be configured at once; each
+# is polled independently every cycle.
 grid_polling_scheduler = None
 if os.environ.get("ENABLE_GRID_POLLING", "true").lower() == "true":
+    _grid_interval = int(os.environ.get("GRID_POLL_INTERVAL_SECONDS", "300"))
+    _grid_clients = []
+
     _grid_api_url = os.environ.get("GRID_API_URL")
     if _grid_api_url:
+        _grid_clients.append(HttpGridClient(api_url=_grid_api_url))
+
+    _grid_modbus_host = os.environ.get("GRID_MODBUS_HOST")
+    if _grid_modbus_host:
+        _unit_ids = [
+            int(u) for u in os.environ.get("GRID_MODBUS_UNIT_IDS", "1").split(",") if u.strip()
+        ]
+        _rated_capacity = os.environ.get("GRID_MODBUS_RATED_CAPACITY_WATTS")
+        _grid_clients.append(ModbusGridClient(
+            host=_grid_modbus_host,
+            port=int(os.environ.get("GRID_MODBUS_PORT", "502")),
+            unit_ids=_unit_ids,
+            mode=os.environ.get("GRID_MODBUS_MODE", "reading"),
+            rated_capacity_watts=float(_rated_capacity) if _rated_capacity else None,
+            poll_interval_seconds=_grid_interval,
+        ))
+
+    if _grid_clients:
         grid_polling_scheduler = GridPollingScheduler(
-            api_url=_grid_api_url,
-            interval_seconds=int(os.environ.get("GRID_POLL_INTERVAL_SECONDS", "300")),
+            clients=_grid_clients,
+            interval_seconds=_grid_interval,
         )
     else:
-        logging.info("Grid polling enabled but GRID_API_URL is not set - poller not started")
+        logging.info("Grid polling enabled but no source is configured (GRID_API_URL / GRID_MODBUS_HOST) - poller not started")
 
 # Supply forecasting. Runs entirely in-process (no external service) - a
 # cold start with zero real supply history is a harmless no-op cycle, so
@@ -118,7 +143,7 @@ async def lifespan(app: FastAPI):
 
     if grid_polling_scheduler:
         grid_polling_scheduler.stop()
-        await grid_polling_scheduler.grid_client.close()
+        await grid_polling_scheduler.close_clients()
         logging.info("Grid polling scheduler stopped")
 
     if forecasting_scheduler:

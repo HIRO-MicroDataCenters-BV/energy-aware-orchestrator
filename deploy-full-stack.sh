@@ -84,6 +84,17 @@ DELETE_PVC="${DELETE_PVC:-false}"
 GRID_API_URL="${GRID_API_URL:-}"
 ENABLE_GRID_STUB="${ENABLE_GRID_STUB:-}"
 
+# GRID_MODBUS_HOST: a real PDU's Modbus host, if you have one. ENABLE_MODBUS_STUB
+# defaults based on whether that's set (resolved after arg parsing, since
+# --modbus-host/--modbus-stub may arrive as flags rather than env vars) - a
+# real host means the dev/test mock Modbus PDU server
+# (energy-metric-service/charts/app/templates/modbus-stub.yaml) has nothing
+# to add, so it defaults off; no host means there's nothing to poll
+# otherwise, so the stub defaults on. Either can still be set explicitly to
+# override this default (e.g. both a real host and the stub, for comparison).
+GRID_MODBUS_HOST="${GRID_MODBUS_HOST:-}"
+ENABLE_MODBUS_STUB="${ENABLE_MODBUS_STUB:-}"
+
 # ENABLE_METRICS_SCHEDULER: scrapes Kepler power/utilization data via
 # Prometheus into container_power_metrics, feeding demand resolution tiers
 # 1-2 (measured/ML-predicted). On by default - the monitoring stack is
@@ -119,6 +130,13 @@ Options (deploy only):
   --grid-url URL        Point GRID_API_URL at a real grid endpoint instead
                          of the mock server (implies --no-grid-stub unless
                          --grid-stub is also passed)
+  --modbus-stub          Deploy the dev/test mock Modbus PDU server
+                         (energy-metric-service). Defaults on when no
+                         --modbus-host is given, off when one is.
+  --no-modbus-stub       Force the mock Modbus PDU server off
+  --modbus-host HOST     Point GRID_MODBUS_HOST at a real PDU instead
+                         of the mock server (implies --no-modbus-stub unless
+                         --modbus-stub is also passed)
   --disable-metrics-scheduler
                          Don't scrape Kepler data via Prometheus into
                          container_power_metrics (feeds demand resolution
@@ -139,6 +157,8 @@ Environment overrides:
   OPERATOR_IMAGE_TAG   Operator Docker image tag   (default: latest)
   ENABLE_GRID_STUB     Same as --grid-stub
   GRID_API_URL         Same as --grid-url
+  ENABLE_MODBUS_STUB   Same as --modbus-stub
+  GRID_MODBUS_HOST     Same as --modbus-host
   ENABLE_METRICS_SCHEDULER  Same as --disable-metrics-scheduler (set to false)
   PROMETHEUS_BASE_URL       Same as --prometheus-url
   MONITORING_RELEASE_NAME   Same as --monitoring-release
@@ -147,6 +167,7 @@ Examples:
   ./deploy-full-stack.sh                       # deploy, mock grid server + metrics scheduler on by default
   ./deploy-full-stack.sh deploy --no-grid-stub
   ./deploy-full-stack.sh deploy --grid-url http://real-grid.example.com/capacity
+  ./deploy-full-stack.sh deploy --modbus-host 192.168.1.50
   ./deploy-full-stack.sh deploy --disable-metrics-scheduler
   ./deploy-full-stack.sh cleanup
   ./deploy-full-stack.sh cleanup --delete-crd --delete-pvc
@@ -172,6 +193,9 @@ parse_args() {
             --grid-stub)    ENABLE_GRID_STUB=true; shift ;;
             --no-grid-stub) ENABLE_GRID_STUB=false; shift ;;
             --grid-url)     GRID_API_URL="$2"; shift 2 ;;
+            --modbus-stub)    ENABLE_MODBUS_STUB=true; shift ;;
+            --no-modbus-stub) ENABLE_MODBUS_STUB=false; shift ;;
+            --modbus-host)    GRID_MODBUS_HOST="$2"; shift 2 ;;
             --disable-metrics-scheduler) ENABLE_METRICS_SCHEDULER=false; shift ;;
             --prometheus-url) PROMETHEUS_BASE_URL="$2"; shift 2 ;;
             --monitoring-release) MONITORING_RELEASE_NAME="$2"; shift 2 ;;
@@ -192,6 +216,16 @@ parse_args() {
             ENABLE_GRID_STUB=false
         else
             ENABLE_GRID_STUB=true
+        fi
+    fi
+
+    # Resolve ENABLE_MODBUS_STUB's default the same way, once --modbus-host/
+    # --modbus-stub have both had a chance to be set.
+    if [ -z "$ENABLE_MODBUS_STUB" ]; then
+        if [ -n "$GRID_MODBUS_HOST" ]; then
+            ENABLE_MODBUS_STUB=false
+        else
+            ENABLE_MODBUS_STUB=true
         fi
     fi
 }
@@ -322,6 +356,7 @@ deploy_metric_service() {
 
     if NAMESPACE="$NAMESPACE" SKIP_PORT_FORWARD=true \
            ENABLE_GRID_STUB="$ENABLE_GRID_STUB" GRID_API_URL="$GRID_API_URL" \
+           ENABLE_MODBUS_STUB="$ENABLE_MODBUS_STUB" GRID_MODBUS_HOST="$GRID_MODBUS_HOST" \
            ENABLE_METRICS_SCHEDULER="$ENABLE_METRICS_SCHEDULER" \
            PROMETHEUS_BASE_URL="$PROMETHEUS_BASE_URL" \
            MONITORING_RELEASE_NAME="$MONITORING_RELEASE_NAME" \
@@ -533,6 +568,9 @@ print_port_forward_guide() {
     if [ "$ENABLE_GRID_STUB" = true ]; then
         echo    "  pkill -f 'svc/grid-stub'                   || true"
     fi
+    if [ "$ENABLE_MODBUS_STUB" = true ]; then
+        echo    "  pkill -f 'svc/modbus-pdu-stub'              || true"
+    fi
     echo ""
     echo -e "${YELLOW}  # Step 2 — Start all port-forwards in the background:${NC}"
     echo ""
@@ -545,6 +583,9 @@ print_port_forward_guide() {
     echo    "  kubectl port-forward -n ${NAMESPACE} svc/orchestrator-k8s-proxy 3001:3000 &"
     if [ "$ENABLE_GRID_STUB" = true ]; then
         echo    "  kubectl port-forward -n ${NAMESPACE} svc/grid-stub 8090:80 &"
+    fi
+    if [ "$ENABLE_MODBUS_STUB" = true ]; then
+        echo    "  kubectl port-forward -n ${NAMESPACE} svc/modbus-pdu-stub 5020:502 8091:8080 &"
     fi
     echo ""
     echo -e "${YELLOW}  # Note: K8s Proxy uses port 3001 to avoid conflict with Grafana on 3000.${NC}"
@@ -566,6 +607,9 @@ print_access_urls() {
     printf "  %-36s %s\n" "K8s Proxy"                   "http://localhost:3001"
     if [ "$ENABLE_GRID_STUB" = true ]; then
         printf "  %-36s %s\n" "Grid Stub (dev/test only)"   "http://localhost:8090/capacity  (GET/POST)"
+    fi
+    if [ "$ENABLE_MODBUS_STUB" = true ]; then
+        printf "  %-36s %s\n" "Modbus PDU Stub (dev/test only)" "Modbus TCP localhost:5020, control http://localhost:8091/pdu"
     fi
     echo ""
     divider

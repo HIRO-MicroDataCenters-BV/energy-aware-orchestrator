@@ -24,6 +24,12 @@ ENABLE_GRID_STUB="${ENABLE_GRID_STUB:-false}"
 # A real grid endpoint, if provided. Takes priority over the mock server
 # (see deployment.yaml's GRID_API_URL derivation).
 GRID_API_URL="${GRID_API_URL:-}"
+# Dev/test-only mock Modbus PDU server (see charts/app/templates/modbus-stub.yaml).
+# Off by default - never enabled in a normal deploy.
+ENABLE_MODBUS_STUB="${ENABLE_MODBUS_STUB:-false}"
+# A real PDU's Modbus host, if provided. Takes priority over the mock server
+# (see deployment.yaml's GRID_MODBUS_HOST derivation).
+GRID_MODBUS_HOST="${GRID_MODBUS_HOST:-}"
 # Scrapes Kepler power/utilization data via Prometheus, feeding demand
 # resolution tiers 1-2 (measured/ML-predicted). Off by default.
 ENABLE_METRICS_SCHEDULER="${ENABLE_METRICS_SCHEDULER:-false}"
@@ -64,6 +70,9 @@ Options:
     --grid-stub         Deploy the dev/test mock grid server and point
                          GRID_API_URL at it (see grid_stub.py)
     --grid-url URL      Point GRID_API_URL at a real grid endpoint instead
+    --modbus-stub       Deploy the dev/test mock Modbus PDU server and point
+                         GRID_MODBUS_HOST at it (see modbus_pdu_stub.py)
+    --modbus-host HOST  Point GRID_MODBUS_HOST at a real PDU instead
     --enable-metrics-scheduler
                          Scrape Kepler data via Prometheus into
                          container_power_metrics (feeds demand resolution
@@ -79,6 +88,7 @@ Examples:
     $0                  # Build and deploy
     $0 --no-build       # Deploy only (use existing image)
     $0 --grid-stub      # Deploy with the mock grid server for testing
+    $0 --modbus-stub    # Deploy with the mock Modbus PDU for testing
     $0 --enable-metrics-scheduler --no-build   # Turn on Kepler metric scraping
 
 EOF
@@ -92,6 +102,8 @@ while [[ $# -gt 0 ]]; do
         --no-build) BUILD_IMAGE=false; shift ;;
         --grid-stub) ENABLE_GRID_STUB=true; shift ;;
         --grid-url) GRID_API_URL="$2"; shift 2 ;;
+        --modbus-stub) ENABLE_MODBUS_STUB=true; shift ;;
+        --modbus-host) GRID_MODBUS_HOST="$2"; shift 2 ;;
         --enable-metrics-scheduler) ENABLE_METRICS_SCHEDULER=true; shift ;;
         --prometheus-url) PROMETHEUS_BASE_URL="$2"; shift 2 ;;
         --monitoring-release) MONITORING_RELEASE_NAME="$2"; shift 2 ;;
@@ -110,6 +122,8 @@ echo "  Namespace: $NAMESPACE"
 echo "  Build Image: $BUILD_IMAGE"
 echo "  Grid Stub: $ENABLE_GRID_STUB"
 echo "  Grid API URL: ${GRID_API_URL:-<none>}"
+echo "  Modbus Stub: $ENABLE_MODBUS_STUB"
+echo "  Grid Modbus Host: ${GRID_MODBUS_HOST:-<none>}"
 echo "  Metrics Scheduler: $ENABLE_METRICS_SCHEDULER"
 echo "  Prometheus URL: ${PROMETHEUS_BASE_URL:-<auto: $MONITORING_RELEASE_NAME-prometheus-server>}"
 echo ""
@@ -201,6 +215,7 @@ HELM_ARGS=(
     --namespace "$NAMESPACE"
     --set "app.image.tag=$IMAGE_TAG"
     --set "gridStub.enabled=$ENABLE_GRID_STUB"
+    --set "modbusStub.enabled=$ENABLE_MODBUS_STUB"
     --set "app.env.ENABLE_METRICS_SCHEDULER=$ENABLE_METRICS_SCHEDULER"
     --set "monitoring.releaseName=$MONITORING_RELEASE_NAME"
     --wait
@@ -208,6 +223,9 @@ HELM_ARGS=(
 )
 if [ -n "$GRID_API_URL" ]; then
     HELM_ARGS+=(--set "app.env.GRID_API_URL=$GRID_API_URL")
+fi
+if [ -n "$GRID_MODBUS_HOST" ]; then
+    HELM_ARGS+=(--set "app.env.GRID_MODBUS_HOST=$GRID_MODBUS_HOST")
 fi
 if [ -n "$PROMETHEUS_BASE_URL" ]; then
     HELM_ARGS+=(--set "app.env.PROMETHEUS_BASE_URL=$PROMETHEUS_BASE_URL")

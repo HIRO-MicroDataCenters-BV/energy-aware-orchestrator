@@ -8,6 +8,18 @@ This README reflects the current state of the app:
 - Legacy tabs/pages (overview, COG, monitoring, k8s root, alerts/actions/request decisions) were removed.
 - Default landing page is `energy-metrics`.
 
+## Table of Contents
+
+- [Current App Routes](#current-app-routes)
+- [Runtime API Configuration](#runtime-api-configuration)
+- [Local Development](#local-development)
+- [Scripts](#scripts)
+  - [`scripts/deploy.sh`](#scriptsdeploysh)
+  - [`scripts/cleanup.sh`](#scriptscleanupsh)
+- [Helm Chart](#helm-chart)
+- [Testing](#testing)
+- [References](#references)
+
 ## Current App Routes
 
 - `/energy-metrics` (default page)

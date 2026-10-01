@@ -2,6 +2,46 @@
 
 This Helm chart deploys a complete energy monitoring stack for Kubernetes clusters using Kepler, Prometheus, and Grafana to collect, store, and visualize energy consumption metrics.
 
+## Table of Contents
+
+- [🎯 Overview](#-overview)
+- [🏗️ Architecture](#-architecture)
+- [📦 Components](#-components)
+  - [1. Kepler (v0.8.0)](#1-kepler-v080)
+  - [2. Prometheus (v25.21.0)](#2-prometheus-v25210)
+  - [3. Grafana (v7.3.9)](#3-grafana-v739)
+- [🔧 Installation](#-installation)
+  - [Prerequisites](#prerequisites)
+  - [Quick Start](#quick-start)
+- [🌐 Access URLs](#-access-urls)
+  - [Grafana Dashboard](#grafana-dashboard)
+  - [Prometheus](#prometheus)
+  - [Direct Kepler Metrics](#direct-kepler-metrics)
+- [📊 Available Dashboards](#-available-dashboards)
+  - [1. Pod & Node Energy Dashboard](#1--pod--node-energy-dashboard-pod-node-energy-dashboardjson)
+  - [2. Simple Test Dashboard](#2-simple-test-dashboard-simple-kepler-dashboardjson)
+- [🔍 How Kepler Collects Energy Metrics](#-how-kepler-collects-energy-metrics)
+  - [Real Hardware Mode (When Available)](#real-hardware-mode-when-available)
+  - [Estimation Mode (Current Setup)](#estimation-mode-current-setup)
+  - [Accuracy Levels](#accuracy-levels)
+- [📈 Key Metrics](#-key-metrics)
+  - [Energy Metrics](#energy-metrics)
+  - [Resource Metrics](#resource-metrics)
+- [🛠️ Configuration](#-configuration)
+  - [Values.yaml Customization](#valuesyaml-customization)
+- [🔧 Troubleshooting](#-troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Health Checks](#health-checks)
+- [📋 Importing Dashboards](#-importing-dashboards)
+  - [Method 1: File Upload](#method-1-file-upload)
+  - [Method 2: Manual Creation](#method-2-manual-creation)
+- [🎛️ Dashboard Variables](#-dashboard-variables)
+- [🔄 Updating the Deployment](#-updating-the-deployment)
+- [🗑️ Cleanup](#-cleanup)
+- [📚 Additional Resources](#-additional-resources)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
 ## 🎯 Overview
 
 This setup provides real-time energy consumption monitoring for:

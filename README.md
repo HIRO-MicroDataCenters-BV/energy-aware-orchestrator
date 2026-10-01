@@ -4,6 +4,20 @@ A Kubernetes platform that schedules workloads based on real-time and forecasted
 
 See [E2E_DEMO.md](E2E_DEMO.md) for a recorded, real-command walkthrough of the full cycle across all three services, or run [e2e_demo.sh](e2e_demo.sh) for a live narrated version.
 
+## Table of Contents
+
+- [Architecture](#architecture)
+  - [Data flow](#data-flow)
+- [Components](#components)
+  - [1 · `energy-aware-operator`](#1--energy-aware-operator)
+  - [2 · `energy-metric-service`](#2--energy-metric-service)
+  - [3 · `energy-monitoring-helm-stack`](#3--energy-monitoring-helm-stack)
+  - [4 · `orchestrator-library-ui`](#4--orchestrator-library-ui)
+  - [5 · `workload/`](#5--workload)
+- [Quick Start](#quick-start)
+- [Repository Layout](#repository-layout)
+- [Service URLs (after port-forwarding)](#service-urls-after-port-forwarding)
+
 ---
 
 ## Architecture
@@ -250,6 +264,8 @@ The script will:
 |---|---|
 | `--grid-stub` / `--no-grid-stub` | Deploy the dev/test mock grid server. Defaults **on** when `--grid-url` isn't given, off when it is |
 | `--grid-url URL` | Point grid polling at a real grid endpoint instead of the mock server |
+| `--modbus-stub` / `--no-modbus-stub` | Deploy the dev/test mock Modbus PDU server. Defaults **on** when `--modbus-host` isn't given, off when it is |
+| `--modbus-host HOST` | Point Modbus grid polling at a real PDU instead of the mock server |
 | `--disable-metrics-scheduler` | Don't collect Kepler/cAdvisor metrics into `node_metrics`/`container_power_metrics`. Defaults **on** (feeds demand resolution tiers 1-2 — see [energy-metric-service/README.md](energy-metric-service/README.md#-container-metrics-collection)) |
 | `--prometheus-url URL` | Override where metrics collection reads from Prometheus (default: auto-derived from `--monitoring-release`) |
 | `--monitoring-release NAME` | Helm release name for the monitoring stack (default: `energy-metrics`) |

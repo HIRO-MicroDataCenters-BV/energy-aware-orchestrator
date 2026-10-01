@@ -1,0 +1,60 @@
+{{- if .Values.modbusStub.enabled }}
+# Dev/test-only mock Modbus PDU server. Stands in for a real Modbus TCP PDU,
+# which isn't reachable from a dev/CI environment - exposes a Modbus TCP
+# port (502) for ModbusGridClient to poll, and an HTTP control port (8080)
+# to set what it returns (see charts/app/files/modbus_pdu_stub.py). Only
+# deployed when modbusStub.enabled=true; never intended for production use.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: modbus-pdu-stub-app
+data:
+  stub.py: |
+{{ .Files.Get "files/modbus_pdu_stub.py" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modbus-pdu-stub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: modbus-pdu-stub
+  template:
+    metadata:
+      labels:
+        app: modbus-pdu-stub
+    spec:
+      containers:
+        - name: modbus-pdu-stub
+          image: python:3.11-slim
+          command: ["python", "/app/stub.py"]
+          ports:
+            - name: modbus
+              containerPort: 502
+            - name: control
+              containerPort: 8080
+          volumeMounts:
+            - name: app
+              mountPath: /app
+      volumes:
+        - name: app
+          configMap:
+            name: modbus-pdu-stub-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modbus-pdu-stub
+spec:
+  selector:
+    app: modbus-pdu-stub
+  ports:
+    - name: modbus
+      port: 502
+      targetPort: 502
+    - name: control
+      port: 8080
+      targetPort: 8080
+{{- end }}

@@ -2,6 +2,52 @@
 
 A Kubernetes operator that enables intelligent workload scheduling based on energy availability and cost.
 
+## Table of Contents
+
+- [What Does This Do?](#what-does-this-do)
+  - [Example Use Case](#example-use-case)
+- [Architecture](#architecture)
+  - [Components](#components)
+- [What Gets Installed](#what-gets-installed)
+- [Quick Install](#quick-install)
+  - [Prerequisites](#prerequisites)
+  - [Install](#install)
+  - [Verify Installation](#verify-installation)
+- [Usage](#usage)
+- [Priority Levels](#priority-levels)
+  - [Scheduling Logic Flow](#scheduling-logic-flow)
+  - [Create an Energy-Aware Orchestration](#create-an-energy-aware-orchestration)
+  - [Check Status](#check-status)
+  - [Example Output](#example-output)
+  - [Time Slot Windows](#time-slot-windows)
+- [Local Development](#local-development)
+  - [Build the Image](#build-the-image)
+  - [Deploy](#deploy)
+  - [View Logs](#view-logs)
+- [Helm Installation](#helm-installation)
+  - [Option 1: Simple Install (Recommended)](#option-1-simple-install-recommended)
+  - [Option 2: Manual Helm Install](#option-2-manual-helm-install)
+  - [Option 3: Deploy to Custom Namespace](#option-3-deploy-to-custom-namespace)
+  - [Option 4: Production Deployment](#option-4-production-deployment)
+  - [Helm Configuration](#helm-configuration)
+- [Uninstall](#uninstall)
+  - [Simple Uninstall](#simple-uninstall)
+  - [Manual Uninstall](#manual-uninstall)
+- [🔧 Configuration](#-configuration)
+  - [Operator Configuration](#operator-configuration)
+  - [Resource Limits](#resource-limits)
+  - [Health Checks](#health-checks)
+  - [View Events](#view-events)
+  - [View Logs](#view-logs-1)
+- [Testing](#testing)
+  - [Run Sample Resource](#run-sample-resource)
+- [Quick Reference](#quick-reference)
+- [Local Development Without Kubernetes](#local-development-without-kubernetes)
+  - [Prerequisites](#prerequisites-1)
+  - [Apply CRD to Cluster](#apply-crd-to-cluster)
+  - [Run Kopf Operator Locally](#run-kopf-operator-locally)
+  - [Test Local Changes](#test-local-changes)
+
 ---
 
 ## What Does This Do?

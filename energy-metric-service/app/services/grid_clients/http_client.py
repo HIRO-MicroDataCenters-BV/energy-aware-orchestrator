@@ -1,5 +1,6 @@
 """
-Grid API Client for polling live capacity data from the external grid.
+HTTP grid API client - polls an external grid capacity endpoint (or the
+dev/test grid-stub) for live capacity data.
 """
 
 import logging
@@ -7,12 +8,14 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+from app.services.grid_clients.base import GridSourceClient
+
 logger = logging.getLogger(__name__)
 
 
-class GridAPIClient:
+class HttpGridClient(GridSourceClient):
     """
-    Client for polling the external grid's capacity API.
+    Client for polling the external grid's capacity API over HTTP.
 
     Best-effort like the operator's EnergyAPIClient: failures are logged and
     return None rather than raising, so a bad poll cycle never crashes the
@@ -26,7 +29,7 @@ class GridAPIClient:
             limits=httpx.Limits(max_connections=10),
             follow_redirects=True,
         )
-        logger.info(f"GridAPIClient initialized (api_url: {api_url})")
+        logger.info(f"HttpGridClient initialized (api_url: {api_url})")
 
     async def close(self):
         if hasattr(self, "http_client"):

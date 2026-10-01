@@ -2,6 +2,32 @@
 
 A comprehensive energy monitoring and forecasting service for Kubernetes clusters. Integrates with Prometheus, Kepler, and Kubernetes to provide real-time energy consumption metrics, grid capacity tracking, and supply forecasting. Includes both the FastAPI application and a custom PostgreSQL Helm chart for persistent storage.
 
+## Table of Contents
+
+- [📁 Project Structure](#-project-structure)
+- [🚀 Features](#-features)
+- [⚡ Quick Start (Recommended)](#-quick-start-recommended)
+- [🛠️ Manual Installation](#-manual-installation)
+- [📦 Helm Installation (Advanced)](#-helm-installation-advanced)
+- [⚙️ Configuration & Customization](#-configuration--customization)
+- [🔄 Database Migrations](#-database-migrations)
+- [🔌 Grid Integration](#-grid-integration)
+  - [Real Supply Polling](#real-supply-polling)
+  - [Modbus PDU Polling](#modbus-pdu-polling)
+  - [Dev/Test Mock Grid Servers](#devtest-mock-grid-servers)
+- [📊 Container Metrics Collection](#-container-metrics-collection)
+- [🧹 Metrics Retention](#-metrics-retention)
+- [📨 Demand Reporting](#-demand-reporting)
+- [🔮 Supply Forecasting (Predictions)](#-supply-forecasting-predictions)
+- [🌐 Accessing the Service](#-accessing-the-service)
+- [🧹 Uninstallation](#-uninstallation)
+- [📝 API Endpoints](#-api-endpoints)
+- [🐳 Local Development](#-local-development)
+- [⚠️ Known Limitations & Next Steps](#-known-limitations--next-steps)
+- [Dependencies](#dependencies)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
 ---
 
 ## 📁 Project Structure
@@ -188,6 +214,11 @@ Environment variables under `app.env`:
 | `ENABLE_GRID_POLLING` | `true` | Whether `GridPollingScheduler` runs at all |
 | `GRID_API_URL` | `""` | Where to poll for grid capacity. Empty = poller stays dormant, unless `gridStub.enabled=true` auto-points it at the dev stub |
 | `GRID_POLL_INTERVAL_SECONDS` | `300` | Grid polling interval |
+| `GRID_MODBUS_HOST` | `""` | Main (or standalone) PDU's address for the Modbus source. Empty = Modbus source stays dormant, unless `modbusStub.enabled=true` auto-points it at the dev stub. Can be set alongside `GRID_API_URL` — both get polled |
+| `GRID_MODBUS_PORT` | `502` | Modbus TCP port |
+| `GRID_MODBUS_UNIT_IDS` | `1` | Comma-separated unit/slave ids to poll on that one connection. `1` = a single standalone PDU (the only topology verified so far); more than one = cluster mode, best-effort |
+| `GRID_MODBUS_MODE` | `reading` | `reading` stores the summed Inlet Active Power as-is (current draw, not headroom). `headroom` stores `GRID_MODBUS_RATED_CAPACITY_WATTS − that sum` instead |
+| `GRID_MODBUS_RATED_CAPACITY_WATTS` | `""` | Required for `headroom` mode; the PDU has no register for this, so it must be supplied here. Ignored (falls back to `reading` mode) if left empty |
 | `ENABLE_FORECASTING` | `true` | Whether `ForecastingScheduler` runs at all (in-process, no URL needed) |
 | `FORECASTING_INTERVAL_SECONDS` | `1800` | Supply prediction refresh interval |
 | `ENABLE_METRICS_RETENTION` | `true` | Whether `MetricsRetentionScheduler` deletes old `node_metrics`/`container_power_metrics` rows (see [Metrics Retention](#-metrics-retention)) |
@@ -202,6 +233,7 @@ Top-level chart values:
 | Value | Default | Purpose |
 |---|---|---|
 | `gridStub.enabled` | `false` | Deploy the dev/test mock grid server (see [Grid Integration](#-grid-integration)) |
+| `modbusStub.enabled` | `false` | Deploy the dev/test mock Modbus PDU server (see [Grid Integration](#-grid-integration)) |
 | `monitoring.releaseName` | `energy-metrics` | Helm release name `energy-monitoring-helm-stack` was installed under - only used to auto-derive `PROMETHEUS_BASE_URL` |
 
 ---
@@ -244,9 +276,14 @@ Always verify a new migration against **both** a fresh/empty database and an exi
 
 ### Real Supply Polling
 
-`GridPollingScheduler` (`app/scheduler/grid_polling_scheduler.py`) periodically polls `GRID_API_URL` via `GridAPIClient` for capacity data, and upserts it as `record_type=supply, data_source=real`. It's fail-proof by design: a bad poll cycle (grid unreachable, malformed response, one bad slot in a batch) is logged and skipped — it never crashes the loop or the pod.
+`GridPollingScheduler` (`app/scheduler/grid_polling_scheduler.py`) periodically polls every configured grid source and upserts what it returns as `record_type=supply, data_source=real`. It's fail-proof by design: a bad poll cycle from one source (unreachable, malformed response, one bad slot in a batch) is logged and skipped — it never crashes the loop, the pod, or polling of any other configured source.
 
-Expected response shape from the grid endpoint:
+Two source types ship today, both implementing the same `GridSourceClient` interface (`app/services/grid_clients/base.py`) so they can run side by side:
+
+- **HTTP** (`HttpGridClient`, `app/services/grid_clients/http_client.py`) — polls `GRID_API_URL` for a JSON envelope (see below).
+- **Modbus** (`ModbusGridClient`, `app/services/grid_clients/modbus_client.py`) — reads live Inlet Active Power directly from a PDU over Modbus TCP (see [Modbus PDU Polling](#modbus-pdu-polling) below).
+
+Expected response shape from an HTTP grid endpoint:
 
 ```json
 {
@@ -265,9 +302,21 @@ Expected response shape from the grid endpoint:
 
 (This is the same envelope this service's own `/api/energy-availability/future/forecast` endpoint returns.)
 
-### Dev/Test Mock Grid Server
+### Modbus PDU Polling
 
-Since there's no real grid API available yet, a lightweight in-cluster stand-in (`charts/app/files/grid_stub.py`) is available for testing — a dependency-free Python `http.server` script holding an in-memory value, exposing:
+`ModbusGridClient` reads a PDU's Inlet Active Power (live power flowing through that PDU right now — the register layout matches the vendor's `read_pdu.py` reference script) once per poll cycle and stores it as one supply slot.
+
+**Topology.** In a daisy-chained cluster, only the Main PDU answers Modbus requests — link PDUs don't serve it themselves, and there's no aggregation on the PDU side (the Main's own inlet reading never includes its links'). So `GRID_MODBUS_HOST` is always a single connection — the Main or a standalone PDU's address — and `GRID_MODBUS_UNIT_IDS` is the list of unit/slave ids read *on* that connection, one per PDU in the chain. Their Active Power readings are summed client-side into one number. Only a single unit id (a standalone PDU) is verified as of this writing; more than one is best-effort, and an unreachable or errored unit id is logged and skipped rather than failing the whole cycle.
+
+**Health check.** Each poll also reads the Inlet block's own first register (address 15) for a device-state value — `Offline(-1)`, `Connection Lost(-2)`, `On(0)`, `Off(1)`, `Unknown Error(-128)`, signed 16-bit. Anything other than `On`/`Off` is treated as a bad reading and skipped rather than stored, so a disconnected link PDU doesn't silently zero out the cluster total.
+
+**Reading vs. headroom.** The PDU only reports live power draw, never a capacity limit — there's no register for one. `GRID_MODBUS_MODE=reading` (default) stores that draw as-is — useful immediately, but it's "what's flowing," not "room left." `GRID_MODBUS_MODE=headroom` instead stores `GRID_MODBUS_RATED_CAPACITY_WATTS − draw`, giving true spare capacity — but only once you supply that rating (from a nameplate, breaker, or contract limit); the code falls back to `reading` mode and logs a warning if it's missing.
+
+### Dev/Test Mock Grid Servers
+
+Since there's no real grid API or PDU reachable from a dev/CI environment, two lightweight in-cluster stand-ins are available for testing — one per source under [Real Supply Polling](#real-supply-polling) above, both dependency-free stdlib-only Python scripts.
+
+**HTTP grid stub** (`charts/app/files/grid_stub.py`) holds an in-memory value, exposing:
 
 - `POST /capacity` — set the data it returns
 - `GET /capacity` — read the current data back
@@ -289,7 +338,36 @@ curl -s -X POST http://localhost:8090/capacity -H "Content-Type: application/jso
 
 When `gridStub.enabled=true` and `GRID_API_URL` is left empty, the chart auto-points the poller at the stub. Set `GRID_API_URL` explicitly to point at a real grid endpoint instead (this also defaults `gridStub.enabled` to `false`, at the `deploy-full-stack.sh` level, via `--grid-url`).
 
-This is **dev/test only** — never intended for production use.
+**Modbus PDU stub** (`charts/app/files/modbus_pdu_stub.py`) is a fake PDU: a real Modbus TCP server (port `502`) for `ModbusGridClient` to poll, paired with an HTTP control API (port `8080`) to set what each fake unit id reports:
+
+- `POST /pdu/<unit_id>` — set that unit's `device_state` and `active_power_watts`
+- `GET /pdu/<unit_id>` — read a unit's current fake reading back
+- `GET /pdu` — see all configured units
+
+Deploy it alongside the app:
+
+```bash
+./scripts/deploy-app.sh --modbus-stub
+# or, from the repo root:
+bash deploy-full-stack.sh deploy --modbus-stub
+```
+
+Feed it data (after port-forwarding `svc/modbus-pdu-stub 5020:502 8091:8080`):
+
+```bash
+curl -s -X POST http://localhost:8091/pdu/1 -H "Content-Type: application/json" \
+  -d '{"device_state":0,"active_power_watts":1500}'
+```
+
+Then poll it exactly like a real PDU — either let the app's own poll cycle pick it up, or cross-check independently with `mbpoll` (see [Modbus PDU Polling](#modbus-pdu-polling) above for the register layout):
+
+```bash
+mbpoll -m tcp -a 1 -r 15 -c 5 -t 4:hex -0 -1 -p 5020 127.0.0.1
+```
+
+When `modbusStub.enabled=true` and `GRID_MODBUS_HOST` is left empty, the chart auto-points the poller at the stub. Set `GRID_MODBUS_HOST` explicitly to point at a real PDU instead (this also defaults `modbusStub.enabled` to `false`, at the `deploy-full-stack.sh` level, via `--modbus-host`).
+
+Both stubs are **dev/test only** — never intended for production use.
 
 ---
 
