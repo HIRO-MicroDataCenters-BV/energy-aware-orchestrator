@@ -1,0 +1,6 @@
+## sum by (pod_name) (rate(kepler_container_joules_total{container_namespace="d43"}[2m]))
+{'pod_name': 'calib-1core-qv9c9'} n=4 42.69 42.69 42.83 42.83
+{'pod_name': 'calib-2core-crx99'} n=6 63.90 83.54 82.44 82.44 84.00 84.00
+## sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="d43",container!=""}[2m]))
+{'pod': 'calib-1core-qv9c9'} n=6 0.71 1.00 1.00 1.00 1.00 1.00
+{'pod': 'calib-2core-crx99'} n=5 1.52 1.99 1.99 1.37 2.00

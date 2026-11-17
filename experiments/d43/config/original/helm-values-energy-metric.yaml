@@ -1,0 +1,53 @@
+COMPUTED VALUES:
+app:
+  env:
+    ENABLE_DEPLOYMENT_SCHEDULER: "true"
+    ENABLE_FORECASTING: "true"
+    ENABLE_GRID_POLLING: "true"
+    ENABLE_METRICS_RETENTION: "true"
+    ENABLE_METRICS_SCHEDULER: true
+    FORECASTING_INTERVAL_SECONDS: "1800"
+    GRID_API_URL: ""
+    GRID_MODBUS_HOST: ""
+    GRID_MODBUS_MODE: reading
+    GRID_MODBUS_PORT: "502"
+    GRID_MODBUS_RATED_CAPACITY_WATTS: ""
+    GRID_MODBUS_UNIT_IDS: "1"
+    GRID_POLL_INTERVAL_SECONDS: "300"
+    KUBERNETES_NAMESPACE: ""
+    LOG_LEVEL: INFO
+    METRICS_RETENTION_DAYS: "30"
+    METRICS_RETENTION_INTERVAL_SECONDS: "3600"
+    PROMETHEUS_BASE_URL: ""
+    USE_KUBECTL_PROXY: "false"
+  image:
+    pullPolicy: IfNotPresent
+    repository: energy-metric-service
+    tag: 373791e-dirty-e3b0c442
+  name: energy-metric-service
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    port: 8000
+    targetPort: 8000
+    type: ClusterIP
+configmap:
+  databaseURLConfig: orchestration-api-config
+database:
+  host: eao-postgres
+  name: orchestration_db
+  password: postgres
+  port: 5432
+  username: postgres
+gridStub:
+  enabled: true
+modbusStub:
+  enabled: true
+monitoring:
+  releaseName: energy-metrics

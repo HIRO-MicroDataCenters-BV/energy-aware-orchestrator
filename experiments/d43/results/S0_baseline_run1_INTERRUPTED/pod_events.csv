@@ -1,0 +1,17 @@
+scenario,workload,class,pod,node,created_utc,scheduled_utc,started_utc,finished_utc,running_at_run_end,created_t_s,scheduled_t_s,started_t_s,finished_t_s
+S0,c1-critical,Critical,c1-critical-55fdbc7c88-tsqcg,sample-worker2,2026-11-17T15:22:08Z,2026-11-17T15:22:08Z,2026-11-17T15:22:08Z,,True,0.0,0.0,0.0,
+S0,c2-critical,Critical,c2-critical-664bb64c87-pb25p,sample-worker,2026-11-17T15:39:28Z,2026-11-17T15:39:28Z,2026-11-17T15:39:28Z,,True,1040.0,1040.0,1040.0,
+S0,o1-optional,Optional,o1-optional-d7tck,sample-worker,2026-11-17T15:31:16Z,2026-11-17T15:31:16Z,2026-11-17T15:31:17Z,2026-11-17T15:39:17Z,False,548.0,548.0,549.0,1029.0
+S0,o1-optional,Optional,o1-optional-pfmtc,sample-worker2,2026-11-17T15:31:16Z,2026-11-17T15:31:16Z,2026-11-17T15:31:17Z,2026-11-17T15:39:17Z,False,548.0,548.0,549.0,1029.0
+S0,o2-optional,Optional,o2-optional-7cw24,sample-worker2,2026-11-17T15:40:16Z,2026-11-17T15:40:16Z,2026-11-17T15:40:17Z,2026-11-17T15:48:17Z,False,1088.0,1088.0,1089.0,1569.0
+S0,o2-optional,Optional,o2-optional-k5bnt,sample-worker,2026-11-17T15:40:16Z,2026-11-17T15:40:16Z,2026-11-17T15:40:17Z,2026-11-17T15:48:17Z,False,1088.0,1088.0,1089.0,1569.0
+S0,o3-optional,Optional,o3-optional-b8xd7,sample-worker2,2026-11-17T16:00:10Z,2026-11-17T16:00:10Z,2026-11-17T16:00:10Z,2026-11-17T16:09:54Z,False,2282.0,2282.0,2282.0,2866.0
+S0,o3-optional,Optional,o3-optional-hl277,sample-worker,2026-11-17T16:00:10Z,2026-11-17T16:00:10Z,2026-11-17T16:00:10Z,2026-11-17T16:09:54Z,False,2282.0,2282.0,2282.0,2866.0
+S0,p1-preferred,Preferred,p1-preferred-gtttn,sample-worker,2026-11-17T15:23:58Z,2026-11-17T15:23:58Z,2026-11-17T15:23:59Z,2026-11-17T15:31:59Z,False,110.0,110.0,111.0,591.0
+S0,p1-preferred,Preferred,p1-preferred-hfrwl,sample-worker2,2026-11-17T15:23:58Z,2026-11-17T15:23:58Z,2026-11-17T15:23:59Z,2026-11-17T15:31:59Z,False,110.0,110.0,111.0,591.0
+S0,p2-preferred,Preferred,p2-preferred-7l69n,sample-worker,2026-11-17T15:32:02Z,2026-11-17T15:32:02Z,2026-11-17T15:32:02Z,2026-11-17T15:40:02Z,False,594.0,594.0,594.0,1074.0
+S0,p2-preferred,Preferred,p2-preferred-t6xbd,sample-worker2,2026-11-17T15:32:02Z,2026-11-17T15:32:02Z,2026-11-17T15:32:02Z,2026-11-17T15:40:02Z,False,594.0,594.0,594.0,1074.0
+S0,p3-preferred,Preferred,p3-preferred-kzfv7,sample-worker,2026-11-17T15:44:17Z,2026-11-17T15:44:17Z,2026-11-17T15:44:18Z,2026-11-17T15:52:18Z,False,1329.0,1329.0,1330.0,1810.0
+S0,p3-preferred,Preferred,p3-preferred-m5q4d,sample-worker2,2026-11-17T15:44:17Z,2026-11-17T15:44:17Z,2026-11-17T15:44:18Z,2026-11-17T15:52:18Z,False,1329.0,1329.0,1330.0,1810.0
+S0,p4-preferred,Preferred,p4-preferred-tg6q2,sample-worker,2026-11-17T15:51:52Z,2026-11-17T15:51:52Z,2026-11-17T15:51:53Z,2026-11-17T15:59:53Z,False,1784.0,1784.0,1785.0,2265.0
+S0,p4-preferred,Preferred,p4-preferred-wjtg7,sample-worker2,2026-11-17T15:51:52Z,2026-11-17T15:51:52Z,2026-11-17T15:51:53Z,2026-11-17T15:59:53Z,False,1784.0,1784.0,1785.0,2265.0

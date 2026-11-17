@@ -1,0 +1,122 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+                "annotations": {
+                    "deployment.kubernetes.io/revision": "1",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Critical\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"c1-critical\"},\"name\":\"c1-critical\",\"namespace\":\"d43-dry\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"d43/workload\":\"c1-critical\"}},\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Critical\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"c1-critical\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"0\"},{\"name\":\"CORES\",\"value\":\"0\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"0\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"0\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Always\",\"schedulerName\":\"hiro-scheduler\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T15:19:00Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Critical",
+                    "d43/scenario": "EAO",
+                    "d43/workload": "c1-critical"
+                },
+                "name": "c1-critical",
+                "namespace": "d43-dry",
+                "resourceVersion": "4088968",
+                "uid": "3d17de72-20cb-400f-b012-e200b3b1ea5b"
+            },
+            "spec": {
+                "progressDeadlineSeconds": 600,
+                "replicas": 1,
+                "revisionHistoryLimit": 10,
+                "selector": {
+                    "matchLabels": {
+                        "d43/workload": "c1-critical"
+                    }
+                },
+                "strategy": {
+                    "rollingUpdate": {
+                        "maxSurge": "25%",
+                        "maxUnavailable": "25%"
+                    },
+                    "type": "RollingUpdate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "d43/class": "Critical",
+                            "d43/scenario": "EAO",
+                            "d43/workload": "c1-critical"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "0"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "0"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "0",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "0",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "schedulerName": "hiro-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-11-17T15:19:00Z",
+                        "lastUpdateTime": "2026-11-17T15:19:00Z",
+                        "message": "Deployment does not have minimum availability.",
+                        "reason": "MinimumReplicasUnavailable",
+                        "status": "False",
+                        "type": "Available"
+                    },
+                    {
+                        "lastTransitionTime": "2026-11-17T15:19:00Z",
+                        "lastUpdateTime": "2026-11-17T15:19:00Z",
+                        "message": "ReplicaSet \"c1-critical-676676dd4d\" is progressing.",
+                        "reason": "ReplicaSetUpdated",
+                        "status": "True",
+                        "type": "Progressing"
+                    }
+                ],
+                "observedGeneration": 1,
+                "replicas": 1,
+                "terminatingReplicas": 0,
+                "unavailableReplicas": 1,
+                "updatedReplicas": 1
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

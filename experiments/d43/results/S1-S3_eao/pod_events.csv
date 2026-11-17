@@ -1,0 +1,17 @@
+scenario,workload,class,pod,node,created_utc,scheduled_utc,started_utc,finished_utc,running_at_run_end,created_t_s,scheduled_t_s,started_t_s,finished_t_s
+EAO,c1-critical,Critical,c1-critical-6b5c7f4597-25x97,sample-worker,2026-11-17T17:15:01Z,2026-11-17T17:15:02Z,2026-11-17T17:15:03Z,,True,1.0,2.0,3.0,
+EAO,c2-critical,Critical,c2-critical-bfc8d5bd4-sjxlx,sample-worker,2026-11-17T17:32:21Z,2026-11-17T17:32:22Z,2026-11-17T17:32:23Z,,True,1041.0,1042.0,1043.0,
+EAO,o1-optional,Optional,o1-optional-48wt5,sample-worker,2026-11-17T17:24:09Z,2026-11-17T18:00:34Z,2026-11-17T18:00:34Z,2026-11-17T18:08:34Z,False,549.0,2734.0,2734.0,3214.0
+EAO,o1-optional,Optional,o1-optional-q6ld8,sample-worker2,2026-11-17T17:24:09Z,2026-11-17T18:00:34Z,2026-11-17T18:00:34Z,2026-11-17T18:08:34Z,False,549.0,2734.0,2734.0,3214.0
+EAO,o2-optional,Optional,o2-optional-5vvsw,sample-worker,2026-11-17T17:33:10Z,2026-11-17T18:00:33Z,2026-11-17T18:00:34Z,2026-11-17T18:08:34Z,False,1090.0,2733.0,2734.0,3214.0
+EAO,o2-optional,Optional,o2-optional-l7krj,sample-worker2,2026-11-17T17:33:10Z,2026-11-17T18:00:34Z,2026-11-17T18:00:34Z,2026-11-17T18:08:34Z,False,1090.0,2734.0,2734.0,3214.0
+EAO,o3-optional,Optional,o3-optional-47vff,sample-worker2,2026-11-17T17:53:34Z,2026-11-17T18:00:34Z,2026-11-17T18:00:35Z,2026-11-17T18:08:35Z,False,2314.0,2734.0,2735.0,3215.0
+EAO,o3-optional,Optional,o3-optional-jb4kk,sample-worker,2026-11-17T17:53:34Z,2026-11-17T18:00:34Z,2026-11-17T18:00:35Z,2026-11-17T18:08:35Z,False,2314.0,2734.0,2735.0,3215.0
+EAO,p1-preferred,Preferred,p1-preferred-629lq,sample-worker2,2026-11-17T17:16:52Z,2026-11-17T17:16:53Z,2026-11-17T17:16:53Z,2026-11-17T17:24:53Z,False,112.0,113.0,113.0,593.0
+EAO,p1-preferred,Preferred,p1-preferred-kxv7p,sample-worker,2026-11-17T17:16:52Z,2026-11-17T17:16:53Z,2026-11-17T17:16:53Z,2026-11-17T17:24:53Z,False,112.0,113.0,113.0,593.0
+EAO,p2-preferred,Preferred,p2-preferred-2ppgn,sample-worker,2026-11-17T17:24:56Z,2026-11-17T17:24:56Z,2026-11-17T17:24:56Z,2026-11-17T17:32:56Z,False,596.0,596.0,596.0,1076.0
+EAO,p2-preferred,Preferred,p2-preferred-wzxqg,sample-worker2,2026-11-17T17:24:56Z,2026-11-17T17:24:56Z,2026-11-17T17:24:57Z,2026-11-17T17:32:57Z,False,596.0,596.0,597.0,1077.0
+EAO,p3-preferred,Preferred,p3-preferred-8k7ft,sample-worker,2026-11-17T17:37:10Z,2026-11-17T17:52:31Z,2026-11-17T17:52:32Z,2026-11-17T18:00:32Z,False,1330.0,2251.0,2252.0,2732.0
+EAO,p3-preferred,Preferred,p3-preferred-tt528,sample-worker2,2026-11-17T17:37:10Z,2026-11-17T17:52:31Z,2026-11-17T17:52:32Z,2026-11-17T18:00:32Z,False,1330.0,2251.0,2252.0,2732.0
+EAO,p4-preferred,Preferred,p4-preferred-fzdgl,sample-worker,2026-11-17T17:44:46Z,2026-11-17T17:52:32Z,2026-11-17T17:52:32Z,2026-11-17T18:00:32Z,False,1786.0,2252.0,2252.0,2732.0
+EAO,p4-preferred,Preferred,p4-preferred-ztqj2,sample-worker2,2026-11-17T17:44:46Z,2026-11-17T17:52:32Z,2026-11-17T17:52:32Z,2026-11-17T18:00:32Z,False,1786.0,2252.0,2252.0,2732.0

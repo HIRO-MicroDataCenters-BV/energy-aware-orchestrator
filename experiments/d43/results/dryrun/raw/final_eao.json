@@ -1,0 +1,169 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "eas.hiro.io/v1",
+            "kind": "EnergyAwareOrchestration",
+            "metadata": {
+                "annotations": {
+                    "eas.hiro.io/kopf-managed": "yes",
+                    "kopf.zalando.org/last-handled-configuration": "{\"spec\":{\"applicationRef\":{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"name\":\"c1-critical\",\"namespace\":\"d43-dry\"},\"energyConsumption\":42,\"forecastWindowDays\":1,\"priority\":\"Critical\"},\"metadata\":{\"labels\":{\"d43/class\":\"Critical\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"c1-critical\"}}}\n",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"eas.hiro.io/v1\",\"kind\":\"EnergyAwareOrchestration\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Critical\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"c1-critical\"},\"name\":\"c1-critical\",\"namespace\":\"d43-dry\"},\"spec\":{\"applicationRef\":{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"name\":\"c1-critical\",\"namespace\":\"d43-dry\"},\"energyConsumption\":42,\"forecastWindowDays\":1,\"priority\":\"Critical\"}}\n"
+                },
+                "creationTimestamp": "2026-11-17T15:18:59Z",
+                "finalizers": [
+                    "kopf.zalando.org/KopfFinalizerMarker"
+                ],
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Critical",
+                    "d43/scenario": "EAO",
+                    "d43/workload": "c1-critical"
+                },
+                "name": "c1-critical",
+                "namespace": "d43-dry",
+                "resourceVersion": "4090107",
+                "uid": "24572251-5d2a-4616-adef-a81d8cb5b96a"
+            },
+            "spec": {
+                "applicationRef": {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "name": "c1-critical",
+                    "namespace": "d43-dry"
+                },
+                "energyConsumption": 42,
+                "forecastWindowDays": 1,
+                "priority": "Critical"
+            },
+            "status": {
+                "decision": {
+                    "action": "DeployImmediately",
+                    "reason": "Critical priority workload - deploying immediately for 24/7 operation"
+                },
+                "demandReported": true,
+                "energyMetrics": {
+                    "measuredWatts": 42,
+                    "requiredWatts": 42,
+                    "sufficient": true
+                },
+                "lastUpdated": "2026-11-17T15:20:59.651479+00:00",
+                "phase": "Scheduled"
+            }
+        },
+        {
+            "apiVersion": "eas.hiro.io/v1",
+            "kind": "EnergyAwareOrchestration",
+            "metadata": {
+                "annotations": {
+                    "eas.hiro.io/kopf-managed": "yes",
+                    "kopf.zalando.org/last-handled-configuration": "{\"spec\":{\"applicationRef\":{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"name\":\"o1-optional\",\"namespace\":\"d43-dry\"},\"energyConsumption\":84,\"forecastWindowDays\":1,\"priority\":\"Optional\"},\"metadata\":{\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"o1-optional\"}}}\n",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"eas.hiro.io/v1\",\"kind\":\"EnergyAwareOrchestration\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"o1-optional\"},\"name\":\"o1-optional\",\"namespace\":\"d43-dry\"},\"spec\":{\"applicationRef\":{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"name\":\"o1-optional\",\"namespace\":\"d43-dry\"},\"energyConsumption\":84,\"forecastWindowDays\":1,\"priority\":\"Optional\"}}\n"
+                },
+                "creationTimestamp": "2026-11-17T15:19:34Z",
+                "finalizers": [
+                    "kopf.zalando.org/KopfFinalizerMarker"
+                ],
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Optional",
+                    "d43/scenario": "EAO",
+                    "d43/workload": "o1-optional"
+                },
+                "name": "o1-optional",
+                "namespace": "d43-dry",
+                "resourceVersion": "4090161",
+                "uid": "a611ed7b-2a40-43ed-ab31-c921b1f587e2"
+            },
+            "spec": {
+                "applicationRef": {
+                    "apiVersion": "batch/v1",
+                    "kind": "Job",
+                    "name": "o1-optional",
+                    "namespace": "d43-dry"
+                },
+                "energyConsumption": 84,
+                "forecastWindowDays": 1,
+                "priority": "Optional"
+            },
+            "status": {
+                "decision": {
+                    "action": "Scheduled",
+                    "nextEvaluationTime": "2026-11-17T18:00:00+00:00",
+                    "reason": "Optional priority - scheduled for optimal energy slot (336W \u003e= 84W)",
+                    "scheduledSlot": {
+                        "availableEnergyWatts": 336,
+                        "requiredEnergyWatts": 84,
+                        "slotEnd": "2026-11-18T00:00:00+00:00",
+                        "slotNumber": 4,
+                        "slotStart": "2026-11-17T18:00:00+00:00"
+                    }
+                },
+                "demandReported": true,
+                "energyMetrics": {
+                    "currentSlotAvailableWatts": 168,
+                    "measuredWatts": 0,
+                    "requiredWatts": 84,
+                    "sufficient": false
+                },
+                "lastUpdated": "2026-11-17T15:21:05.205303+00:00",
+                "phase": "Scheduled"
+            }
+        },
+        {
+            "apiVersion": "eas.hiro.io/v1",
+            "kind": "EnergyAwareOrchestration",
+            "metadata": {
+                "annotations": {
+                    "eas.hiro.io/kopf-managed": "yes",
+                    "kopf.zalando.org/last-handled-configuration": "{\"spec\":{\"applicationRef\":{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"name\":\"p1-preferred\",\"namespace\":\"d43-dry\"},\"energyConsumption\":84,\"forecastWindowDays\":1,\"priority\":\"Preferred\"},\"metadata\":{\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"p1-preferred\"}}}\n",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"eas.hiro.io/v1\",\"kind\":\"EnergyAwareOrchestration\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"EAO\",\"d43/workload\":\"p1-preferred\"},\"name\":\"p1-preferred\",\"namespace\":\"d43-dry\"},\"spec\":{\"applicationRef\":{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"name\":\"p1-preferred\",\"namespace\":\"d43-dry\"},\"energyConsumption\":84,\"forecastWindowDays\":1,\"priority\":\"Preferred\"}}\n"
+                },
+                "creationTimestamp": "2026-11-17T15:19:15Z",
+                "finalizers": [
+                    "kopf.zalando.org/KopfFinalizerMarker"
+                ],
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Preferred",
+                    "d43/scenario": "EAO",
+                    "d43/workload": "p1-preferred"
+                },
+                "name": "p1-preferred",
+                "namespace": "d43-dry",
+                "resourceVersion": "4090295",
+                "uid": "ceb6f237-b7a9-4134-91ca-9a965aa7112f"
+            },
+            "spec": {
+                "applicationRef": {
+                    "apiVersion": "batch/v1",
+                    "kind": "Job",
+                    "name": "p1-preferred",
+                    "namespace": "d43-dry"
+                },
+                "energyConsumption": 84,
+                "forecastWindowDays": 1,
+                "priority": "Preferred"
+            },
+            "status": {
+                "decision": {
+                    "action": "DeployImmediately",
+                    "reason": "Preferred priority - current slot has sufficient energy (168W \u003e= 84W)"
+                },
+                "demandReported": true,
+                "energyMetrics": {
+                    "currentSlotAvailableWatts": 168,
+                    "measuredWatts": 84,
+                    "requiredWatts": 84,
+                    "sufficient": true
+                },
+                "lastUpdated": "2026-11-17T15:21:15.360192+00:00",
+                "phase": "Scheduled"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

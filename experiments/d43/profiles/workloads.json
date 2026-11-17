@@ -1,0 +1,92 @@
+[
+  {
+    "name": "c1-critical",
+    "class": "Critical",
+    "kind": "Deployment",
+    "pods": 1,
+    "cores_per_pod": 1,
+    "duration_s": null,
+    "submit_s": 0,
+    "energy_consumption_w": 42
+  },
+  {
+    "name": "p1-preferred",
+    "class": "Preferred",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 110,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "o1-optional",
+    "class": "Optional",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 548,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "p2-preferred",
+    "class": "Preferred",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 594,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "c2-critical",
+    "class": "Critical",
+    "kind": "Deployment",
+    "pods": 1,
+    "cores_per_pod": 1,
+    "duration_s": null,
+    "submit_s": 1040,
+    "energy_consumption_w": 42
+  },
+  {
+    "name": "o2-optional",
+    "class": "Optional",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 1088,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "p3-preferred",
+    "class": "Preferred",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 1329,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "p4-preferred",
+    "class": "Preferred",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 1784,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "o3-optional",
+    "class": "Optional",
+    "kind": "Job",
+    "pods": 2,
+    "cores_per_pod": 1,
+    "duration_s": 480,
+    "submit_s": 2312,
+    "energy_consumption_w": 84
+  }
+]

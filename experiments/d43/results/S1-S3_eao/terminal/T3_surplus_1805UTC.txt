@@ -1,0 +1,36 @@
+$ date -u
+Tue 17 Nov 2026 18:05:30 UTC
+
+$ kubectl --context kind-sample -n d43 get eao -o custom-columns='NAME:.metadata.name,PRIORITY:.spec.priority,REQUIRED_W:.spec.energyConsumption,ACTION:.status.decision.action,SLOT_START:.status.decision.scheduledSlot.slotStart,AVAILABLE_W:.status.energyMetrics.currentSlotAvailableWatts'
+NAME           PRIORITY    REQUIRED_W   ACTION              SLOT_START                  AVAILABLE_W
+c1-critical    Critical    42           DeployImmediately   <none>                      <none>
+c2-critical    Critical    42           DeployImmediately   <none>                      <none>
+o1-optional    Optional    84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+o2-optional    Optional    84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+o3-optional    Optional    84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+p1-preferred   Preferred   84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+p2-preferred   Preferred   84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+p3-preferred   Preferred   84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+p4-preferred   Preferred   84           DeployImmediately   2026-11-17T18:00:00+00:00   336
+
+$ kubectl --context kind-sample -n d43 get pods -o wide
+NAME                           READY   STATUS      RESTARTS   AGE   IP            NODE             NOMINATED NODE   READINESS GATES
+c1-critical-6b5c7f4597-25x97   1/1     Running     0          50m   10.245.1.59   sample-worker    <none>           <none>
+c2-critical-bfc8d5bd4-sjxlx    1/1     Running     0          33m   10.245.1.62   sample-worker    <none>           <none>
+o1-optional-48wt5              1/1     Running     0          41m   10.245.1.66   sample-worker    <none>           <none>
+o1-optional-q6ld8              1/1     Running     0          41m   10.245.2.29   sample-worker2   <none>           <none>
+o2-optional-5vvsw              1/1     Running     0          32m   10.245.1.65   sample-worker    <none>           <none>
+o2-optional-l7krj              1/1     Running     0          32m   10.245.2.28   sample-worker2   <none>           <none>
+o3-optional-47vff              1/1     Running     0          11m   10.245.2.30   sample-worker2   <none>           <none>
+o3-optional-jb4kk              1/1     Running     0          11m   10.245.1.67   sample-worker    <none>           <none>
+p1-preferred-629lq             0/1     Completed   0          48m   10.245.2.24   sample-worker2   <none>           <none>
+p1-preferred-kxv7p             0/1     Completed   0          48m   10.245.1.60   sample-worker    <none>           <none>
+p2-preferred-2ppgn             0/1     Completed   0          40m   10.245.1.61   sample-worker    <none>           <none>
+p2-preferred-wzxqg             0/1     Completed   0          40m   10.245.2.25   sample-worker2   <none>           <none>
+p3-preferred-8k7ft             0/1     Completed   0          28m   10.245.1.63   sample-worker    <none>           <none>
+p3-preferred-tt528             0/1     Completed   0          28m   10.245.2.26   sample-worker2   <none>           <none>
+p4-preferred-fzdgl             0/1     Completed   0          20m   10.245.1.64   sample-worker    <none>           <none>
+p4-preferred-ztqj2             0/1     Completed   0          20m   10.245.2.27   sample-worker2   <none>           <none>
+
+$ kubectl --context kind-sample -n d43 get pods --field-selector=status.phase=Pending -o custom-columns='POD:.metadata.name,SCHEDULED:.status.conditions[?(@.type=="PodScheduled")].status,REASON:.status.conditions[?(@.type=="PodScheduled")].reason'
+POD   SCHEDULED   REASON

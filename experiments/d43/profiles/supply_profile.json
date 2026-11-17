@@ -1,0 +1,57 @@
+{
+  "description": "SYNTHETIC two-feed supply profile (Feed A / Feed B). Not measured data.",
+  "seed": 42,
+  "watts_per_core": 42.0,
+  "flexible_job_requirement_w": 84,
+  "run_min": 65,
+  "boundary_min": 45,
+  "phases": [
+    {
+      "name": "normal",
+      "start_s": 0,
+      "end_s": 900,
+      "feed_a_w": 75.6,
+      "feed_b_w": 92.4
+    },
+    {
+      "name": "contingency",
+      "start_s": 900,
+      "end_s": 2100,
+      "feed_a_w": 75.6,
+      "feed_b_w": 0.0
+    },
+    {
+      "name": "recovery",
+      "start_s": 2100,
+      "end_s": 2700,
+      "feed_a_w": 75.6,
+      "feed_b_w": 92.4
+    }
+  ],
+  "future_slots": [
+    {
+      "name": "surplus",
+      "index": 0,
+      "feed_a_w": 168.0,
+      "feed_b_w": 168.0
+    },
+    {
+      "name": "night",
+      "index": 1,
+      "feed_a_w": 75.6,
+      "feed_b_w": 50.4
+    },
+    {
+      "name": "morning",
+      "index": 2,
+      "feed_a_w": 75.6,
+      "feed_b_w": 92.4
+    },
+    {
+      "name": "next-afternoon",
+      "index": 3,
+      "feed_a_w": 75.6,
+      "feed_b_w": 92.4
+    }
+  ]
+}

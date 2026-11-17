@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+
+# Raw dumps that contain the scheduler plugin's own objects or messages:
+# kept locally, not published (RESULTS.md section 8).
+results/S1-S3_eao/raw/final_pods.json
+results/S1-S3_eao/raw/final_events.json.gz
+results/S1-S3_eao/raw/final_orchestrationprofiles.json
+results/dryrun/raw/final_pods.json
+results/dryrun/raw/final_events.json
+results/dryrun/raw/final_orchestrationprofiles.json
+results/smoke_test/objects.json
+results/smoke_test/events.json

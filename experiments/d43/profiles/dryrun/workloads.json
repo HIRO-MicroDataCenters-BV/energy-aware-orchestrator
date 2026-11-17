@@ -1,0 +1,32 @@
+[
+  {
+    "name": "c1-critical",
+    "class": "Critical",
+    "kind": "Deployment",
+    "pods": 1,
+    "cores_per_pod": 0,
+    "duration_s": null,
+    "submit_s": 5,
+    "energy_consumption_w": 42
+  },
+  {
+    "name": "p1-preferred",
+    "class": "Preferred",
+    "kind": "Job",
+    "pods": 1,
+    "cores_per_pod": 0,
+    "duration_s": 30,
+    "submit_s": 20,
+    "energy_consumption_w": 84
+  },
+  {
+    "name": "o1-optional",
+    "class": "Optional",
+    "kind": "Job",
+    "pods": 1,
+    "cores_per_pod": 0,
+    "duration_s": 30,
+    "submit_s": 40,
+    "energy_consumption_w": 84
+  }
+]

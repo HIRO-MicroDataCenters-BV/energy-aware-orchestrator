@@ -1,0 +1,10 @@
+scenario,workload,class,kind,pods,energy_consumption_w,planned_submit_t_s,submit_utc,submit_t_s,eao_first_action,eao_first_scheduled_slot,eao_first_current_slot_available_w,eao_first_reason,decision,eao_decision_history,gate_held,gate_first_seen_t_s,gate_message,first_pod_scheduled_t_s,start_t_s,end_t_s,running_at_run_end,wait_before_start_s,nodes
+S0,c1-critical,Critical,Deployment,1,42,0,2026-11-17T15:22:08.076335Z,0.1,,,,,"placed (default scheduler, no EAO)",,False,,,0.0,0.0,3900.0,True,-0.1,sample-worker2
+S0,p1-preferred,Preferred,Job,2,84,110,2026-11-17T15:23:58.601906Z,110.6,,,,,"placed (default scheduler, no EAO)",,False,,,110.0,111.0,591.0,False,0.4,sample-worker;sample-worker2
+S0,o1-optional,Optional,Job,2,84,548,2026-11-17T15:31:16.832716Z,548.8,,,,,"placed (default scheduler, no EAO)",,False,,,548.0,549.0,1029.0,False,0.2,sample-worker;sample-worker2
+S0,p2-preferred,Preferred,Job,2,84,594,2026-11-17T15:32:02.417953Z,594.4,,,,,"placed (default scheduler, no EAO)",,False,,,594.0,594.0,1074.0,False,-0.4,sample-worker;sample-worker2
+S0,c2-critical,Critical,Deployment,1,42,1040,2026-11-17T15:39:28.152031Z,1040.2,,,,,"placed (default scheduler, no EAO)",,False,,,1040.0,1040.0,3900.0,True,-0.2,sample-worker
+S0,o2-optional,Optional,Job,2,84,1088,2026-11-17T15:40:16.763326Z,1088.8,,,,,"placed (default scheduler, no EAO)",,False,,,1088.0,1089.0,1569.0,False,0.2,sample-worker;sample-worker2
+S0,p3-preferred,Preferred,Job,2,84,1329,2026-11-17T15:44:17.872745Z,1329.9,,,,,"placed (default scheduler, no EAO)",,False,,,1329.0,1330.0,1810.0,False,0.1,sample-worker;sample-worker2
+S0,p4-preferred,Preferred,Job,2,84,1784,2026-11-17T15:51:52.758648Z,1784.8,,,,,"placed (default scheduler, no EAO)",,False,,,1784.0,1785.0,2265.0,False,0.2,sample-worker;sample-worker2
+S0,o3-optional,Optional,Job,2,84,2312,2026-11-17T16:09:49.386128Z,2861.4,,,,,"placed (default scheduler, no EAO)",,False,,,2282.0,2282.0,2866.0,False,-579.4,sample-worker;sample-worker2

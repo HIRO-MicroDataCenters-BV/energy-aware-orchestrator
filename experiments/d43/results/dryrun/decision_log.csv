@@ -1,0 +1,4 @@
+scenario,t_s,utc,workload,class,action,scheduled_slot_start,current_slot_available_w,required_w,reason
+EAO,6.6,2026-11-17T15:19:00.644938Z,c1-critical,Critical,DeployImmediately,,,42,Critical priority workload - deploying immediately for 24/7 operation
+EAO,22.4,2026-11-17T15:19:16.358160Z,p1-preferred,Preferred,DeployImmediately,,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,43.2,2026-11-17T15:19:37.210414Z,o1-optional,Optional,Scheduled,2026-11-17T18:00:00+00:00,168.0,84,Optional priority - scheduled for optimal energy slot (336W >= 84W)

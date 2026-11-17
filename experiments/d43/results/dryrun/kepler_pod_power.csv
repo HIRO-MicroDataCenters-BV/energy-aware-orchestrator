@@ -1,0 +1,9 @@
+utc,t_s,pod,workload,class,watts
+2026-11-17T15:20:24+00:00,90,c1-critical-676676dd4d-fhw96,c1-critical,Critical,0.0
+2026-11-17T15:20:54+00:00,120,c1-critical-676676dd4d-fhw96,c1-critical,Critical,0.0
+2026-11-17T15:21:24+00:00,150,c1-critical-676676dd4d-fhw96,c1-critical,Critical,0.0
+2026-11-17T15:21:54+00:00,180,c1-critical-676676dd4d-fhw96,c1-critical,Critical,0.0
+2026-11-17T15:20:24+00:00,90,p1-preferred-m79hk,p1-preferred,Preferred,0.0
+2026-11-17T15:20:54+00:00,120,p1-preferred-m79hk,p1-preferred,Preferred,0.0
+2026-11-17T15:21:24+00:00,150,p1-preferred-m79hk,p1-preferred,Preferred,0.0
+2026-11-17T15:21:54+00:00,180,p1-preferred-m79hk,p1-preferred,Preferred,0.0

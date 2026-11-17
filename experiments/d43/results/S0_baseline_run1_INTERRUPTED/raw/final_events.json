@@ -1,0 +1,3439 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:22:08.086948Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-tsqcg",
+                "namespace": "d43",
+                "resourceVersion": "4091431",
+                "uid": "5fbb98a0-335e-4bb7-a07e-281a9464f88b"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/c1-critical-55fdbc7c88-tsqcg to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:22:08Z",
+                "name": "c1-critical-55fdbc7c88-tsqcg.18e8de59a3b20a92",
+                "namespace": "d43",
+                "resourceVersion": "4091436",
+                "uid": "2ca98e4d-f05c-47e0-bf74-66b29b06f309"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:22:08Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-tsqcg",
+                "namespace": "d43",
+                "resourceVersion": "4091434",
+                "uid": "5fbb98a0-335e-4bb7-a07e-281a9464f88b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:22:08Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:22:08Z",
+                "name": "c1-critical-55fdbc7c88-tsqcg.18e8de59cc814c74",
+                "namespace": "d43",
+                "resourceVersion": "4091515",
+                "uid": "7be0f035-bf76-49fd-b27e-6c0a8a6f9560"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:22:08Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-tsqcg",
+                "namespace": "d43",
+                "resourceVersion": "4091434",
+                "uid": "5fbb98a0-335e-4bb7-a07e-281a9464f88b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:22:08Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:22:08Z",
+                "name": "c1-critical-55fdbc7c88-tsqcg.18e8de59cce6434c",
+                "namespace": "d43",
+                "resourceVersion": "4091516",
+                "uid": "93910bc9-2975-4c0a-80fa-d375a52036e1"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:22:08Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-tsqcg",
+                "namespace": "d43",
+                "resourceVersion": "4091434",
+                "uid": "5fbb98a0-335e-4bb7-a07e-281a9464f88b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:22:08Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:22:08Z",
+                "name": "c1-critical-55fdbc7c88-tsqcg.18e8de59d093a546",
+                "namespace": "d43",
+                "resourceVersion": "4091517",
+                "uid": "41cfe3c3-419c-498f-92f4-9078e3db88a9"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:17:56.092468Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-zbf8b",
+                "namespace": "d43",
+                "resourceVersion": "4088531",
+                "uid": "cc80032b-55a6-44bc-90e5-a97673d44417"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/c1-critical-55fdbc7c88-zbf8b to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:17:56Z",
+                "name": "c1-critical-55fdbc7c88-zbf8b.18e8de1ef7a774dc",
+                "namespace": "d43",
+                "resourceVersion": "4088537",
+                "uid": "6b5fd190-d3e4-4051-b55d-d01e00ed4771"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:17:56Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-zbf8b",
+                "namespace": "d43",
+                "resourceVersion": "4088535",
+                "uid": "cc80032b-55a6-44bc-90e5-a97673d44417"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:17:56Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:17:56Z",
+                "name": "c1-critical-55fdbc7c88-zbf8b.18e8de1f0f143ca4",
+                "namespace": "d43",
+                "resourceVersion": "4088540",
+                "uid": "ea4a4231-4904-4f80-a4db-5f60244c6673"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:17:56Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-zbf8b",
+                "namespace": "d43",
+                "resourceVersion": "4088535",
+                "uid": "cc80032b-55a6-44bc-90e5-a97673d44417"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:17:56Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:17:56Z",
+                "name": "c1-critical-55fdbc7c88-zbf8b.18e8de1f0f8f228e",
+                "namespace": "d43",
+                "resourceVersion": "4088541",
+                "uid": "1eedeae9-7a35-4d5a-b683-7bb6db9fbcd3"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:17:56Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-zbf8b",
+                "namespace": "d43",
+                "resourceVersion": "4088535",
+                "uid": "cc80032b-55a6-44bc-90e5-a97673d44417"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:17:56Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:17:56Z",
+                "name": "c1-critical-55fdbc7c88-zbf8b.18e8de1f1254009c",
+                "namespace": "d43",
+                "resourceVersion": "4088543",
+                "uid": "978edf2c-fc6a-4418-b82c-c5b616e21061"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:18:11Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c1-critical-55fdbc7c88-zbf8b",
+                "namespace": "d43",
+                "resourceVersion": "4088535",
+                "uid": "cc80032b-55a6-44bc-90e5-a97673d44417"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:18:11Z",
+            "message": "Stopping container burn",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:18:11Z",
+                "name": "c1-critical-55fdbc7c88-zbf8b.18e8de228218b479",
+                "namespace": "d43",
+                "resourceVersion": "4088659",
+                "uid": "da97c0da-8af6-468f-80ec-8b966e8ff9bf"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:17:56Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "c1-critical-55fdbc7c88",
+                "namespace": "d43",
+                "resourceVersion": "4088528",
+                "uid": "b0d82f88-7d98-43a6-9023-bb079a29e19f"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:17:56Z",
+            "message": "Created pod: c1-critical-55fdbc7c88-zbf8b",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:17:56Z",
+                "name": "c1-critical-55fdbc7c88.18e8de1ef779a046",
+                "namespace": "d43",
+                "resourceVersion": "4088533",
+                "uid": "2f621135-0fd1-43bb-9486-7d1a56a7b61d"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:22:08Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "c1-critical-55fdbc7c88",
+                "namespace": "d43",
+                "resourceVersion": "4091428",
+                "uid": "4323f052-55aa-4fbd-9c15-0ee771cd27e5"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:22:08Z",
+            "message": "Created pod: c1-critical-55fdbc7c88-tsqcg",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:22:08Z",
+                "name": "c1-critical-55fdbc7c88.18e8de59a38ad5c9",
+                "namespace": "d43",
+                "resourceVersion": "4091433",
+                "uid": "019e99dc-b5a0-45b5-9c6e-9b72594f19fa"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:17:56Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "Deployment",
+                "name": "c1-critical",
+                "namespace": "d43",
+                "resourceVersion": "4088527",
+                "uid": "6f3f95b3-6eeb-46b0-8369-03c8ee851992"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:17:56Z",
+            "message": "Scaled up replica set c1-critical-55fdbc7c88 from 0 to 1",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:17:56Z",
+                "name": "c1-critical.18e8de1ef7256f0d",
+                "namespace": "d43",
+                "resourceVersion": "4088530",
+                "uid": "e353e33a-6055-42ad-b8a4-68edaf48591a"
+            },
+            "reason": "ScalingReplicaSet",
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:22:08Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "Deployment",
+                "name": "c1-critical",
+                "namespace": "d43",
+                "resourceVersion": "4091427",
+                "uid": "d7ec39f3-f349-4108-88b2-8c3b1dffcf20"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:22:08Z",
+            "message": "Scaled up replica set c1-critical-55fdbc7c88 from 0 to 1",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:22:08Z",
+                "name": "c1-critical.18e8de59a315f4e3",
+                "namespace": "d43",
+                "resourceVersion": "4091430",
+                "uid": "70c15316-da23-4fe7-b1f1-82a82a4bf6a5"
+            },
+            "reason": "ScalingReplicaSet",
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:39:28.160740Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "c2-critical-664bb64c87-pb25p",
+                "namespace": "d43",
+                "resourceVersion": "4096675",
+                "uid": "ece29c5f-6079-4ae0-b0a2-e74a5ac0e83e"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/c2-critical-664bb64c87-pb25p to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:28Z",
+                "name": "c2-critical-664bb64c87-pb25p.18e8df4bcceca07b",
+                "namespace": "d43",
+                "resourceVersion": "4096681",
+                "uid": "fc63c6aa-778b-4eb6-b1a3-cacd33a57619"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:39:28Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c2-critical-664bb64c87-pb25p",
+                "namespace": "d43",
+                "resourceVersion": "4096679",
+                "uid": "ece29c5f-6079-4ae0-b0a2-e74a5ac0e83e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:39:28Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:28Z",
+                "name": "c2-critical-664bb64c87-pb25p.18e8df4be2f044c4",
+                "namespace": "d43",
+                "resourceVersion": "4096684",
+                "uid": "f683e178-1962-4d48-9d8e-969b85ac3a21"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:39:28Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c2-critical-664bb64c87-pb25p",
+                "namespace": "d43",
+                "resourceVersion": "4096679",
+                "uid": "ece29c5f-6079-4ae0-b0a2-e74a5ac0e83e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:39:28Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:28Z",
+                "name": "c2-critical-664bb64c87-pb25p.18e8df4be3687816",
+                "namespace": "d43",
+                "resourceVersion": "4096685",
+                "uid": "2788143a-a571-4c35-82cc-5fa84bf9ce0a"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:39:28Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "c2-critical-664bb64c87-pb25p",
+                "namespace": "d43",
+                "resourceVersion": "4096679",
+                "uid": "ece29c5f-6079-4ae0-b0a2-e74a5ac0e83e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:39:28Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:28Z",
+                "name": "c2-critical-664bb64c87-pb25p.18e8df4be6e1868f",
+                "namespace": "d43",
+                "resourceVersion": "4096686",
+                "uid": "d6eca8a4-a1a0-478b-a30a-9221336b1aa1"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:39:28Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "c2-critical-664bb64c87",
+                "namespace": "d43",
+                "resourceVersion": "4096672",
+                "uid": "edf06cf8-4a20-4b2e-94d2-da1166329b45"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:39:28Z",
+            "message": "Created pod: c2-critical-664bb64c87-pb25p",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:28Z",
+                "name": "c2-critical-664bb64c87.18e8df4bccc38a17",
+                "namespace": "d43",
+                "resourceVersion": "4096677",
+                "uid": "37b37c7d-076d-442d-bd3f-c4cdc7ed1ff6"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "replicaset-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "replicaset-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:39:28Z",
+            "involvedObject": {
+                "apiVersion": "apps/v1",
+                "kind": "Deployment",
+                "name": "c2-critical",
+                "namespace": "d43",
+                "resourceVersion": "4096671",
+                "uid": "61ddb3ba-54df-45a9-a984-b76ffa14e17c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:39:28Z",
+            "message": "Scaled up replica set c2-critical-664bb64c87 from 0 to 1",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:28Z",
+                "name": "c2-critical.18e8df4bcc73708e",
+                "namespace": "d43",
+                "resourceVersion": "4096673",
+                "uid": "03dd42c0-f063-4085-a75f-6707a5efe8b9"
+            },
+            "reason": "ScalingReplicaSet",
+            "reportingComponent": "deployment-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "deployment-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:04:57.704145Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "calib-1core-qv9c9",
+                "namespace": "d43",
+                "resourceVersion": "4083533",
+                "uid": "28b548aa-a082-4772-81c6-f2c748aaaad2"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/calib-1core-qv9c9 to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:57Z",
+                "name": "calib-1core-qv9c9.18e8dd69bc183ce9",
+                "namespace": "d43",
+                "resourceVersion": "4083542",
+                "uid": "a6868738-4046-4c31-9f45-6e3c06285fff"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-1core-qv9c9",
+                "namespace": "d43",
+                "resourceVersion": "4083539",
+                "uid": "28b548aa-a082-4772-81c6-f2c748aaaad2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:58Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:58Z",
+                "name": "calib-1core-qv9c9.18e8dd69d55ba212",
+                "namespace": "d43",
+                "resourceVersion": "4083545",
+                "uid": "7aeca40b-b8f1-48bd-883a-f2f7104acfb8"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-1core-qv9c9",
+                "namespace": "d43",
+                "resourceVersion": "4083539",
+                "uid": "28b548aa-a082-4772-81c6-f2c748aaaad2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:58Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:58Z",
+                "name": "calib-1core-qv9c9.18e8dd69d6603fae",
+                "namespace": "d43",
+                "resourceVersion": "4083547",
+                "uid": "2d640303-c0cc-4d74-b17c-7a5065f8e2c7"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-1core-qv9c9",
+                "namespace": "d43",
+                "resourceVersion": "4083539",
+                "uid": "28b548aa-a082-4772-81c6-f2c748aaaad2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:58Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:58Z",
+                "name": "calib-1core-qv9c9.18e8dd69dcf06e78",
+                "namespace": "d43",
+                "resourceVersion": "4083550",
+                "uid": "5928a4e7-f272-46ef-9d24-509f3e17c8ab"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:09:03Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-1core-qv9c9",
+                "namespace": "d43",
+                "resourceVersion": "4083539",
+                "uid": "28b548aa-a082-4772-81c6-f2c748aaaad2"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:09:03Z",
+            "message": "Stopping container burn",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:09:03Z",
+                "name": "calib-1core-qv9c9.18e8dda2f5747c17",
+                "namespace": "d43",
+                "resourceVersion": "4084752",
+                "uid": "69571e07-22db-424e-9b37-58f233d85946"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:57Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "calib-1core",
+                "namespace": "d43",
+                "resourceVersion": "4083531",
+                "uid": "891e3cd8-eb0a-4453-a73a-17897d6e6551"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:57Z",
+            "message": "Created pod: calib-1core-qv9c9",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:57Z",
+                "name": "calib-1core.18e8dd69bb940859",
+                "namespace": "d43",
+                "resourceVersion": "4083535",
+                "uid": "b08b621e-31ec-4456-8f9f-f576c4516cd5"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:04:57.703610Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "calib-2core-crx99",
+                "namespace": "d43",
+                "resourceVersion": "4083534",
+                "uid": "421861d2-b34c-4ffb-a5c8-25983a4e7297"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/calib-2core-crx99 to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:57Z",
+                "name": "calib-2core-crx99.18e8dd69bc102afe",
+                "namespace": "d43",
+                "resourceVersion": "4083541",
+                "uid": "48db6baa-2bda-4bba-a141-de79d8451daa"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-2core-crx99",
+                "namespace": "d43",
+                "resourceVersion": "4083537",
+                "uid": "421861d2-b34c-4ffb-a5c8-25983a4e7297"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:58Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:58Z",
+                "name": "calib-2core-crx99.18e8dd69d5c05f22",
+                "namespace": "d43",
+                "resourceVersion": "4083546",
+                "uid": "a61f1c9f-48be-4ccb-b841-d99d23a40c9c"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-2core-crx99",
+                "namespace": "d43",
+                "resourceVersion": "4083537",
+                "uid": "421861d2-b34c-4ffb-a5c8-25983a4e7297"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:58Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:58Z",
+                "name": "calib-2core-crx99.18e8dd69d6b4cbb9",
+                "namespace": "d43",
+                "resourceVersion": "4083548",
+                "uid": "af346c63-7000-41a9-bdf5-f404d7be52de"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-2core-crx99",
+                "namespace": "d43",
+                "resourceVersion": "4083537",
+                "uid": "421861d2-b34c-4ffb-a5c8-25983a4e7297"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:58Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:58Z",
+                "name": "calib-2core-crx99.18e8dd69dc66d342",
+                "namespace": "d43",
+                "resourceVersion": "4083549",
+                "uid": "6d8921d3-70fe-4184-9bcc-0967ca982b12"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:09:03Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "calib-2core-crx99",
+                "namespace": "d43",
+                "resourceVersion": "4083537",
+                "uid": "421861d2-b34c-4ffb-a5c8-25983a4e7297"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:09:03Z",
+            "message": "Stopping container burn",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:09:03Z",
+                "name": "calib-2core-crx99.18e8dda2f594afbe",
+                "namespace": "d43",
+                "resourceVersion": "4084753",
+                "uid": "36aff07d-cd9e-426b-adf4-34e1221e6b70"
+            },
+            "reason": "Killing",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:04:57Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "calib-2core",
+                "namespace": "d43",
+                "resourceVersion": "4083532",
+                "uid": "05d4de0a-3ed1-4e36-81aa-cc25d38a70b0"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:04:57Z",
+            "message": "Created pod: calib-2core-crx99",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:04:57Z",
+                "name": "calib-2core.18e8dd69bba92740",
+                "namespace": "d43",
+                "resourceVersion": "4083538",
+                "uid": "42e25e16-669e-4b63-b971-5b7a665cfc94"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:31:16.838648Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "o1-optional-d7tck",
+                "namespace": "d43",
+                "resourceVersion": "4094218",
+                "uid": "277fd2fd-d195-4129-8c28-fab92f6f5379"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/o1-optional-d7tck to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:16Z",
+                "name": "o1-optional-d7tck.18e8ded967d87ad1",
+                "namespace": "d43",
+                "resourceVersion": "4094225",
+                "uid": "344e15d1-7f64-4e93-81dd-8bd1a0f0fb19"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o1-optional-d7tck",
+                "namespace": "d43",
+                "resourceVersion": "4094220",
+                "uid": "277fd2fd-d195-4129-8c28-fab92f6f5379"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:17Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:17Z",
+                "name": "o1-optional-d7tck.18e8ded97e63dc20",
+                "namespace": "d43",
+                "resourceVersion": "4094230",
+                "uid": "88a8b0a8-8583-47d4-9de3-1c3a996d663b"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o1-optional-d7tck",
+                "namespace": "d43",
+                "resourceVersion": "4094220",
+                "uid": "277fd2fd-d195-4129-8c28-fab92f6f5379"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:17Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:17Z",
+                "name": "o1-optional-d7tck.18e8ded97f1f210b",
+                "namespace": "d43",
+                "resourceVersion": "4094232",
+                "uid": "c526bcf2-bd81-424d-b75a-61b915d2e2b9"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o1-optional-d7tck",
+                "namespace": "d43",
+                "resourceVersion": "4094220",
+                "uid": "277fd2fd-d195-4129-8c28-fab92f6f5379"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:17Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:17Z",
+                "name": "o1-optional-d7tck.18e8ded983641256",
+                "namespace": "d43",
+                "resourceVersion": "4094234",
+                "uid": "ae174217-18a0-46e0-927f-d28241620920"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:31:16.841789Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "o1-optional-pfmtc",
+                "namespace": "d43",
+                "resourceVersion": "4094221",
+                "uid": "d31b0c82-affa-42ea-93a7-596add6bc213"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/o1-optional-pfmtc to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:16Z",
+                "name": "o1-optional-pfmtc.18e8ded9680862fa",
+                "namespace": "d43",
+                "resourceVersion": "4094226",
+                "uid": "b74c7589-1a88-427f-9db8-22e8c3d2491a"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o1-optional-pfmtc",
+                "namespace": "d43",
+                "resourceVersion": "4094223",
+                "uid": "d31b0c82-affa-42ea-93a7-596add6bc213"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:17Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:17Z",
+                "name": "o1-optional-pfmtc.18e8ded97e923caf",
+                "namespace": "d43",
+                "resourceVersion": "4094231",
+                "uid": "9996e30b-ee23-410e-be7d-cd7699d7f2bf"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o1-optional-pfmtc",
+                "namespace": "d43",
+                "resourceVersion": "4094223",
+                "uid": "d31b0c82-affa-42ea-93a7-596add6bc213"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:17Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:17Z",
+                "name": "o1-optional-pfmtc.18e8ded97f20a7d5",
+                "namespace": "d43",
+                "resourceVersion": "4094233",
+                "uid": "0ae391e1-fd64-409c-90cc-9a3d5049f974"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o1-optional-pfmtc",
+                "namespace": "d43",
+                "resourceVersion": "4094223",
+                "uid": "d31b0c82-affa-42ea-93a7-596add6bc213"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:17Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:17Z",
+                "name": "o1-optional-pfmtc.18e8ded983743a68",
+                "namespace": "d43",
+                "resourceVersion": "4094235",
+                "uid": "27f340cc-1c7a-4fd6-b442-35c328b88c93"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:16Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o1-optional",
+                "namespace": "d43",
+                "resourceVersion": "4094217",
+                "uid": "6687fc97-03bd-461f-865d-3d310621d420"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:16Z",
+            "message": "Created pod: o1-optional-d7tck",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:16Z",
+                "name": "o1-optional.18e8ded967b3dbfb",
+                "namespace": "d43",
+                "resourceVersion": "4094219",
+                "uid": "c5bcc260-d084-4042-bc3d-05a044d1e7bd"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:31:16Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o1-optional",
+                "namespace": "d43",
+                "resourceVersion": "4094217",
+                "uid": "6687fc97-03bd-461f-865d-3d310621d420"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:31:16Z",
+            "message": "Created pod: o1-optional-pfmtc",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:31:16Z",
+                "name": "o1-optional.18e8ded967dbdc8a",
+                "namespace": "d43",
+                "resourceVersion": "4094222",
+                "uid": "06129d38-5584-4f79-b9dc-7229748a395e"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:39:19Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o1-optional",
+                "namespace": "d43",
+                "resourceVersion": "4096642",
+                "uid": "6687fc97-03bd-461f-865d-3d310621d420"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:39:19Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:39:19Z",
+                "name": "o1-optional.18e8df49d71ea43d",
+                "namespace": "d43",
+                "resourceVersion": "4096646",
+                "uid": "fa19f767-f52a-417f-8784-e064eb90ee29"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:40:16.767199Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "o2-optional-7cw24",
+                "namespace": "d43",
+                "resourceVersion": "4096967",
+                "uid": "b677dd74-ed9e-421d-bb4d-e07878571386"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/o2-optional-7cw24 to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:16Z",
+                "name": "o2-optional-7cw24.18e8df571e185106",
+                "namespace": "d43",
+                "resourceVersion": "4096971",
+                "uid": "95d289e1-7d77-4959-9e83-539bb9868205"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o2-optional-7cw24",
+                "namespace": "d43",
+                "resourceVersion": "4096968",
+                "uid": "b677dd74-ed9e-421d-bb4d-e07878571386"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:17Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:17Z",
+                "name": "o2-optional-7cw24.18e8df57341ae844",
+                "namespace": "d43",
+                "resourceVersion": "4096980",
+                "uid": "38d5e42a-78e4-4951-8331-c49044934908"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o2-optional-7cw24",
+                "namespace": "d43",
+                "resourceVersion": "4096968",
+                "uid": "b677dd74-ed9e-421d-bb4d-e07878571386"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:17Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:17Z",
+                "name": "o2-optional-7cw24.18e8df5734a051e9",
+                "namespace": "d43",
+                "resourceVersion": "4096981",
+                "uid": "44a5ac28-32e1-4666-91f8-0bf76d59ae5e"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o2-optional-7cw24",
+                "namespace": "d43",
+                "resourceVersion": "4096968",
+                "uid": "b677dd74-ed9e-421d-bb4d-e07878571386"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:17Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:17Z",
+                "name": "o2-optional-7cw24.18e8df573813b7a6",
+                "namespace": "d43",
+                "resourceVersion": "4096984",
+                "uid": "c8e9467d-b7fb-40dc-a176-11c1c1709d9c"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:40:16.770066Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "o2-optional-k5bnt",
+                "namespace": "d43",
+                "resourceVersion": "4096970",
+                "uid": "ea7b8cfb-1464-46f3-a50e-d8937aaebac3"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/o2-optional-k5bnt to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:16Z",
+                "name": "o2-optional-k5bnt.18e8df571e441232",
+                "namespace": "d43",
+                "resourceVersion": "4096975",
+                "uid": "90c0e2f9-b8c4-4edd-8b34-c998731f9e56"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o2-optional-k5bnt",
+                "namespace": "d43",
+                "resourceVersion": "4096972",
+                "uid": "ea7b8cfb-1464-46f3-a50e-d8937aaebac3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:17Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:17Z",
+                "name": "o2-optional-k5bnt.18e8df57341b3fab",
+                "namespace": "d43",
+                "resourceVersion": "4096979",
+                "uid": "18e937ae-5a45-496a-b964-57b5d28e5869"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o2-optional-k5bnt",
+                "namespace": "d43",
+                "resourceVersion": "4096972",
+                "uid": "ea7b8cfb-1464-46f3-a50e-d8937aaebac3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:17Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:17Z",
+                "name": "o2-optional-k5bnt.18e8df5734a3846f",
+                "namespace": "d43",
+                "resourceVersion": "4096982",
+                "uid": "df13d9b5-e65f-4ae4-af28-81a8ab3dc079"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:17Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o2-optional-k5bnt",
+                "namespace": "d43",
+                "resourceVersion": "4096972",
+                "uid": "ea7b8cfb-1464-46f3-a50e-d8937aaebac3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:17Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:17Z",
+                "name": "o2-optional-k5bnt.18e8df5738094214",
+                "namespace": "d43",
+                "resourceVersion": "4096983",
+                "uid": "c710acb1-5660-4f08-b1ea-be90f4362731"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:16Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o2-optional",
+                "namespace": "d43",
+                "resourceVersion": "4096966",
+                "uid": "c38ae3e9-13da-42d2-9309-8ba3cbe99d1a"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:16Z",
+            "message": "Created pod: o2-optional-7cw24",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:16Z",
+                "name": "o2-optional.18e8df571dfc69a2",
+                "namespace": "d43",
+                "resourceVersion": "4096969",
+                "uid": "5105c9e5-eae4-4ed4-b980-697f23f4746b"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:16Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o2-optional",
+                "namespace": "d43",
+                "resourceVersion": "4096966",
+                "uid": "c38ae3e9-13da-42d2-9309-8ba3cbe99d1a"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:16Z",
+            "message": "Created pod: o2-optional-k5bnt",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:16Z",
+                "name": "o2-optional.18e8df571e2a0664",
+                "namespace": "d43",
+                "resourceVersion": "4096973",
+                "uid": "caa4c5ff-7498-435a-ac1c-bafeb03bceb7"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:48:19Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o2-optional",
+                "namespace": "d43",
+                "resourceVersion": "4099380",
+                "uid": "c38ae3e9-13da-42d2-9309-8ba3cbe99d1a"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:48:19Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:48:19Z",
+                "name": "o2-optional.18e8dfc789a89885",
+                "namespace": "d43",
+                "resourceVersion": "4099384",
+                "uid": "96716a84-14da-4bca-8e03-88790526697e"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T16:00:10.377034Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "o3-optional-b8xd7",
+                "namespace": "d43",
+                "resourceVersion": "4102872",
+                "uid": "1b19b01b-4dcb-4278-a367-c7c59e7d5250"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/o3-optional-b8xd7 to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-b8xd7.18e8e06d06c904fd",
+                "namespace": "d43",
+                "resourceVersion": "4102879",
+                "uid": "e10d4669-c1e7-4636-a19c-022eacb8adc8"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o3-optional-b8xd7",
+                "namespace": "d43",
+                "resourceVersion": "4102875",
+                "uid": "1b19b01b-4dcb-4278-a367-c7c59e7d5250"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-b8xd7.18e8e06d1d3f72da",
+                "namespace": "d43",
+                "resourceVersion": "4102885",
+                "uid": "5cbe7102-fdac-47e2-b18b-0d54e01f0932"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o3-optional-b8xd7",
+                "namespace": "d43",
+                "resourceVersion": "4102875",
+                "uid": "1b19b01b-4dcb-4278-a367-c7c59e7d5250"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-b8xd7.18e8e06d1dc0a82a",
+                "namespace": "d43",
+                "resourceVersion": "4102888",
+                "uid": "f644d90c-55ad-411c-98a8-c67ad49d34f4"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o3-optional-b8xd7",
+                "namespace": "d43",
+                "resourceVersion": "4102875",
+                "uid": "1b19b01b-4dcb-4278-a367-c7c59e7d5250"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-b8xd7.18e8e06d22e5d9d3",
+                "namespace": "d43",
+                "resourceVersion": "4102890",
+                "uid": "9d9843b4-6076-46dc-87ca-5f86e0100964"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T16:00:10.379164Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "o3-optional-hl277",
+                "namespace": "d43",
+                "resourceVersion": "4102874",
+                "uid": "1130bbee-ea0c-4c05-abc2-4c0d6948cd8b"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/o3-optional-hl277 to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-hl277.18e8e06d06e98a05",
+                "namespace": "d43",
+                "resourceVersion": "4102880",
+                "uid": "6f48863c-a9ec-4131-9ba2-d498e1531df9"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o3-optional-hl277",
+                "namespace": "d43",
+                "resourceVersion": "4102877",
+                "uid": "1130bbee-ea0c-4c05-abc2-4c0d6948cd8b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-hl277.18e8e06d1d44c676",
+                "namespace": "d43",
+                "resourceVersion": "4102886",
+                "uid": "63794c63-71af-465e-bf0c-e9106846f49e"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o3-optional-hl277",
+                "namespace": "d43",
+                "resourceVersion": "4102877",
+                "uid": "1130bbee-ea0c-4c05-abc2-4c0d6948cd8b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-hl277.18e8e06d1dc0a800",
+                "namespace": "d43",
+                "resourceVersion": "4102887",
+                "uid": "2a5e2a88-0bbc-4f85-bf0f-8e96ff477ea2"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "o3-optional-hl277",
+                "namespace": "d43",
+                "resourceVersion": "4102877",
+                "uid": "1130bbee-ea0c-4c05-abc2-4c0d6948cd8b"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional-hl277.18e8e06d2301e33c",
+                "namespace": "d43",
+                "resourceVersion": "4102891",
+                "uid": "272e909f-55d8-4a92-9e52-f1b86290a4cd"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o3-optional",
+                "namespace": "d43",
+                "resourceVersion": "4102871",
+                "uid": "0f810cfc-39b6-451e-baaa-ee2c8d45be72"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Created pod: o3-optional-b8xd7",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional.18e8e06d068546de",
+                "namespace": "d43",
+                "resourceVersion": "4102873",
+                "uid": "41746e4e-e17c-4896-9efb-f98c9bfbcbe3"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:00:10Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o3-optional",
+                "namespace": "d43",
+                "resourceVersion": "4102871",
+                "uid": "0f810cfc-39b6-451e-baaa-ee2c8d45be72"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:00:10Z",
+            "message": "Created pod: o3-optional-hl277",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:00:10Z",
+                "name": "o3-optional.18e8e06d06b71725",
+                "namespace": "d43",
+                "resourceVersion": "4102876",
+                "uid": "d91c0b68-beb6-44c4-af0b-4ee6c6678392"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T16:09:57Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "o3-optional",
+                "namespace": "d43",
+                "resourceVersion": "4102987",
+                "uid": "0f810cfc-39b6-451e-baaa-ee2c8d45be72"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T16:09:57Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T16:09:57Z",
+                "name": "o3-optional.18e8e0f5a53ad8e3",
+                "namespace": "d43",
+                "resourceVersion": "4102991",
+                "uid": "a5891f2f-450c-4f80-8259-7160b9ec5e54"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:23:58.608818Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p1-preferred-gtttn",
+                "namespace": "d43",
+                "resourceVersion": "4092017",
+                "uid": "c5c9c40e-4fbf-4227-b8b7-886eba4b3e2d"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p1-preferred-gtttn to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred-gtttn.18e8de735f4ff308",
+                "namespace": "d43",
+                "resourceVersion": "4092022",
+                "uid": "5b7cdc96-cb30-47d4-b5c3-636f0cab80aa"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p1-preferred-gtttn",
+                "namespace": "d43",
+                "resourceVersion": "4092019",
+                "uid": "c5c9c40e-4fbf-4227-b8b7-886eba4b3e2d"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:58Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred-gtttn.18e8de737566b9c0",
+                "namespace": "d43",
+                "resourceVersion": "4092031",
+                "uid": "ca361706-bb3f-4955-82a2-4467d81a76f0"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p1-preferred-gtttn",
+                "namespace": "d43",
+                "resourceVersion": "4092019",
+                "uid": "c5c9c40e-4fbf-4227-b8b7-886eba4b3e2d"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:58Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred-gtttn.18e8de7375d5c28e",
+                "namespace": "d43",
+                "resourceVersion": "4092033",
+                "uid": "72893490-e226-4f57-b8b1-034f1c096bc2"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:59Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p1-preferred-gtttn",
+                "namespace": "d43",
+                "resourceVersion": "4092019",
+                "uid": "c5c9c40e-4fbf-4227-b8b7-886eba4b3e2d"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:59Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:59Z",
+                "name": "p1-preferred-gtttn.18e8de737a028324",
+                "namespace": "d43",
+                "resourceVersion": "4092036",
+                "uid": "abab6c79-548b-4535-8d06-49eeeff1f444"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:23:58.612526Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p1-preferred-hfrwl",
+                "namespace": "d43",
+                "resourceVersion": "4092020",
+                "uid": "8485e217-1f1c-46b2-9178-715a52e6333c"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p1-preferred-hfrwl to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred-hfrwl.18e8de735f8880bb",
+                "namespace": "d43",
+                "resourceVersion": "4092025",
+                "uid": "b22c51c2-0ec9-4175-9279-a7fcc1431031"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p1-preferred-hfrwl",
+                "namespace": "d43",
+                "resourceVersion": "4092023",
+                "uid": "8485e217-1f1c-46b2-9178-715a52e6333c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:58Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred-hfrwl.18e8de737580bc48",
+                "namespace": "d43",
+                "resourceVersion": "4092032",
+                "uid": "643b9c83-eaff-4048-b712-be2f823ccbe8"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:58Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p1-preferred-hfrwl",
+                "namespace": "d43",
+                "resourceVersion": "4092023",
+                "uid": "8485e217-1f1c-46b2-9178-715a52e6333c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:58Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred-hfrwl.18e8de7375f07f9c",
+                "namespace": "d43",
+                "resourceVersion": "4092034",
+                "uid": "efc173f5-5d05-47a7-aa1b-2b020ce10c2c"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:59Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p1-preferred-hfrwl",
+                "namespace": "d43",
+                "resourceVersion": "4092023",
+                "uid": "8485e217-1f1c-46b2-9178-715a52e6333c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:59Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:59Z",
+                "name": "p1-preferred-hfrwl.18e8de7379ffeac1",
+                "namespace": "d43",
+                "resourceVersion": "4092035",
+                "uid": "cb1ebb0b-b25c-4434-8418-36132ad19094"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:58Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p1-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4092016",
+                "uid": "88bdc9f4-5de0-4a67-ad46-6aef3b378b66"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:58Z",
+            "message": "Created pod: p1-preferred-gtttn",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred.18e8de735f1fb6e3",
+                "namespace": "d43",
+                "resourceVersion": "4092018",
+                "uid": "8c6db5b7-f15e-4d5c-898d-0e8f82d08777"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:23:58Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p1-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4092016",
+                "uid": "88bdc9f4-5de0-4a67-ad46-6aef3b378b66"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:23:58Z",
+            "message": "Created pod: p1-preferred-hfrwl",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:23:58Z",
+                "name": "p1-preferred.18e8de735f52277c",
+                "namespace": "d43",
+                "resourceVersion": "4092024",
+                "uid": "e4f145bf-4fd3-4370-8bf4-a37412ebba78"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p1-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4094427",
+                "uid": "88bdc9f4-5de0-4a67-ad46-6aef3b378b66"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p1-preferred.18e8dee3ec48fac2",
+                "namespace": "d43",
+                "resourceVersion": "4094431",
+                "uid": "fd7d4ed0-90ee-443c-81bf-06c1c26c7fbc"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:32:02.423101Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p2-preferred-7l69n",
+                "namespace": "d43",
+                "resourceVersion": "4094434",
+                "uid": "4c0ecd8d-0099-4148-bdc0-d931903c10d6"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p2-preferred-7l69n to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-7l69n.18e8dee404e40479",
+                "namespace": "d43",
+                "resourceVersion": "4094440",
+                "uid": "4d74f798-4859-43c5-9d10-f768eb246692"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p2-preferred-7l69n",
+                "namespace": "d43",
+                "resourceVersion": "4094436",
+                "uid": "4c0ecd8d-0099-4148-bdc0-d931903c10d6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-7l69n.18e8dee41ac5fccd",
+                "namespace": "d43",
+                "resourceVersion": "4094445",
+                "uid": "3b31e865-2b8f-4de6-a8ab-8b200654af52"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p2-preferred-7l69n",
+                "namespace": "d43",
+                "resourceVersion": "4094436",
+                "uid": "4c0ecd8d-0099-4148-bdc0-d931903c10d6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-7l69n.18e8dee41b49a370",
+                "namespace": "d43",
+                "resourceVersion": "4094448",
+                "uid": "99fa395c-3b40-4966-9d2a-d29810f300fb"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p2-preferred-7l69n",
+                "namespace": "d43",
+                "resourceVersion": "4094436",
+                "uid": "4c0ecd8d-0099-4148-bdc0-d931903c10d6"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-7l69n.18e8dee41edd0da1",
+                "namespace": "d43",
+                "resourceVersion": "4094450",
+                "uid": "8976b710-20e1-4978-bce5-7b5d3053c4d3"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:32:02.426576Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p2-preferred-t6xbd",
+                "namespace": "d43",
+                "resourceVersion": "4094437",
+                "uid": "fe1a6cc9-8f5b-4b28-8660-0c8c5f9db16e"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p2-preferred-t6xbd to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-t6xbd.18e8dee405190963",
+                "namespace": "d43",
+                "resourceVersion": "4094443",
+                "uid": "fdf728d6-4c32-4c67-8bf6-d3801bbd1562"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p2-preferred-t6xbd",
+                "namespace": "d43",
+                "resourceVersion": "4094441",
+                "uid": "fe1a6cc9-8f5b-4b28-8660-0c8c5f9db16e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-t6xbd.18e8dee41ac6990d",
+                "namespace": "d43",
+                "resourceVersion": "4094446",
+                "uid": "c8c26eda-fe1b-47d4-9c19-ad76e5d7944c"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p2-preferred-t6xbd",
+                "namespace": "d43",
+                "resourceVersion": "4094441",
+                "uid": "fe1a6cc9-8f5b-4b28-8660-0c8c5f9db16e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-t6xbd.18e8dee41b431f4f",
+                "namespace": "d43",
+                "resourceVersion": "4094447",
+                "uid": "6582670a-605d-4ed2-8876-44e3fbf06786"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p2-preferred-t6xbd",
+                "namespace": "d43",
+                "resourceVersion": "4094441",
+                "uid": "fe1a6cc9-8f5b-4b28-8660-0c8c5f9db16e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred-t6xbd.18e8dee41eda6a2d",
+                "namespace": "d43",
+                "resourceVersion": "4094449",
+                "uid": "72ab6b97-11ca-4dd2-9a84-1333f1c7bdc2"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p2-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4094433",
+                "uid": "6c8e2441-ecc2-4aaa-96f0-51f1bee8bdff"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Created pod: p2-preferred-7l69n",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred.18e8dee404b04590",
+                "namespace": "d43",
+                "resourceVersion": "4094435",
+                "uid": "1a710099-7384-47ab-885e-2d26cb83821c"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:32:02Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p2-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4094433",
+                "uid": "6c8e2441-ecc2-4aaa-96f0-51f1bee8bdff"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:32:02Z",
+            "message": "Created pod: p2-preferred-t6xbd",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:32:02Z",
+                "name": "p2-preferred.18e8dee404e2abe8",
+                "namespace": "d43",
+                "resourceVersion": "4094438",
+                "uid": "96271961-3125-4424-b86d-33d3091e5fe8"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:40:05Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p2-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4096861",
+                "uid": "6c8e2441-ecc2-4aaa-96f0-51f1bee8bdff"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:40:05Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:40:05Z",
+                "name": "p2-preferred.18e8df549207e353",
+                "namespace": "d43",
+                "resourceVersion": "4096865",
+                "uid": "837651e1-8cfa-463c-bd85-5cdc80f35691"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:44:17.880384Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p3-preferred-kzfv7",
+                "namespace": "d43",
+                "resourceVersion": "4098172",
+                "uid": "f77c4b2f-3f61-449f-8100-3d8b5bd6875c"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p3-preferred-kzfv7 to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:17Z",
+                "name": "p3-preferred-kzfv7.18e8df8f418f902a",
+                "namespace": "d43",
+                "resourceVersion": "4098177",
+                "uid": "87d57e7a-ec78-4d35-8a2b-5056b2d3c1e7"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:18Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p3-preferred-kzfv7",
+                "namespace": "d43",
+                "resourceVersion": "4098173",
+                "uid": "f77c4b2f-3f61-449f-8100-3d8b5bd6875c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:18Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:18Z",
+                "name": "p3-preferred-kzfv7.18e8df8f5760f79c",
+                "namespace": "d43",
+                "resourceVersion": "4098181",
+                "uid": "49cbbdf4-7192-4c3c-9787-6876dafd2c59"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:18Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p3-preferred-kzfv7",
+                "namespace": "d43",
+                "resourceVersion": "4098173",
+                "uid": "f77c4b2f-3f61-449f-8100-3d8b5bd6875c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:18Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:18Z",
+                "name": "p3-preferred-kzfv7.18e8df8f57f1ad2e",
+                "namespace": "d43",
+                "resourceVersion": "4098183",
+                "uid": "583fef5e-a524-461a-8c5d-24f92298c59b"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:18Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p3-preferred-kzfv7",
+                "namespace": "d43",
+                "resourceVersion": "4098173",
+                "uid": "f77c4b2f-3f61-449f-8100-3d8b5bd6875c"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:18Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:18Z",
+                "name": "p3-preferred-kzfv7.18e8df8f5b819760",
+                "namespace": "d43",
+                "resourceVersion": "4098186",
+                "uid": "7d1aaf92-4ffb-41e7-9d30-ed0f926bc129"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:44:17.877704Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p3-preferred-m5q4d",
+                "namespace": "d43",
+                "resourceVersion": "4098169",
+                "uid": "1d23e4f2-6b49-483c-bb12-b38ed35ffea9"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p3-preferred-m5q4d to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:17Z",
+                "name": "p3-preferred-m5q4d.18e8df8f41672bd5",
+                "namespace": "d43",
+                "resourceVersion": "4098175",
+                "uid": "99c9b6f3-ece9-4f2e-91b6-b573a78fd3c3"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:18Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p3-preferred-m5q4d",
+                "namespace": "d43",
+                "resourceVersion": "4098170",
+                "uid": "1d23e4f2-6b49-483c-bb12-b38ed35ffea9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:18Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:18Z",
+                "name": "p3-preferred-m5q4d.18e8df8f5768a78b",
+                "namespace": "d43",
+                "resourceVersion": "4098182",
+                "uid": "492e901d-a738-4bf5-87c4-b4b306c4c079"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:18Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p3-preferred-m5q4d",
+                "namespace": "d43",
+                "resourceVersion": "4098170",
+                "uid": "1d23e4f2-6b49-483c-bb12-b38ed35ffea9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:18Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:18Z",
+                "name": "p3-preferred-m5q4d.18e8df8f58091341",
+                "namespace": "d43",
+                "resourceVersion": "4098184",
+                "uid": "1a89df39-4c06-46cc-b49b-fe6c88f92cfb"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:18Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p3-preferred-m5q4d",
+                "namespace": "d43",
+                "resourceVersion": "4098170",
+                "uid": "1d23e4f2-6b49-483c-bb12-b38ed35ffea9"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:18Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:18Z",
+                "name": "p3-preferred-m5q4d.18e8df8f5b85c316",
+                "namespace": "d43",
+                "resourceVersion": "4098185",
+                "uid": "44b4dabb-dc4f-4a05-b2dd-16c767c91f1a"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:17Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p3-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4098168",
+                "uid": "0bfaf1a4-1a50-43ac-8b7d-f8b061bab329"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:17Z",
+            "message": "Created pod: p3-preferred-m5q4d",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:17Z",
+                "name": "p3-preferred.18e8df8f414aab48",
+                "namespace": "d43",
+                "resourceVersion": "4098171",
+                "uid": "d657d6e1-41a1-4c01-ab67-7468dbd13361"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:44:17Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p3-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4098168",
+                "uid": "0bfaf1a4-1a50-43ac-8b7d-f8b061bab329"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:44:17Z",
+            "message": "Created pod: p3-preferred-kzfv7",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:44:17Z",
+                "name": "p3-preferred.18e8df8f4176c676",
+                "namespace": "d43",
+                "resourceVersion": "4098174",
+                "uid": "2c2b5645-51c6-4e3e-9e79-283cb811fc73"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:52:21Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p3-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4100591",
+                "uid": "0bfaf1a4-1a50-43ac-8b7d-f8b061bab329"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:52:21Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:52:21Z",
+                "name": "p3-preferred.18e8dfffbf314175",
+                "namespace": "d43",
+                "resourceVersion": "4100595",
+                "uid": "0754d3de-f26d-424e-bbbc-cf84b06bd574"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:51:52.766539Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p4-preferred-tg6q2",
+                "namespace": "d43",
+                "resourceVersion": "4100425",
+                "uid": "842c8fb8-8c14-460d-a7dc-852530330f28"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p4-preferred-tg6q2 to sample-worker",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:52Z",
+                "name": "p4-preferred-tg6q2.18e8dff92ae36f12",
+                "namespace": "d43",
+                "resourceVersion": "4100431",
+                "uid": "251366db-0efa-4ca8-bbc5-5e7f81f9422e"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:53Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p4-preferred-tg6q2",
+                "namespace": "d43",
+                "resourceVersion": "4100427",
+                "uid": "842c8fb8-8c14-460d-a7dc-852530330f28"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:53Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:53Z",
+                "name": "p4-preferred-tg6q2.18e8dff941749faf",
+                "namespace": "d43",
+                "resourceVersion": "4100435",
+                "uid": "4accfc8e-23d7-4552-8556-82e4b74b5091"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:53Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p4-preferred-tg6q2",
+                "namespace": "d43",
+                "resourceVersion": "4100427",
+                "uid": "842c8fb8-8c14-460d-a7dc-852530330f28"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:53Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:53Z",
+                "name": "p4-preferred-tg6q2.18e8dff942007d06",
+                "namespace": "d43",
+                "resourceVersion": "4100437",
+                "uid": "d317ea84-09a7-46df-a63c-32a317ae0d76"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:53Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p4-preferred-tg6q2",
+                "namespace": "d43",
+                "resourceVersion": "4100427",
+                "uid": "842c8fb8-8c14-460d-a7dc-852530330f28"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:53Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:53Z",
+                "name": "p4-preferred-tg6q2.18e8dff945b6a6b9",
+                "namespace": "d43",
+                "resourceVersion": "4100438",
+                "uid": "55efdf3f-71ae-4a44-ac31-e2d529f5d872"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Binding",
+            "apiVersion": "v1",
+            "eventTime": "2026-11-17T15:51:52.765553Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "p4-preferred-wjtg7",
+                "namespace": "d43",
+                "resourceVersion": "4100423",
+                "uid": "452cc1d2-0df6-494c-ba3d-93dd8d1eb4dc"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Successfully assigned d43/p4-preferred-wjtg7 to sample-worker2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:52Z",
+                "name": "p4-preferred-wjtg7.18e8dff92ad4683b",
+                "namespace": "d43",
+                "resourceVersion": "4100430",
+                "uid": "87bc8f8d-0e8a-4945-9c6c-e341726c191a"
+            },
+            "reason": "Scheduled",
+            "reportingComponent": "default-scheduler",
+            "reportingInstance": "default-scheduler-sample-control-plane",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:53Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p4-preferred-wjtg7",
+                "namespace": "d43",
+                "resourceVersion": "4100426",
+                "uid": "452cc1d2-0df6-494c-ba3d-93dd8d1eb4dc"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:53Z",
+            "message": "Container image \"python:3.11-slim\" already present on machine and can be accessed by the pod",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:53Z",
+                "name": "p4-preferred-wjtg7.18e8dff94163adf5",
+                "namespace": "d43",
+                "resourceVersion": "4100434",
+                "uid": "1a7bc989-990e-43d0-b525-92caf7b139b4"
+            },
+            "reason": "Pulled",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:53Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p4-preferred-wjtg7",
+                "namespace": "d43",
+                "resourceVersion": "4100426",
+                "uid": "452cc1d2-0df6-494c-ba3d-93dd8d1eb4dc"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:53Z",
+            "message": "Container created",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:53Z",
+                "name": "p4-preferred-wjtg7.18e8dff941f13f01",
+                "namespace": "d43",
+                "resourceVersion": "4100436",
+                "uid": "b88ee62a-0b9f-445e-bd82-6c6521c42a51"
+            },
+            "reason": "Created",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:53Z",
+            "involvedObject": {
+                "apiVersion": "v1",
+                "fieldPath": "spec.containers{burn}",
+                "kind": "Pod",
+                "name": "p4-preferred-wjtg7",
+                "namespace": "d43",
+                "resourceVersion": "4100426",
+                "uid": "452cc1d2-0df6-494c-ba3d-93dd8d1eb4dc"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:53Z",
+            "message": "Container started",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:53Z",
+                "name": "p4-preferred-wjtg7.18e8dff945b6a63c",
+                "namespace": "d43",
+                "resourceVersion": "4100439",
+                "uid": "9b31a637-5a8e-41fa-973c-ef808f7bea67"
+            },
+            "reason": "Started",
+            "reportingComponent": "kubelet",
+            "reportingInstance": "sample-worker2",
+            "source": {
+                "component": "kubelet",
+                "host": "sample-worker2"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:52Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p4-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4100422",
+                "uid": "a0fc1cc3-1237-48a3-a342-3b6461bbc78e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:52Z",
+            "message": "Created pod: p4-preferred-wjtg7",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:52Z",
+                "name": "p4-preferred.18e8dff92a9f7be4",
+                "namespace": "d43",
+                "resourceVersion": "4100424",
+                "uid": "ea98703e-3dd9-4319-a2c0-03b0de199170"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:51:52Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p4-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4100422",
+                "uid": "a0fc1cc3-1237-48a3-a342-3b6461bbc78e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:51:52Z",
+            "message": "Created pod: p4-preferred-tg6q2",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:51:52Z",
+                "name": "p4-preferred.18e8dff92ad5a44f",
+                "namespace": "d43",
+                "resourceVersion": "4100428",
+                "uid": "16485075-3606-45fb-9ab1-cac323760d7f"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-11-17T15:59:55Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "p4-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4102827",
+                "uid": "a0fc1cc3-1237-48a3-a342-3b6461bbc78e"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-11-17T15:59:55Z",
+            "message": "Job completed",
+            "metadata": {
+                "creationTimestamp": "2026-11-17T15:59:55Z",
+                "name": "p4-preferred.18e8e069a778e02a",
+                "namespace": "d43",
+                "resourceVersion": "4102831",
+                "uid": "caca269a-1c0a-4d95-844e-06f8634291a3"
+            },
+            "reason": "Completed",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

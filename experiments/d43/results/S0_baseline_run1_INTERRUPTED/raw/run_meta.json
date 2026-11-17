@@ -1,0 +1,10 @@
+{
+  "scenario": "S0",
+  "context": "kind-sample",
+  "namespace": "d43",
+  "t0": "2026-11-17T15:22:08Z",
+  "boundary": "2026-11-17T16:07:08Z",
+  "end": "2026-11-17T16:27:08Z",
+  "sample_every_s": 5,
+  "image": "python:3.11-slim"
+}

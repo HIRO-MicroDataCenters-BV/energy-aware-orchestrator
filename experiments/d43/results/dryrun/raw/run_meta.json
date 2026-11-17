@@ -1,0 +1,10 @@
+{
+  "scenario": "EAO",
+  "context": "kind-sample",
+  "namespace": "d43-dry",
+  "t0": "2026-11-17T15:18:54Z",
+  "boundary": "2026-11-17T18:00:00Z",
+  "end": "2026-11-17T15:21:24Z",
+  "sample_every_s": 5,
+  "image": "python:3.11-slim"
+}

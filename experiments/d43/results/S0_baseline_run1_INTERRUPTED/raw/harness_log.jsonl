@@ -1,0 +1,12 @@
+{"ts": "2026-11-17T15:22:08.004312Z", "t_s": 0.0, "event": "run_start", "scenario": "S0", "context": "kind-sample", "namespace": "d43", "t0": "2026-11-17T15:22:08Z", "boundary": "2026-11-17T16:07:08Z", "end": "2026-11-17T16:27:08Z", "sample_every_s": 5, "image": "python:3.11-slim"}
+{"ts": "2026-11-17T15:22:08.076335Z", "t_s": 0.1, "event": "workload_submitted", "workload": "c1-critical", "cls": "Critical", "kind": "Deployment", "pods": 1}
+{"ts": "2026-11-17T15:23:58.601906Z", "t_s": 110.6, "event": "workload_submitted", "workload": "p1-preferred", "cls": "Preferred", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T15:31:16.832716Z", "t_s": 548.8, "event": "workload_submitted", "workload": "o1-optional", "cls": "Optional", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T15:32:02.417953Z", "t_s": 594.4, "event": "workload_submitted", "workload": "p2-preferred", "cls": "Preferred", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T15:39:28.152031Z", "t_s": 1040.2, "event": "workload_submitted", "workload": "c2-critical", "cls": "Critical", "kind": "Deployment", "pods": 1}
+{"ts": "2026-11-17T15:40:16.763326Z", "t_s": 1088.8, "event": "workload_submitted", "workload": "o2-optional", "cls": "Optional", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T15:44:17.872745Z", "t_s": 1329.9, "event": "workload_submitted", "workload": "p3-preferred", "cls": "Preferred", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T15:51:52.758648Z", "t_s": 1784.8, "event": "workload_submitted", "workload": "p4-preferred", "cls": "Preferred", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T16:09:49.386128Z", "t_s": 2861.4, "event": "workload_submitted", "workload": "o3-optional", "cls": "Optional", "kind": "Job", "pods": 2}
+{"ts": "2026-11-17T16:27:50.892976Z", "t_s": 3942.9, "event": "run_end"}
+{"ts": "2026-11-17T16:27:51.058957Z", "t_s": 3943.1, "event": "final_dump_done"}

@@ -1,0 +1,52 @@
+COMPUTED VALUES:
+configuration:
+  api_group: eas.hiro.io
+  api_version: v1
+  energy_api_url: http://energy-metric-service:8000
+  log_level: INFO
+  plural: energyawareorchestrations
+  reconcile_interval_seconds: 600
+fullnameOverride: ""
+image:
+  pullPolicy: Never
+  repository: energy-aware-operator
+  tag: 373791e-dirty-e3b0c442
+imagePullSecrets: []
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /healthz
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+nameOverride: ""
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+replicaCount: 1
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+securityContext: {}
+service:
+  port: 8080
+  type: ClusterIP
+serviceAccount:
+  annotations: {}
+  automount: true
+  create: true
+  name: ""

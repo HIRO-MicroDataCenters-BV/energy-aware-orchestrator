@@ -1,0 +1,19 @@
+scenario,t_s,utc,workload,class,action,scheduled_slot_start,current_slot_available_w,required_w,reason
+EAO,1.4,2026-11-17T17:15:01.389484Z,c1-critical,Critical,DeployImmediately,,,42,Critical priority workload - deploying immediately for 24/7 operation
+EAO,114.0,2026-11-17T17:16:54.035165Z,p1-preferred,Preferred,DeployImmediately,,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,550.0,2026-11-17T17:24:10.005934Z,o1-optional,Optional,Scheduled,2026-11-17T18:00:00+00:00,168.0,84,Optional priority - scheduled for optimal energy slot (336W >= 84W)
+EAO,596.3,2026-11-17T17:24:56.277860Z,p2-preferred,Preferred,DeployImmediately,,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,924.0,2026-11-17T17:30:24.006046Z,p1-preferred,Preferred,Scheduled,2026-11-17T18:00:00+00:00,75.6,84,Preferred priority - scheduled for first sufficient energy slot (336W >= 84W)
+EAO,929.1,2026-11-17T17:30:29.112940Z,p2-preferred,Preferred,Scheduled,2026-11-17T18:00:00+00:00,75.6,84,Preferred priority - scheduled for first sufficient energy slot (336W >= 84W)
+EAO,1041.9,2026-11-17T17:32:21.930661Z,c2-critical,Critical,DeployImmediately,,,42,Critical priority workload - deploying immediately for 24/7 operation
+EAO,1093.3,2026-11-17T17:33:13.331644Z,o2-optional,Optional,Scheduled,2026-11-17T18:00:00+00:00,75.6,84,Optional priority - scheduled for optimal energy slot (336W >= 84W)
+EAO,1334.1,2026-11-17T17:37:14.083821Z,p3-preferred,Preferred,Scheduled,2026-11-17T18:00:00+00:00,75.6,84,Preferred priority - scheduled for first sufficient energy slot (336W >= 84W)
+EAO,1786.2,2026-11-17T17:44:46.178469Z,p4-preferred,Preferred,Scheduled,2026-11-17T18:00:00+00:00,75.6,84,Preferred priority - scheduled for first sufficient energy slot (336W >= 84W)
+EAO,2119.3,2026-11-17T17:50:19.340843Z,p4-preferred,Preferred,DeployImmediately,2026-11-17T18:00:00+00:00,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,2124.5,2026-11-17T17:50:24.486429Z,p1-preferred,Preferred,DeployImmediately,2026-11-17T18:00:00+00:00,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,2129.6,2026-11-17T17:50:29.591135Z,p2-preferred,Preferred,DeployImmediately,2026-11-17T18:00:00+00:00,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,2144.9,2026-11-17T17:50:44.938738Z,p3-preferred,Preferred,DeployImmediately,2026-11-17T18:00:00+00:00,168.0,84,Preferred priority - current slot has sufficient energy (168W >= 84W)
+EAO,2314.2,2026-11-17T17:53:34.249097Z,o3-optional,Optional,Scheduled,2026-11-17T18:00:00+00:00,168.0,84,Optional priority - scheduled for optimal energy slot (336W >= 84W)
+EAO,2703.9,2026-11-17T18:00:03.894736Z,o3-optional,Optional,DeployImmediately,2026-11-17T18:00:00+00:00,336.0,84,Optional priority - honoring previously committed slot (336W >= 84W)
+EAO,2714.2,2026-11-17T18:00:14.156154Z,o1-optional,Optional,DeployImmediately,2026-11-17T18:00:00+00:00,336.0,84,Optional priority - honoring previously committed slot (336W >= 84W)
+EAO,2714.2,2026-11-17T18:00:14.156154Z,o2-optional,Optional,DeployImmediately,2026-11-17T18:00:00+00:00,336.0,84,Optional priority - honoring previously committed slot (336W >= 84W)

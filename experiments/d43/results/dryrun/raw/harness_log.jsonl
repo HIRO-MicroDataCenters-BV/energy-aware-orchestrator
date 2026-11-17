@@ -1,0 +1,24 @@
+{"ts": "2026-11-17T15:18:24.944746Z", "t_s": -29.1, "event": "supply_push", "phase": "normal", "feed_a_w": 75.6, "feed_b_w": 92.4, "resp": "{\"status\": \"ok\", \"count\": 10}"}
+{"ts": "2026-11-17T15:18:24.981851Z", "t_s": -29.0, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:18:54.002136Z", "t_s": 0.0, "event": "run_start", "scenario": "EAO", "context": "kind-sample", "namespace": "d43-dry", "t0": "2026-11-17T15:18:54Z", "boundary": "2026-11-17T18:00:00Z", "end": "2026-11-17T15:21:24Z", "sample_every_s": 5, "image": "python:3.11-slim"}
+{"ts": "2026-11-17T15:18:54.226212Z", "t_s": 0.2, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:18:59.381144Z", "t_s": 5.4, "event": "eao_cr_created", "workload": "c1-critical", "cls": "Critical", "energy_w": 42}
+{"ts": "2026-11-17T15:19:00.480558Z", "t_s": 6.5, "event": "eao_first_decision", "workload": "c1-critical", "action": "DeployImmediately", "reason": "Critical priority workload - deploying immediately for 24/7 operation", "slot_start": null, "current_slot_available_w": null}
+{"ts": "2026-11-17T15:19:00.530872Z", "t_s": 6.5, "event": "workload_submitted", "workload": "c1-critical", "cls": "Critical", "kind": "Deployment", "pods": 1}
+{"ts": "2026-11-17T15:19:09.856382Z", "t_s": 15.9, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:19:15.090710Z", "t_s": 21.1, "event": "eao_cr_created", "workload": "p1-preferred", "cls": "Preferred", "energy_w": 84}
+{"ts": "2026-11-17T15:19:16.195063Z", "t_s": 22.2, "event": "eao_first_decision", "workload": "p1-preferred", "action": "DeployImmediately", "reason": "Preferred priority - current slot has sufficient energy (168W >= 84W)", "slot_start": null, "current_slot_available_w": 168}
+{"ts": "2026-11-17T15:19:16.250265Z", "t_s": 22.3, "event": "workload_submitted", "workload": "p1-preferred", "cls": "Preferred", "kind": "Job", "pods": 1}
+{"ts": "2026-11-17T15:19:25.568136Z", "t_s": 31.6, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:19:34.934101Z", "t_s": 40.9, "event": "eao_cr_created", "workload": "o1-optional", "cls": "Optional", "energy_w": 84}
+{"ts": "2026-11-17T15:19:36.045695Z", "t_s": 42.0, "event": "eao_first_decision", "workload": "o1-optional", "action": "Scheduled", "reason": "Optional priority - scheduled for optimal energy slot (336W >= 84W)", "slot_start": "2026-11-17T18:00:00+00:00", "current_slot_available_w": 168}
+{"ts": "2026-11-17T15:19:36.091305Z", "t_s": 42.1, "event": "workload_submitted", "workload": "o1-optional", "cls": "Optional", "kind": "Job", "pods": 1}
+{"ts": "2026-11-17T15:19:41.296979Z", "t_s": 47.3, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:19:56.764587Z", "t_s": 62.8, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:20:12.203462Z", "t_s": 78.2, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:20:27.693648Z", "t_s": 93.7, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:20:43.133166Z", "t_s": 109.1, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-b", 92.4, "real"], ["d43-feed-a", 75.6, "real"]]}
+{"ts": "2026-11-17T15:20:58.559193Z", "t_s": 124.6, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-b", 92.4, "real"], ["d43-feed-a", 75.6, "real"]]}
+{"ts": "2026-11-17T15:21:13.944869Z", "t_s": 139.9, "event": "supply_obs", "current_slot_total_w": 168.0, "rows": [["d43-feed-a", 75.6, "real"], ["d43-feed-b", 92.4, "real"]]}
+{"ts": "2026-11-17T15:21:24.187466Z", "t_s": 150.2, "event": "run_end"}
+{"ts": "2026-11-17T15:21:24.587297Z", "t_s": 150.6, "event": "final_dump_done"}

@@ -1,0 +1,59 @@
+# Calibration: how many watts Kepler attributes to a pod busy-looping on 1 and
+# on 2 CPU cores on this kind testbed. Default scheduler, no EAO involved.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: calib-1core
+  namespace: d43
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: {d43/role: calibration}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: burn
+          image: python:3.11-slim
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-c"]
+          args:
+            - |
+              import multiprocessing as mp, time
+              def burn(t):
+                  while time.time() < t: pass
+              end = time.time() + 300
+              ps = [mp.Process(target=burn, args=(end,)) for _ in range(1)]
+              [p.start() for p in ps]; [p.join() for p in ps]
+          resources:
+            requests: {cpu: "1", memory: 64Mi}
+            limits: {cpu: "1", memory: 128Mi}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: calib-2core
+  namespace: d43
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: {d43/role: calibration}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: burn
+          image: python:3.11-slim
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-c"]
+          args:
+            - |
+              import multiprocessing as mp, time
+              def burn(t):
+                  while time.time() < t: pass
+              end = time.time() + 300
+              ps = [mp.Process(target=burn, args=(end,)) for _ in range(2)]
+              [p.start() for p in ps]; [p.join() for p in ps]
+          resources:
+            requests: {cpu: "2", memory: 64Mi}
+            limits: {cpu: "2", memory: 128Mi}

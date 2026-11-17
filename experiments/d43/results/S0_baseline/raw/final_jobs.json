@@ -1,0 +1,807 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"S0\",\"d43/workload\":\"o1-optional\"},\"name\":\"o1-optional\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"S0\",\"d43/workload\":\"o1-optional\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T18:34:09Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Optional",
+                    "d43/scenario": "S0",
+                    "d43/workload": "o1-optional"
+                },
+                "name": "o1-optional",
+                "namespace": "d43",
+                "resourceVersion": "4175393",
+                "uid": "51d0f8dd-6ede-48b9-8c23-4dce46614724"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "51d0f8dd-6ede-48b9-8c23-4dce46614724"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "51d0f8dd-6ede-48b9-8c23-4dce46614724",
+                            "batch.kubernetes.io/job-name": "o1-optional",
+                            "controller-uid": "51d0f8dd-6ede-48b9-8c23-4dce46614724",
+                            "d43/class": "Optional",
+                            "d43/scenario": "S0",
+                            "d43/workload": "o1-optional",
+                            "job-name": "o1-optional"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T18:42:12Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T18:42:12Z",
+                        "lastTransitionTime": "2026-11-17T18:42:12Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T18:42:12Z",
+                        "lastTransitionTime": "2026-11-17T18:42:12Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T18:34:09Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"S0\",\"d43/workload\":\"o2-optional\"},\"name\":\"o2-optional\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"S0\",\"d43/workload\":\"o2-optional\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T18:43:08Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Optional",
+                    "d43/scenario": "S0",
+                    "d43/workload": "o2-optional"
+                },
+                "name": "o2-optional",
+                "namespace": "d43",
+                "resourceVersion": "4178138",
+                "uid": "4d3febfd-f417-41ad-97c8-f1d0458d36c3"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "4d3febfd-f417-41ad-97c8-f1d0458d36c3"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "4d3febfd-f417-41ad-97c8-f1d0458d36c3",
+                            "batch.kubernetes.io/job-name": "o2-optional",
+                            "controller-uid": "4d3febfd-f417-41ad-97c8-f1d0458d36c3",
+                            "d43/class": "Optional",
+                            "d43/scenario": "S0",
+                            "d43/workload": "o2-optional",
+                            "job-name": "o2-optional"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T18:51:11Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T18:51:11Z",
+                        "lastTransitionTime": "2026-11-17T18:51:11Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T18:51:11Z",
+                        "lastTransitionTime": "2026-11-17T18:51:11Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T18:43:08Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"S0\",\"d43/workload\":\"o3-optional\"},\"name\":\"o3-optional\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Optional\",\"d43/scenario\":\"S0\",\"d43/workload\":\"o3-optional\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T19:03:32Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Optional",
+                    "d43/scenario": "S0",
+                    "d43/workload": "o3-optional"
+                },
+                "name": "o3-optional",
+                "namespace": "d43",
+                "resourceVersion": "4184266",
+                "uid": "11880aea-d43e-4072-9c00-095dccc3a966"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "11880aea-d43e-4072-9c00-095dccc3a966"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "11880aea-d43e-4072-9c00-095dccc3a966",
+                            "batch.kubernetes.io/job-name": "o3-optional",
+                            "controller-uid": "11880aea-d43e-4072-9c00-095dccc3a966",
+                            "d43/class": "Optional",
+                            "d43/scenario": "S0",
+                            "d43/workload": "o3-optional",
+                            "job-name": "o3-optional"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T19:11:35Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T19:11:35Z",
+                        "lastTransitionTime": "2026-11-17T19:11:35Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T19:11:35Z",
+                        "lastTransitionTime": "2026-11-17T19:11:35Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T19:03:32Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p1-preferred\"},\"name\":\"p1-preferred\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p1-preferred\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T18:26:50Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Preferred",
+                    "d43/scenario": "S0",
+                    "d43/workload": "p1-preferred"
+                },
+                "name": "p1-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4173242",
+                "uid": "28ce27bb-b4d0-4fb0-a36e-024240ef55a0"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "28ce27bb-b4d0-4fb0-a36e-024240ef55a0"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "28ce27bb-b4d0-4fb0-a36e-024240ef55a0",
+                            "batch.kubernetes.io/job-name": "p1-preferred",
+                            "controller-uid": "28ce27bb-b4d0-4fb0-a36e-024240ef55a0",
+                            "d43/class": "Preferred",
+                            "d43/scenario": "S0",
+                            "d43/workload": "p1-preferred",
+                            "job-name": "p1-preferred"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T18:34:53Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T18:34:53Z",
+                        "lastTransitionTime": "2026-11-17T18:34:53Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T18:34:53Z",
+                        "lastTransitionTime": "2026-11-17T18:34:53Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T18:26:50Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p2-preferred\"},\"name\":\"p2-preferred\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p2-preferred\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T18:34:54Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Preferred",
+                    "d43/scenario": "S0",
+                    "d43/workload": "p2-preferred"
+                },
+                "name": "p2-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4175680",
+                "uid": "063ff2d6-d975-4cec-98ac-9ab5d6607ad6"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "063ff2d6-d975-4cec-98ac-9ab5d6607ad6"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "063ff2d6-d975-4cec-98ac-9ab5d6607ad6",
+                            "batch.kubernetes.io/job-name": "p2-preferred",
+                            "controller-uid": "063ff2d6-d975-4cec-98ac-9ab5d6607ad6",
+                            "d43/class": "Preferred",
+                            "d43/scenario": "S0",
+                            "d43/workload": "p2-preferred",
+                            "job-name": "p2-preferred"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T18:42:58Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T18:42:58Z",
+                        "lastTransitionTime": "2026-11-17T18:42:58Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T18:42:58Z",
+                        "lastTransitionTime": "2026-11-17T18:42:58Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T18:34:54Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p3-preferred\"},\"name\":\"p3-preferred\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p3-preferred\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T18:47:10Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Preferred",
+                    "d43/scenario": "S0",
+                    "d43/workload": "p3-preferred"
+                },
+                "name": "p3-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4179357",
+                "uid": "bd3157dd-2be7-4a01-8ae5-ab0fd91618d5"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "bd3157dd-2be7-4a01-8ae5-ab0fd91618d5"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "bd3157dd-2be7-4a01-8ae5-ab0fd91618d5",
+                            "batch.kubernetes.io/job-name": "p3-preferred",
+                            "controller-uid": "bd3157dd-2be7-4a01-8ae5-ab0fd91618d5",
+                            "d43/class": "Preferred",
+                            "d43/scenario": "S0",
+                            "d43/workload": "p3-preferred",
+                            "job-name": "p3-preferred"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T18:55:12Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T18:55:12Z",
+                        "lastTransitionTime": "2026-11-17T18:55:12Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T18:55:12Z",
+                        "lastTransitionTime": "2026-11-17T18:55:12Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T18:47:10Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p4-preferred\"},\"name\":\"p4-preferred\",\"namespace\":\"d43\"},\"spec\":{\"backoffLimit\":0,\"completions\":2,\"parallelism\":2,\"template\":{\"metadata\":{\"labels\":{\"d43/class\":\"Preferred\",\"d43/scenario\":\"S0\",\"d43/workload\":\"p4-preferred\"}},\"spec\":{\"containers\":[{\"command\":[\"python\",\"-c\",\"\\nimport multiprocessing as mp, os, time\\nd = float(os.environ[\\\"DURATION_S\\\"])\\nend = time.time() + d if d \\u003e 0 else float(\\\"inf\\\")\\ndef burn():\\n    while time.time() \\u003c end:\\n        pass\\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\\\"CORES\\\"]))]\\n[p.start() for p in ps]\\n[p.join() for p in ps]\\n\"],\"env\":[{\"name\":\"DURATION_S\",\"value\":\"480\"},{\"name\":\"CORES\",\"value\":\"1\"}],\"image\":\"python:3.11-slim\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"burn\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"1\",\"memory\":\"64Mi\"}}}],\"restartPolicy\":\"Never\",\"terminationGracePeriodSeconds\":5}}}}\n"
+                },
+                "creationTimestamp": "2026-11-17T18:54:44Z",
+                "generation": 1,
+                "labels": {
+                    "d43/class": "Preferred",
+                    "d43/scenario": "S0",
+                    "d43/workload": "p4-preferred"
+                },
+                "name": "p4-preferred",
+                "namespace": "d43",
+                "resourceVersion": "4181673",
+                "uid": "ddc2bb0d-4fd3-4c16-a774-70ef8978aeab"
+            },
+            "spec": {
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 2,
+                "manualSelector": false,
+                "parallelism": 2,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "ddc2bb0d-4fd3-4c16-a774-70ef8978aeab"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "ddc2bb0d-4fd3-4c16-a774-70ef8978aeab",
+                            "batch.kubernetes.io/job-name": "p4-preferred",
+                            "controller-uid": "ddc2bb0d-4fd3-4c16-a774-70ef8978aeab",
+                            "d43/class": "Preferred",
+                            "d43/scenario": "S0",
+                            "d43/workload": "p4-preferred",
+                            "job-name": "p4-preferred"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "command": [
+                                    "python",
+                                    "-c",
+                                    "\nimport multiprocessing as mp, os, time\nd = float(os.environ[\"DURATION_S\"])\nend = time.time() + d if d \u003e 0 else float(\"inf\")\ndef burn():\n    while time.time() \u003c end:\n        pass\nps = [mp.Process(target=burn) for _ in range(int(os.environ[\"CORES\"]))]\n[p.start() for p in ps]\n[p.join() for p in ps]\n"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DURATION_S",
+                                        "value": "480"
+                                    },
+                                    {
+                                        "name": "CORES",
+                                        "value": "1"
+                                    }
+                                ],
+                                "image": "python:3.11-slim",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "burn",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "128Mi"
+                                    },
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "64Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Never",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 5
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-11-17T19:02:47Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-11-17T19:02:47Z",
+                        "lastTransitionTime": "2026-11-17T19:02:47Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-11-17T19:02:47Z",
+                        "lastTransitionTime": "2026-11-17T19:02:47Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-11-17T18:54:44Z",
+                "succeeded": 2,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

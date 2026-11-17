@@ -1,0 +1,4 @@
+scenario,workload,class,pod,node,created_utc,scheduled_utc,started_utc,finished_utc,running_at_run_end,created_t_s,scheduled_t_s,started_t_s,finished_t_s
+EAO,c1-critical,Critical,c1-critical-676676dd4d-fhw96,sample-worker,2026-11-17T15:19:00Z,2026-11-17T15:19:01Z,2026-11-17T15:20:26Z,2026-11-17T15:20:26Z,False,6.0,7.0,92.0,92.0
+EAO,o1-optional,Optional,o1-optional-kwhtk,,2026-11-17T15:19:36Z,,,,False,42.0,,,
+EAO,p1-preferred,Preferred,p1-preferred-m79hk,sample-worker,2026-11-17T15:19:16Z,2026-11-17T15:19:16Z,2026-11-17T15:19:16Z,2026-11-17T15:19:16Z,False,22.0,22.0,22.0,22.0
